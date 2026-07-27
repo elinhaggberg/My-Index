@@ -5,7 +5,10 @@
 // column's real rendered height can be read back with offsetHeight right
 // after an append and used for the next placement decision.
 export function renderMasonry(container, items, createNode) {
-  const columnCount = container.clientWidth >= 420 ? 3 : 2;
+  // Favors 2 wider columns over 3 narrower ones up to a higher width than
+  // before -- these cards are mostly text (links/quotes/notes), so more
+  // width per card means more of that text is visible before it clamps.
+  const columnCount = container.clientWidth >= 560 ? 3 : 2;
   const columns = Array.from({ length: columnCount }, () => {
     const col = document.createElement("div");
     col.className = "pin-col";

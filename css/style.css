@@ -283,7 +283,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .card-grid {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   padding: 4px 16px 16px;
 }
 .pin-col {
@@ -291,7 +291,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .pin {
@@ -313,12 +313,12 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   background: var(--surface-2);
   object-fit: cover;
 }
-.pin-body { padding: 12px; }
+.pin-body { padding: 16px; }
 /* The type icon sits inline beside the title as a small badge, rather than
    a fixed-size placeholder box standing in for a photo the snippet almost
    certainly doesn't have -- this app is a register of links/quotes/notes,
    not a photo library, so the card shouldn't look shaped around one. */
-.pin-head { display: flex; align-items: flex-start; gap: 8px; }
+.pin-head { display: flex; align-items: flex-start; gap: 10px; }
 .pin-type-icon {
   width: 26px;
   height: 26px;
@@ -334,23 +334,23 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .pin-title {
   flex: 1;
   min-width: 0;
-  font-size: 0.92rem;
+  font-size: 0.98rem;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.4;
   margin: 0;
   padding-top: 2px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .pin-comment {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   color: var(--text-dim);
-  line-height: 1.4;
-  margin: 4px 0 0;
+  line-height: 1.5;
+  margin: 8px 0 0;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -358,10 +358,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--text-dim);
   overflow: hidden;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 .pin-source span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pin-source .icon { width: 0.8em; height: 0.8em; flex-shrink: 0; }
