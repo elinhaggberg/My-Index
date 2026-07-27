@@ -69,27 +69,23 @@ function messageForStatus(status) {
   return `Couldn't fetch that page (HTTP ${status}).`;
 }
 
-// YouTube watch pages are handled separately, via YouTube's own public
-// oEmbed endpoint, rather than the generic HTML-scraping path below.
-// Scraping the watch page directly is unreliable: YouTube often serves a
-// cookie-consent or bot-check interstitial to non-browser requests instead
-// of the real page, which has no video info on it at all -- that's why a
-// plain scrape reported "no image" even though the real video page
-// normally has one. oEmbed is unauthenticated, stable, and built for
-// exactly this (title + thumbnail), so it sidesteps the problem entirely.
-function extractYouTubeVideoId(parsed) {
+// YouTube pages are handled separately, via YouTube's own public oEmbed
+// endpoint, rather than the generic HTML-scraping path below. Scraping the
+// watch page directly is unreliable: YouTube often serves a cookie-consent
+// or bot-check interstitial to non-browser requests instead of the real
+// page, which has no video info on it at all. oEmbed is unauthenticated,
+// stable, and built for exactly this (title + thumbnail), so it sidesteps
+// the problem entirely.
+//
+// Matched by hostname only, not by path shape -- watch/live/shorts/embed
+// links, playlist and tracking query params, youtu.be short links, all of
+// it. Trying to hand-parse every URL shape YouTube hands out is fragile
+// (miss one and it silently falls through to the unreliable scrape path
+// instead); oEmbed already validates the URL itself and returns a clean
+// not-found response for anything that isn't a real video.
+function isYouTubeHost(parsed) {
   const host = parsed.hostname.replace(/^www\./, "").replace(/^m\./, "");
-  if (host === "youtu.be") {
-    return parsed.pathname.slice(1).split("/")[0] || null;
-  }
-  if (host === "youtube.com" || host === "youtube-nocookie.com") {
-    if (parsed.pathname === "/watch") return parsed.searchParams.get("v");
-    const shortsMatch = parsed.pathname.match(/^\/shorts\/([^/]+)/);
-    if (shortsMatch) return shortsMatch[1];
-    const embedMatch = parsed.pathname.match(/^\/embed\/([^/]+)/);
-    if (embedMatch) return embedMatch[1];
-  }
-  return null;
+  return host === "youtube.com" || host === "youtu.be" || host === "youtube-nocookie.com";
 }
 
 async function fetchYouTubeOEmbed(parsed, signal) {
@@ -136,8 +132,7 @@ module.exports = async (req, res) => {
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const youTubeVideoId = extractYouTubeVideoId(parsed);
-    if (youTubeVideoId) {
+    if (isYouTubeHost(parsed)) {
       const result = await fetchYouTubeOEmbed(parsed, controller.signal);
       if (result) {
         res.status(200).json(result);
@@ -184,16 +179,17 @@ module.exports = async (req, res) => {
     const image = resolveUrl(getMeta(html, "og:image") || getMeta(html, "twitter:image") || getLinkHref(html, "image_src"), finalUrl);
     const siteName = getMeta(html, "og:site_name") || parsed.hostname.replace(/^www\./, "");
 
-    // The page loaded (HTTP 200) but nothing at all could be extracted —
-    // usually means the real content only appears after JavaScript runs
-    // (this fetch never executes scripts), or the response was actually a
-    // bot-check/consent page disguised as a normal 200.
-    const foundNothing = !title && !image && !description;
+    // Title is the one field the editor's Content input actually surfaces
+    // ("fetch fills this in") -- a missing image is never worth its own
+    // message, since there's no visible "Image" field for the user to be
+    // watching for. So the only thing worth complaining about here is a
+    // missing title; a found title with no image is just a quiet success.
     const result = { title, image, description, siteName, sourceUrl: finalUrl };
-    if (foundNothing) {
-      result.error = "Couldn't find any details on this page — it may block scraping or need JavaScript to load its content.";
-    } else if (!image) {
-      result.notice = "Got the details, but no image was found on this page.";
+    if (!title) {
+      result.error =
+        !description && !image
+          ? "Couldn't find any details on this page — it may block scraping or need JavaScript to load its content."
+          : "Couldn't find a title on this page — you can type your own below.";
     }
     res.status(200).json(result);
   } catch (err) {
