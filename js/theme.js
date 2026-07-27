@@ -1,0 +1,51 @@
+import { getThemePref, setThemePref } from "./storage.js";
+
+export const THEMES = [
+  { id: "playful", label: "Playful" },
+  { id: "light", label: "Light" },
+  { id: "dark", label: "Dark" },
+];
+
+// The Playful theme's accent is user-selectable rather than fixed, so the
+// app can be re-skinned to personal taste. Dark and Light each have one
+// fixed accent, defined in CSS instead.
+export const PLAYFUL_SWATCHES = [
+  { id: "terracotta", label: "Terracotta", accent: "#d87a4a", accentText: "#ffffff" },
+  { id: "ochre", label: "Ochre", accent: "#d9a441", accentText: "#241c1c" },
+  { id: "sage", label: "Sage", accent: "#7a8f6d", accentText: "#ffffff" },
+  { id: "rosewood", label: "Rosewood", accent: "#a8465a", accentText: "#ffffff" },
+  { id: "ink", label: "Ink", accent: "#3a2a4a", accentText: "#ffffff" },
+];
+
+const THEME_BG = { dark: "#0b0d0f", light: "#f6f7f9", playful: "#f7f1e3" };
+
+// Playful (warm parchment, like a paper index card) is the app's default
+// look, matching the "commonplace book" tone rather than a sterile tracker.
+const DEFAULT_PREF = { mode: "playful", playfulAccent: "terracotta" };
+
+export function getTheme() {
+  return { ...DEFAULT_PREF, ...getThemePref() };
+}
+
+export function setTheme(pref) {
+  setThemePref(pref);
+  applyTheme();
+}
+
+export function applyTheme() {
+  const pref = getTheme();
+  const root = document.documentElement;
+  root.dataset.theme = pref.mode;
+
+  if (pref.mode === "playful") {
+    const swatch = PLAYFUL_SWATCHES.find((s) => s.id === pref.playfulAccent) || PLAYFUL_SWATCHES[0];
+    root.style.setProperty("--accent", swatch.accent);
+    root.style.setProperty("--accent-text", swatch.accentText);
+  } else {
+    root.style.removeProperty("--accent");
+    root.style.removeProperty("--accent-text");
+  }
+
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeColorMeta) themeColorMeta.setAttribute("content", THEME_BG[pref.mode] || THEME_BG.playful);
+}

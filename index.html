@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <script>
+    // Applied before the stylesheet paints, since the module script that
+    // normally owns theming (js/theme.js) runs after HTML parsing and would
+    // otherwise flash the default theme first on every load.
+    try {
+      var themeMode = (JSON.parse(localStorage.getItem("mi_theme_v1") || "{}") || {}).mode;
+      document.documentElement.dataset.theme = themeMode || "playful";
+    } catch (e) {}
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>My Index</title>
+  <meta name="description" content="A personal, local-first register of people and themes you're curious about — a digital commonplace book, no account, no algorithm." />
+  <meta name="theme-color" content="#f7f1e3" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- ===== Home ===== -->
+  <template id="tpl-home">
+    <header class="topbar home-topbar">
+      <h1 id="home-title">My Index</h1>
+      <button class="icon-btn filter-btn" id="filter-btn" aria-label="Filter by tag"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M7 12h10M10 19h4"/></svg></button>
+      <button class="icon-btn settings-btn" id="settings-btn" aria-label="Menu"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/></svg></button>
+    </header>
+    <div id="backup-banner" class="banner hidden">
+      <p>You haven't backed up in a while — export takes a second.</p>
+      <div class="banner-actions">
+        <button type="button" class="text-btn primary" id="backup-now-btn">Back up now</button>
+        <button type="button" class="text-btn" id="backup-dismiss-btn">Later</button>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="profile-row" id="profile-row"></div>
+      <p class="card-detail-section-label" style="padding:8px 16px 8px;">Recently saved</p>
+      <div class="card-grid" id="home-grid"></div>
+    </div>
+    <button class="fab" id="add-btn" aria-label="Save something new"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"/></svg></button>
+  </template>
+
+  <template id="tpl-profile-tile">
+    <button class="profile-tile">
+      <span class="profile-tile-avatar-wrap">
+        <span class="profile-tile-avatar"></span>
+        <span class="profile-tile-badge hidden"></span>
+      </span>
+      <span class="profile-tile-name"></span>
+    </button>
+  </template>
+
+  <!-- ===== Tags list ===== -->
+  <template id="tpl-tags">
+    <header class="topbar">
+      <h1>Tags</h1>
+      <button class="icon-btn settings-btn" id="settings-btn" aria-label="Menu"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/></svg></button>
+    </header>
+    <div class="page-body">
+      <div class="board-grid" id="tags-grid"></div>
+    </div>
+  </template>
+
+  <template id="tpl-tag-tile">
+    <button class="board-tile tag-tile">
+      <div class="tag-tile-icon"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M3 3h8l10 10-8 8L3 11V3z"/><circle cx="7.5" cy="7.5" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+      <div class="board-tile-body">
+        <p class="board-tile-title tag-tile-title"></p>
+        <p class="board-tile-meta tag-tile-meta"></p>
+      </div>
+    </button>
+  </template>
+
+  <!-- ===== Tag detail ===== -->
+  <template id="tpl-tag">
+    <header class="topbar">
+      <button class="icon-btn back-btn" aria-label="Back"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 105.4-105.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></button>
+      <h1 id="tag-title"></h1>
+      <button class="icon-btn" id="tag-pin-btn" aria-label="Edit pinned note" title="Edit pinned note"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M352.9 21.2L308 66.1 445.9 204 490.8 159.1C504.4 145.6 512 127.2 512 108s-7.6-37.6-21.2-51.1L455.1 21.2C441.6 7.6 423.2 0 404 0s-37.6 7.6-51.1 21.2zM274.1 100L58.9 315.1c-10.7 10.7-18.5 24.1-22.6 38.7L.9 481.6c-2.3 8.3 0 17.3 6.2 23.4s15.1 8.5 23.4 6.2l127.8-35.5c14.6-4.1 27.9-11.8 38.7-22.6L412 237.9 274.1 100z"/></svg></button>
+    </header>
+    <div class="page-body">
+      <p class="tag-pinned-note hidden" id="tag-pinned-note"></p>
+      <div class="profile-row" id="tag-profile-row"></div>
+      <div class="card-grid" id="tag-snippets-grid"></div>
+    </div>
+    <button class="fab" id="tag-add-snippet-btn" aria-label="Save something new"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"/></svg></button>
+  </template>
+
+  <template id="tpl-tag-pinned-editor">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Pinned note</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <p class="import-hint">A short reflection on this theme itself, shown at the top of its page.</p>
+      <label class="field">
+        <textarea id="tag-pinned-note-input" maxlength="1000" rows="5" placeholder="What draws you to this theme…"></textarea>
+      </label>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="tag-pinned-note-save-btn">Save</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-tag-filter">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Filter by tag</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <div class="sort-option-list" id="tag-filter-list"></div>
+    </div>
+  </template>
+
+  <template id="tpl-tag-create">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>New tag</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <form id="tag-create-form">
+        <label class="field">
+          <span>Name</span>
+          <input type="text" name="name" maxlength="40" required autocomplete="off" placeholder="e.g. Philosophy" />
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="text-btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </template>
+
+  <template id="tpl-profile-create">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>New profile</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <form id="profile-create-form">
+        <label class="field">
+          <span>Name</span>
+          <input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="Who are you curious about?" />
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="text-btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </template>
+
+  <!-- ===== Profile page ===== -->
+  <template id="tpl-profile">
+    <header class="topbar">
+      <button class="icon-btn back-btn" aria-label="Back"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 105.4-105.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></button>
+      <h1 id="profile-title"></h1>
+      <button class="icon-btn" id="profile-edit-btn" aria-label="Edit" title="Edit"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M352.9 21.2L308 66.1 445.9 204 490.8 159.1C504.4 145.6 512 127.2 512 108s-7.6-37.6-21.2-51.1L455.1 21.2C441.6 7.6 423.2 0 404 0s-37.6 7.6-51.1 21.2zM274.1 100L58.9 315.1c-10.7 10.7-18.5 24.1-22.6 38.7L.9 481.6c-2.3 8.3 0 17.3 6.2 23.4s15.1 8.5 23.4 6.2l127.8-35.5c14.6-4.1 27.9-11.8 38.7-22.6L412 237.9 274.1 100z"/></svg></button>
+    </header>
+    <div class="page-body">
+      <p class="profile-note hidden" id="profile-note"></p>
+      <p class="card-detail-section-label" id="profile-channels-label">Channels</p>
+      <div class="channel-view-list" id="profile-channels"></div>
+      <p class="card-detail-section-label">Tags</p>
+      <div class="board-chip-list" id="profile-tag-chips"></div>
+      <p class="card-detail-section-label">Snippets</p>
+      <div class="card-grid" id="profile-snippets-grid"></div>
+    </div>
+    <button class="fab" id="profile-add-snippet-btn" aria-label="Save something new"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"/></svg></button>
+  </template>
+
+  <!-- ===== Profile editor ===== -->
+  <template id="tpl-profile-editor">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2 id="profile-editor-heading">New profile</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <label class="field">
+        <span>Name</span>
+        <input type="text" id="profile-editor-name" maxlength="80" placeholder="Who are you curious about?" />
+      </label>
+      <label class="field">
+        <span>Note</span>
+        <textarea id="profile-editor-note" maxlength="500" placeholder="Why did you save this person?"></textarea>
+      </label>
+
+      <p class="card-detail-section-label">Channels</p>
+      <div id="profile-editor-channels"></div>
+      <button type="button" class="text-btn secondary add-channel-btn" id="profile-editor-add-channel-btn">+ Add channel</button>
+
+      <p class="card-detail-section-label" style="margin-top:20px;">Tags</p>
+      <div class="board-chip-list" id="profile-editor-tag-chips"></div>
+
+      <p class="import-message error hidden" id="profile-editor-save-error"></p>
+      <div class="form-actions">
+        <button type="button" class="text-btn secondary" id="profile-editor-share-btn">Export</button>
+        <button type="button" class="text-btn danger" id="profile-editor-delete-btn">Delete</button>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="profile-editor-save-btn">Save</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- ===== Snippet editor ===== -->
+  <template id="tpl-snippet-editor">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2 id="editor-heading">Save something</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+
+      <div class="type-chip-row" id="editor-type-segmented"></div>
+
+      <div class="field-row">
+        <label class="field" style="flex:1">
+          <span>Link (optional)</span>
+          <input type="url" id="editor-url-input" placeholder="https://…" autocomplete="off" />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="text-btn secondary" id="editor-fetch-btn">Fetch details</button>
+      </div>
+      <p class="import-message hidden" id="editor-fetch-message"></p>
+
+      <div class="photo-preview-wrap hidden" id="editor-image-preview-wrap">
+        <img class="photo-preview" id="editor-image-preview" alt="" />
+        <button type="button" class="photo-preview-clear" id="editor-image-clear-btn" aria-label="Remove image"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </div>
+
+      <label class="field">
+        <span>Content</span>
+        <textarea id="editor-content" maxlength="2000" rows="2"></textarea>
+      </label>
+      <label class="field">
+        <span>Your notes</span>
+        <textarea id="editor-comment" maxlength="1000" placeholder="Why did you save this?"></textarea>
+      </label>
+
+      <p class="card-detail-section-label">Tags</p>
+      <div class="board-chip-list" id="editor-tag-chips"></div>
+
+      <p class="card-detail-section-label">Profiles</p>
+      <div class="board-chip-list" id="editor-profile-chips"></div>
+
+      <p class="import-message error hidden" id="editor-save-error"></p>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="editor-save-btn">Save</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- ===== Snippet card (masonry tile) ===== -->
+  <template id="tpl-pin-card">
+    <article class="pin">
+      <img class="pin-media hidden" loading="lazy" />
+      <div class="pin-media-placeholder hidden"></div>
+      <div class="pin-body">
+        <h3 class="pin-title"></h3>
+        <span class="pin-source hidden"></span>
+        <span class="pin-badge hidden"></span>
+      </div>
+    </article>
+  </template>
+
+  <!-- ===== Snippet detail ===== -->
+  <template id="tpl-snippet-detail">
+    <div class="sheet">
+      <header class="sheet-header">
+        <span class="pin-badge" id="detail-type-badge" style="margin-right:auto;"></span>
+        <button class="icon-btn" id="detail-edit-btn" aria-label="Edit" title="Edit"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M352.9 21.2L308 66.1 445.9 204 490.8 159.1C504.4 145.6 512 127.2 512 108s-7.6-37.6-21.2-51.1L455.1 21.2C441.6 7.6 423.2 0 404 0s-37.6 7.6-51.1 21.2zM274.1 100L58.9 315.1c-10.7 10.7-18.5 24.1-22.6 38.7L.9 481.6c-2.3 8.3 0 17.3 6.2 23.4s15.1 8.5 23.4 6.2l127.8-35.5c14.6-4.1 27.9-11.8 38.7-22.6L412 237.9 274.1 100z"/></svg></button>
+        <button class="icon-btn" id="detail-share-btn" aria-label="Export / share" title="Export"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M384 192c53 0 96-43 96-96s-43-96-96-96-96 43-96 96c0 5.4 .5 10.8 1.3 16L159.6 184.1c-16.9-15-39.2-24.1-63.6-24.1-53 0-96 43-96 96s43 96 96 96c24.4 0 46.6-9.1 63.6-24.1L289.3 400c-.9 5.2-1.3 10.5-1.3 16 0 53 43 96 96 96s96-43 96-96-43-96-96-96c-24.4 0-46.6 9.1-63.6 24.1L190.7 272c.9-5.2 1.3-10.5 1.3-16s-.5-10.8-1.3-16l129.7-72.1c16.9 15 39.2 24.1 63.6 24.1z"/></svg></button>
+        <button class="icon-btn" id="detail-delete-btn" aria-label="Delete" title="Delete"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M136.7 5.9C141.1-7.2 153.3-16 167.1-16l113.9 0c13.8 0 26 8.8 30.4 21.9L320 32 416 32c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 96C14.3 96 0 81.7 0 64S14.3 32 32 32l96 0 8.7-26.1zM32 144l384 0 0 304c0 35.3-28.7 64-64 64L96 512c-35.3 0-64-28.7-64-64l0-304zm88 64c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24z"/></svg></button>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <img class="card-detail-media hidden" id="detail-image" alt="" />
+      <h2 class="card-detail-title" id="detail-title"></h2>
+      <a class="card-detail-link hidden" id="detail-link" target="_blank" rel="noopener noreferrer">
+        <svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><rect x="1.8" y="9" width="10" height="6" rx="3" transform="rotate(-45 6.8 12)"/><rect x="12.2" y="9" width="10" height="6" rx="3" transform="rotate(-45 17.2 12)"/></svg>
+        <span id="detail-link-text"></span>
+        <svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h12v12"/><path d="M21 3L10 14"/><path d="M17 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6"/></svg>
+      </a>
+      <p class="card-detail-note hidden" id="detail-comment"></p>
+      <p class="card-detail-section-label">Tags</p>
+      <div class="board-chip-list" id="detail-tag-chips"></div>
+      <p class="card-detail-section-label">Profiles</p>
+      <div class="board-chip-list" id="detail-profile-chips"></div>
+    </div>
+  </template>
+
+  <!-- ===== Settings ===== -->
+  <template id="tpl-settings-menu">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Settings</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <button type="button" class="menu-item" id="instructions-btn">
+        <svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><circle cx="256" cy="256" r="216" fill="none" stroke="currentColor" stroke-width="40" /><circle cx="256" cy="176" r="28" /><rect x="228" y="232" width="56" height="180" rx="12" /></svg>
+        <span>Instructions</span>
+      </button>
+      <button type="button" class="menu-item" id="customize-btn">
+        <svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><rect x="32" y="86" width="448" height="32" rx="16" /><circle cx="176" cy="102" r="40" /><rect x="32" y="240" width="448" height="32" rx="16" /><circle cx="336" cy="256" r="40" /><rect x="32" y="394" width="448" height="32" rx="16" /><circle cx="256" cy="410" r="40" /></svg>
+        <span>Customize</span>
+      </button>
+      <button type="button" class="menu-item" id="export-all-btn">
+        <svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M384 192c53 0 96-43 96-96s-43-96-96-96-96 43-96 96c0 5.4 .5 10.8 1.3 16L159.6 184.1c-16.9-15-39.2-24.1-63.6-24.1-53 0-96 43-96 96s43 96 96 96c24.4 0 46.6-9.1 63.6-24.1L289.3 400c-.9 5.2-1.3 10.5-1.3 16 0 53 43 96 96 96s96-43 96-96-43-96-96-96c-24.4 0-46.6 9.1-63.6 24.1L190.7 272c.9-5.2 1.3-10.5 1.3-16s-.5-10.8-1.3-16l129.7-72.1c16.9 15 39.2 24.1 63.6 24.1z"/></svg>
+        <span>Export all data</span>
+      </button>
+      <button type="button" class="menu-item" id="import-btn">
+        <svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M64 0C28.7 0 0 28.7 0 64l0 240 182.1 0-31-31c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l72 72c9.4 9.4 9.4 24.6 0 33.9l-72 72c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l31-31-182.1 0 0 96c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-277.5c0-17-6.7-33.3-18.7-45.3L258.7 18.7C246.7 6.7 230.5 0 213.5 0L64 0zM325.5 176L232 176c-13.3 0-24-10.7-24-24L208 58.5 325.5 176z"/></svg>
+        <span>Import</span>
+      </button>
+    </div>
+  </template>
+
+  <template id="tpl-instructions">
+    <div class="sheet instructions-sheet">
+      <header class="sheet-header">
+        <h2>Instructions</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <div class="instructions-body">
+        <section>
+          <h3>Installing on your phone</h3>
+          <p>This is a web app, not an app-store app — but you can add it to your Home Screen so it opens full-screen, just like a regular app.</p>
+          <p><strong>iOS (Safari):</strong> tap the Share icon, then "Add to Home Screen".</p>
+          <p><strong>Android (Chrome):</strong> tap the ⋮ menu, then "Add to Home screen" (or "Install app").</p>
+        </section>
+        <section>
+          <h3>Profiles</h3>
+          <p>A Profile is a person you're curious about. Give them a name, an optional note on why you saved them, and any Channels — blogs, podcasts, newsletters, socials — you follow them through.</p>
+        </section>
+        <section>
+          <h3>Snippets</h3>
+          <p>A Snippet is anything you've captured — a link, a quote, a note, a book, a podcast episode. Tap <strong>+</strong>, paste a link (the app fetches its title and image for you) or just write your own text, then tag it and optionally link it to one or more Profiles.</p>
+        </section>
+        <section>
+          <h3>Tags &amp; themes</h3>
+          <p>Tags are shared between Profiles and Snippets — tag a person and a quote with "Philosophy" and they'll both show up on that Tag's page, cross-referencing each other. Write a pinned note on a Tag's page to capture your own reflection on the theme.</p>
+          <p>Anything you save without a tag lands in <strong>Uncategorized</strong> automatically, so nothing gets lost — sort it whenever you like.</p>
+        </section>
+        <section>
+          <h3>Backup &amp; sharing</h3>
+          <p>Export a single profile or snippet to share with someone, or back up everything at once from Settings. Importing always merges into what you already have — it never replaces or deletes anything.</p>
+        </section>
+        <section>
+          <h3>Your data</h3>
+          <p>Everything you save is stored only on this device — there's no account, no server-side database, and nothing is collected. The only network request the app makes is a stateless link "unfurl" when you paste a URL, and it doesn't store anything either.</p>
+          <p><strong>Removing the app from your Home Screen deletes its saved data too</strong> — it's not just an icon, so deleting it works the same as uninstalling an app.</p>
+          <p>Use <strong>Export all data</strong> in Settings every so often to keep a backup.</p>
+        </section>
+        <section>
+          <h3>Themes</h3>
+          <p>Pick Playful, Light, or Dark from Settings → Customize. Playful lets you choose your own accent color too.</p>
+        </section>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-customize">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Customize</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <label class="field home-title-field">
+        <span>Home screen title</span>
+        <input type="text" id="home-title-input" maxlength="24" placeholder="My Index" autocomplete="off" />
+      </label>
+      <div class="theme-option-list">
+        <button type="button" class="theme-option" data-theme-mode="playful">
+          <span class="theme-swatch-preview playful"></span>
+          <span>Playful</span>
+        </button>
+        <button type="button" class="theme-option" data-theme-mode="light">
+          <span class="theme-swatch-preview light"></span>
+          <span>Light</span>
+        </button>
+        <button type="button" class="theme-option" data-theme-mode="dark">
+          <span class="theme-swatch-preview dark"></span>
+          <span>Dark</span>
+        </button>
+      </div>
+      <div class="playful-accent-picker hidden" id="playful-accent-picker">
+        <p class="playful-accent-label">Accent color</p>
+        <div class="swatch-row" id="playful-swatch-row"></div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-import">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Import</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <p class="import-hint">Choose an exported profile, snippet, or backup file.</p>
+      <button type="button" class="text-btn primary import-file-btn">Choose file…</button>
+      <input type="file" accept="application/json,.json" class="import-file-input" hidden />
+      <p class="import-message" aria-live="polite"></p>
+    </div>
+  </template>
+
+  <template id="tpl-confirm-delete">
+    <div class="sheet confirm-sheet">
+      <h2 class="confirm-title">Delete?</h2>
+      <p class="confirm-message"></p>
+      <div class="form-actions">
+        <button type="button" class="text-btn secondary cancel-btn">Cancel</button>
+        <button type="button" class="text-btn danger confirm-btn">Delete</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-whats-new">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>What's new</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <div class="whats-new-body" id="whats-new-body"></div>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="whats-new-got-it-btn">Got it</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-how-it-works">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>How this app works</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <div class="instructions-body">
+        <section>
+          <h3>It's a PWA</h3>
+          <p>This is a "Progressive Web App" — a website that behaves like an installed app. Add it to your Home Screen from the browser's share/menu button and it opens full-screen and works offline, no app store involved.</p>
+        </section>
+        <section>
+          <h3>Your data, your device</h3>
+          <p>There's no central database. Everything you enter lives only in this browser, on this device — nothing is sent to a server, because there isn't one.</p>
+        </section>
+        <section>
+          <h3>Not a feed</h3>
+          <p>Nothing here is algorithmic. You discover people and ideas on your own, elsewhere, and this is just where you keep track of them — a register you browse back through, not one that serves you anything.</p>
+        </section>
+        <section>
+          <h3>Backups are on you</h3>
+          <p>That also means backing up is your responsibility. There's no account recovery and no "we've got your data" safety net — export a backup every so often, especially before switching devices or clearing your browser's data.</p>
+        </section>
+        <section>
+          <h3>The app itself can still update</h3>
+          <p>The look, features, and bug fixes can improve over time — that's just code changing. Updates never touch your data; it stays exactly where it is.</p>
+        </section>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="how-it-works-got-it-btn">Got it</button>
+      </div>
+    </div>
+  </template>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
