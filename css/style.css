@@ -36,23 +36,24 @@
 }
 
 /* --accent/--accent-text are overridden inline via theme.js for the user's
-   chosen swatch; these are just the default (Terracotta) shown before that
-   runs, or if no swatch has been picked yet. */
+   chosen swatch; these are just the default (Lipstick) shown before that
+   runs, or if no swatch has been picked yet. Same palette as My Bookshelf
+   and My Closet, for a consistent design system across the app suite. */
 :root[data-theme="playful"] {
-  --bg: #f7f1e3;
-  --surface: #fffcf5;
-  --surface-2: #efe7d4;
-  --border: #e2d6ba;
-  --text: #2a231c;
-  --text-dim: #8a7d68;
-  --accent: #d87a4a;
+  --bg: #f5eedc;
+  --surface: #fffcf4;
+  --surface-2: #efe6d0;
+  --border: #e3d7b8;
+  --text: #241c1c;
+  --text-dim: #8a7f6d;
+  --accent: #ee4c9b;
   --accent-text: #ffffff;
-  --danger: #c94a3f;
+  --danger: #e0454a;
   --good: #4c8f5f;
   --warn: #c98424;
   --font-heading: ui-serif, Georgia, "Times New Roman", serif;
   --radius: 22px;
-  --card-tint: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --card-tint: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
 
 * { box-sizing: border-box; }
@@ -776,13 +777,18 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .theme-swatch-preview.dark { background: linear-gradient(90deg, #0b0d0f 50%, #b9a6ff 50%); }
 .theme-swatch-preview.light { background: linear-gradient(90deg, #ffffff 50%, #3e7bd9 50%); }
 .theme-swatch-preview.playful {
-  background: conic-gradient(#d87a4a 0deg 72deg, #d9a441 72deg 144deg, #7a8f6d 144deg 216deg, #a8465a 216deg 288deg, #3a2a4a 288deg 360deg);
+  background: conic-gradient(#ee4c9b 0deg 72deg, #f2542d 72deg 144deg, #f5b942 144deg 216deg, #b9a6ff 216deg 288deg, #3b2352 288deg 360deg);
 }
 .playful-accent-picker { padding-bottom: 8px; }
 .playful-accent-label { color: var(--text-dim); font-size: 0.85rem; margin: 0 0 10px; }
 .swatch-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .swatch-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid transparent; position: relative; }
 .swatch-btn.active { border-color: var(--text); }
+.swatch-btn[data-accent="lipstick"] { background: #ee4c9b; }
+.swatch-btn[data-accent="grapefruit"] { background: #f2542d; }
+.swatch-btn[data-accent="sunshine"] { background: #f5b942; }
+.swatch-btn[data-accent="lilac"] { background: #b9a6ff; }
+.swatch-btn[data-accent="midnight"] { background: #3b2352; }
 
 /* Import */
 .import-hint { color: var(--text-dim); font-size: 0.88rem; margin: 4px 0 14px; }

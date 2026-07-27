@@ -8,20 +8,22 @@ export const THEMES = [
 
 // The Playful theme's accent is user-selectable rather than fixed, so the
 // app can be re-skinned to personal taste. Dark and Light each have one
-// fixed accent, defined in CSS instead.
+// fixed accent, defined in CSS instead. Same five swatches, same order, as
+// My Bookshelf and My Closet, so switching between Make It Local apps feels
+// like the same design system rather than a different palette each time.
 export const PLAYFUL_SWATCHES = [
-  { id: "terracotta", label: "Terracotta", accent: "#d87a4a", accentText: "#ffffff" },
-  { id: "ochre", label: "Ochre", accent: "#d9a441", accentText: "#241c1c" },
-  { id: "sage", label: "Sage", accent: "#7a8f6d", accentText: "#ffffff" },
-  { id: "rosewood", label: "Rosewood", accent: "#a8465a", accentText: "#ffffff" },
-  { id: "ink", label: "Ink", accent: "#3a2a4a", accentText: "#ffffff" },
+  { id: "lipstick", label: "Lipstick", accent: "#ee4c9b", accentText: "#ffffff" },
+  { id: "grapefruit", label: "Grapefruit", accent: "#f2542d", accentText: "#ffffff" },
+  { id: "sunshine", label: "Sunshine", accent: "#f5b942", accentText: "#241c1c" },
+  { id: "lilac", label: "Lilac", accent: "#b9a6ff", accentText: "#241c1c" },
+  { id: "midnight", label: "Midnight", accent: "#3b2352", accentText: "#ffffff" },
 ];
 
-const THEME_BG = { dark: "#0b0d0f", light: "#f6f7f9", playful: "#f7f1e3" };
+const THEME_BG = { dark: "#0b0d0f", light: "#f6f7f9", playful: "#f5eedc" };
 
 // Playful (warm parchment, like a paper index card) is the app's default
 // look, matching the "commonplace book" tone rather than a sterile tracker.
-const DEFAULT_PREF = { mode: "playful", playfulAccent: "terracotta" };
+const DEFAULT_PREF = { mode: "playful", playfulAccent: "lipstick" };
 
 export function getTheme() {
   return { ...DEFAULT_PREF, ...getThemePref() };
