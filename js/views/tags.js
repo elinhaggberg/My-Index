@@ -1,6 +1,7 @@
 import { getTags, getProfiles, getSnippets, getUncategorizedCount, UNCATEGORIZED_TAG } from "../storage.js";
 import { renderTabbar } from "../tabbar.js";
 import { openSettingsMenu } from "../settingsMenu.js";
+import { resolveImageUrl } from "../imageBlob.js";
 
 export async function renderTags(root, nav) {
   const tpl = document.getElementById("tpl-tags");
@@ -37,6 +38,11 @@ export async function renderTags(root, nav) {
     ...entries.map(({ tag, count }) => {
       const tpl2 = document.getElementById("tpl-tag-tile");
       const node = tpl2.content.cloneNode(true);
+      const iconBox = node.querySelector(".tag-tile-icon");
+      if (tag.image) {
+        iconBox.style.backgroundImage = `url("${resolveImageUrl(tag.image)}")`;
+        iconBox.classList.add("has-image");
+      }
       node.querySelector(".tag-tile-title").textContent = tag.name;
       node.querySelector(".tag-tile-meta").textContent = `${count} item${count !== 1 ? "s" : ""}`;
       node.querySelector(".tag-tile").addEventListener("click", () => nav.toTag(tag.id));

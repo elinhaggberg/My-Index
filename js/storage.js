@@ -1,4 +1,5 @@
 import { getAll, getOne, putOne, deleteOne } from "./db.js";
+import { blobToDataUrl, dataUrlToBlob } from "./imageBlob.js";
 
 const THEME_KEY = "mi_theme_v1";
 const HOME_TITLE_KEY = "mi_home_title_v1";
@@ -7,7 +8,8 @@ const LAST_BACKUP_KEY = "mi_last_backup_at_v1";
 const BACKUP_BANNER_DISMISSED_KEY = "mi_backup_banner_dismissed_at_v1";
 const FIRST_OPEN_KEY = "mi_first_open_at_v1";
 const ONBOARDING_SEEN_KEY = "mi_onboarding_seen_v1";
-const HOME_TAG_FILTER_KEY = "mi_home_tag_filter_v1";
+const HOME_FILTER_KEY = "mi_home_filter_v1";
+const PROFILES_FILTER_KEY = "mi_profiles_filter_v1";
 
 export const UNCATEGORIZED_TAG_ID = "uncategorized";
 
@@ -35,7 +37,7 @@ function writeJSON(key, value) {
 // being an always-present entry, except here it's synthesized rather than a
 // real row, since "no tags" is already exactly the condition that defines it.
 
-export const UNCATEGORIZED_TAG = { id: UNCATEGORIZED_TAG_ID, name: "Uncategorized", isSystem: true, pinnedNote: "" };
+export const UNCATEGORIZED_TAG = { id: UNCATEGORIZED_TAG_ID, name: "Uncategorized", isSystem: true, pinnedNote: "", image: null };
 
 export async function getTags() {
   const tags = await getAll("tags");
@@ -63,25 +65,18 @@ export async function findOrCreateTag(name) {
   const existing = (await getTags()).find((t) => t.name.toLowerCase() === trimmed.toLowerCase());
   if (existing) return existing;
 
-  const tag = { id: uid(), name: trimmed, pinnedNote: "", createdAt: Date.now() };
+  const tag = { id: uid(), name: trimmed, pinnedNote: "", image: null, createdAt: Date.now() };
   await putOne("tags", tag);
   return tag;
 }
 
-export async function saveTagPinnedNote(id, pinnedNote) {
+// Single write for everything editable about an existing tag -- name,
+// pinned note, and cover image -- from the Tag page's edit sheet.
+export async function saveTagDetails(id, { name, pinnedNote, image }) {
   const tag = await getOne("tags", id);
   if (!tag) return null;
-  const updated = { ...tag, pinnedNote };
-  await putOne("tags", updated);
-  return updated;
-}
-
-export async function renameTag(id, name) {
   const trimmed = normalizeTagName(name);
-  if (!trimmed) return null;
-  const tag = await getOne("tags", id);
-  if (!tag) return null;
-  const updated = { ...tag, name: trimmed };
+  const updated = { ...tag, name: trimmed || tag.name, pinnedNote, image };
   await putOne("tags", updated);
   return updated;
 }
@@ -105,15 +100,6 @@ export async function deleteTag(id) {
   }
 }
 
-async function resolveTagNames(names) {
-  const tags = [];
-  for (const name of names) {
-    const tag = await findOrCreateTag(name);
-    if (tag && tag.id !== UNCATEGORIZED_TAG_ID) tags.push(tag);
-  }
-  return [...new Set(tags.map((t) => t.id))];
-}
-
 // ---- Profiles ----
 
 export async function getProfiles() {
@@ -129,6 +115,7 @@ export function createEmptyProfile() {
     id: uid(),
     name: "",
     note: "",
+    image: null,
     tagIds: [],
     channels: [],
     newCount: 0,
@@ -231,13 +218,29 @@ export async function getUncategorizedCount() {
 
 // ---- Export / import ----
 
+// Exports inline each Profile/Tag's actual image bytes as a data: URI (a
+// Blob can't survive a JSON.stringify) so an exported file is fully
+// self-contained and portable -- it doesn't depend on this device's
+// IndexedDB to be useful on another device or after a reinstall.
+async function inlineProfileImages(profiles) {
+  return Promise.all(
+    profiles.map(async (p) => (p.image instanceof Blob ? { ...p, image: await blobToDataUrl(p.image) } : p))
+  );
+}
+
+async function inlineTagImages(tags) {
+  return Promise.all(
+    tags.map(async (t) => (t.image instanceof Blob ? { ...t, image: await blobToDataUrl(t.image) } : t))
+  );
+}
+
 export async function exportBackupData() {
   return {
     type: "backup",
     version: 1,
     exportedAt: new Date().toISOString(),
-    profiles: await getProfiles(),
-    tags: await getTags(),
+    profiles: await inlineProfileImages(await getProfiles()),
+    tags: await inlineTagImages(await getTags()),
     snippets: await getSnippets(),
     theme: getThemePref(),
     homeTitle: getHomeTitle(),
@@ -253,8 +256,8 @@ export async function exportProfileData(profile) {
     type: "profile",
     version: 1,
     exportedAt: new Date().toISOString(),
-    profiles: [profile],
-    tags,
+    profiles: await inlineProfileImages([profile]),
+    tags: await inlineTagImages(tags),
     snippets,
   };
 }
@@ -266,8 +269,8 @@ export async function exportSnippetData(snippet) {
     type: "snippet",
     version: 1,
     exportedAt: new Date().toISOString(),
-    profiles,
-    tags,
+    profiles: await inlineProfileImages(profiles),
+    tags: await inlineTagImages(tags),
     snippets: [snippet],
   };
 }
@@ -277,6 +280,17 @@ export async function exportSnippetData(snippet) {
 // shared taxonomy, like My Closet's boards); profiles and snippets are
 // richer individual records so they always import as new, with their
 // cross-references remapped to the freshly-created local ids.
+async function reviveImage(image) {
+  if (typeof image === "string" && image.startsWith("data:")) {
+    try {
+      return await dataUrlToBlob(image);
+    } catch {
+      return null; // Couldn't decode it -- import still succeeds, just without this image.
+    }
+  }
+  return null;
+}
+
 export async function importData(data) {
   if (!data || !["backup", "profile", "snippet"].includes(data.type)) {
     throw new Error("That doesn't look like a My Index export file.");
@@ -286,25 +300,41 @@ export async function importData(data) {
   const oldTagIdToLocalId = new Map();
   for (const tag of importedTags) {
     const local = await findOrCreateTag(tag.name);
-    if (local) oldTagIdToLocalId.set(tag.id, local.id);
+    if (!local) continue;
+    oldTagIdToLocalId.set(tag.id, local.id);
+
+    // Fill in a pinned note / cover image only if the local tag doesn't
+    // already have one -- findOrCreateTag may have resolved to an existing
+    // tag by name (a dedupe, not a fresh row), so importing shouldn't
+    // clobber what's already there.
+    if (local.id !== UNCATEGORIZED_TAG_ID && (!local.pinnedNote || !local.image)) {
+      const pinnedNote = local.pinnedNote || tag.pinnedNote || "";
+      const image = local.image || (await reviveImage(tag.image));
+      if (pinnedNote !== local.pinnedNote || image !== local.image) {
+        await saveTagDetails(local.id, { name: local.name, pinnedNote, image });
+      }
+    }
   }
   const remapTagIds = (ids) => (ids || []).map((id) => oldTagIdToLocalId.get(id)).filter(Boolean);
 
   const importedProfiles = Array.isArray(data.profiles) ? data.profiles : [];
   const oldProfileIdToLocalId = new Map();
-  const newProfiles = importedProfiles.map((p) => {
-    const id = uid();
-    oldProfileIdToLocalId.set(p.id, id);
-    return {
-      ...createEmptyProfile(),
-      ...p,
-      id,
-      tagIds: remapTagIds(p.tagIds),
-      channels: (p.channels || []).map((c) => ({ ...c, id: uid(), newCount: 0 })),
-      newCount: 0,
-      createdAt: Date.now(),
-    };
-  });
+  const newProfiles = await Promise.all(
+    importedProfiles.map(async (p) => {
+      const id = uid();
+      oldProfileIdToLocalId.set(p.id, id);
+      return {
+        ...createEmptyProfile(),
+        ...p,
+        id,
+        image: await reviveImage(p.image),
+        tagIds: remapTagIds(p.tagIds),
+        channels: (p.channels || []).map((c) => ({ ...c, id: uid(), newCount: 0 })),
+        newCount: 0,
+        createdAt: Date.now(),
+      };
+    })
+  );
   for (const profile of newProfiles) await putOne("profiles", profile);
 
   const importedSnippets = Array.isArray(data.snippets) ? data.snippets : [];
@@ -403,13 +433,24 @@ export async function shouldShowBackupBanner() {
   return true;
 }
 
-export function getHomeTagFilter() {
-  return localStorage.getItem(HOME_TAG_FILTER_KEY) || "";
+const DEFAULT_HOME_FILTER = { tagIds: [], types: [], dateFrom: "", dateTo: "" };
+
+export function getHomeFilterPref() {
+  return { ...DEFAULT_HOME_FILTER, ...readJSON(HOME_FILTER_KEY, {}) };
 }
 
-export function setHomeTagFilter(tagId) {
-  if (tagId) localStorage.setItem(HOME_TAG_FILTER_KEY, tagId);
-  else localStorage.removeItem(HOME_TAG_FILTER_KEY);
+export function setHomeFilterPref(pref) {
+  writeJSON(HOME_FILTER_KEY, pref);
+}
+
+const DEFAULT_PROFILES_FILTER = { sort: "recent", tagIds: [] };
+
+export function getProfilesFilterPref() {
+  return { ...DEFAULT_PROFILES_FILTER, ...readJSON(PROFILES_FILTER_KEY, {}) };
+}
+
+export function setProfilesFilterPref(pref) {
+  writeJSON(PROFILES_FILTER_KEY, pref);
 }
 
 export function getOnboardingSeen() {

@@ -2,7 +2,7 @@ import {
   getTag,
   getProfilesForTag,
   getSnippetsForTag,
-  saveTagPinnedNote,
+  saveTagDetails,
   createEmptySnippet,
   UNCATEGORIZED_TAG_ID,
 } from "../storage.js";
@@ -12,6 +12,8 @@ import { createProfileTileNode } from "../profileTile.js";
 import { openSnippetDetail } from "../snippetDetail.js";
 import { openSnippetEditor } from "../snippetEditor.js";
 import { openSheet } from "../sheet.js";
+import { readAndResizeImage, resolveImageUrl } from "../imageBlob.js";
+import { ICON_TAG } from "../icons.js";
 
 export async function renderTag(root, nav, id) {
   const tpl = document.getElementById("tpl-tag");
@@ -28,6 +30,14 @@ export async function renderTag(root, nav, id) {
 
     document.getElementById("tag-title").textContent = tag.name;
 
+    const coverEl = document.getElementById("tag-cover-image");
+    if (tag.image) {
+      coverEl.style.backgroundImage = `url("${resolveImageUrl(tag.image)}")`;
+      coverEl.classList.remove("hidden");
+    } else {
+      coverEl.classList.add("hidden");
+    }
+
     const pinBtn = document.getElementById("tag-pin-btn");
     const pinnedEl = document.getElementById("tag-pinned-note");
     if (tag.isSystem) {
@@ -35,7 +45,7 @@ export async function renderTag(root, nav, id) {
       pinnedEl.classList.add("hidden");
     } else {
       pinBtn.classList.remove("hidden");
-      pinBtn.onclick = () => openPinnedNoteEditor(tag, load);
+      pinBtn.onclick = () => openTagEditor(tag, load);
       if (tag.pinnedNote) {
         pinnedEl.textContent = tag.pinnedNote;
         pinnedEl.classList.remove("hidden");
@@ -77,14 +87,66 @@ export async function renderTag(root, nav, id) {
   await load();
 }
 
-function openPinnedNoteEditor(tag, refresh) {
-  const sheet = openSheet("tpl-tag-pinned-editor");
+function openTagEditor(tag, refresh) {
+  const sheet = openSheet("tpl-tag-editor");
   const el = sheet.el;
   el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
-  const textarea = el.querySelector("#tag-pinned-note-input");
-  textarea.value = tag.pinnedNote || "";
-  el.querySelector("#tag-pinned-note-save-btn").addEventListener("click", async () => {
-    await saveTagPinnedNote(tag.id, textarea.value.trim());
+
+  let image = tag.image || null;
+  const coverImg = el.querySelector("#tag-editor-cover-img");
+  const coverPlaceholder = el.querySelector("#tag-editor-cover-placeholder");
+  const clearBtn = el.querySelector("#tag-editor-cover-clear-btn");
+  coverPlaceholder.innerHTML = ICON_TAG;
+
+  function renderCover() {
+    if (image) {
+      coverImg.src = resolveImageUrl(image);
+      coverImg.classList.remove("hidden");
+      coverPlaceholder.classList.add("hidden");
+      clearBtn.classList.remove("hidden");
+    } else {
+      coverImg.classList.add("hidden");
+      coverPlaceholder.classList.remove("hidden");
+      clearBtn.classList.add("hidden");
+    }
+  }
+  renderCover();
+
+  const cameraInput = el.querySelector("#tag-editor-cover-camera-input");
+  const libraryInput = el.querySelector("#tag-editor-cover-library-input");
+  el.querySelector("#tag-editor-cover-camera-btn").addEventListener("click", () => cameraInput.click());
+  el.querySelector("#tag-editor-cover-library-btn").addEventListener("click", () => libraryInput.click());
+  async function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      image = await readAndResizeImage(file);
+      renderCover();
+    } catch {
+      // Unreadable file -- leave the picker as-is so they can retry.
+    }
+  }
+  cameraInput.addEventListener("change", () => handleFile(cameraInput));
+  libraryInput.addEventListener("change", () => handleFile(libraryInput));
+  clearBtn.addEventListener("click", () => {
+    image = null;
+    renderCover();
+  });
+
+  const nameInput = el.querySelector("#tag-editor-name");
+  nameInput.value = tag.name;
+  const noteInput = el.querySelector("#tag-editor-pinned-note");
+  noteInput.value = tag.pinnedNote || "";
+
+  const errorEl = el.querySelector("#tag-editor-save-error");
+  el.querySelector("#tag-editor-save-btn").addEventListener("click", async () => {
+    const name = nameInput.value.trim();
+    if (!name) {
+      errorEl.textContent = "Give this tag a name.";
+      errorEl.classList.remove("hidden");
+      return;
+    }
+    await saveTagDetails(tag.id, { name, pinnedNote: noteInput.value.trim(), image });
     sheet.close();
     refresh();
   });

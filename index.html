@@ -29,7 +29,8 @@
   <template id="tpl-home">
     <header class="topbar home-topbar">
       <h1 id="home-title">My Index</h1>
-      <button class="icon-btn filter-btn" id="filter-btn" aria-label="Filter by tag"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M7 12h10M10 19h4"/></svg></button>
+      <button class="icon-btn" id="search-btn" aria-label="Search"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg></button>
+      <button class="icon-btn filter-btn" id="filter-btn" aria-label="Filter"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M7 12h10M10 19h4"/></svg></button>
       <button class="icon-btn settings-btn" id="settings-btn" aria-label="Menu"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/></svg></button>
     </header>
     <div id="backup-banner" class="banner hidden">
@@ -41,7 +42,10 @@
     </div>
     <div class="page-body">
       <div class="profile-row" id="profile-row"></div>
-      <p class="card-detail-section-label" style="padding:8px 16px 8px;">Recently saved</p>
+      <div class="home-headline-row">
+        <p class="card-detail-section-label" id="home-headline" style="padding:0;">Recently saved</p>
+        <button type="button" class="text-btn hidden" id="home-filter-clear-btn">Clear</button>
+      </div>
       <div class="card-grid" id="home-grid"></div>
     </div>
     <button class="fab" id="add-btn" aria-label="Save something new"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"/></svg></button>
@@ -55,6 +59,60 @@
       </span>
       <span class="profile-tile-name"></span>
     </button>
+  </template>
+
+  <!-- ===== Profiles list ===== -->
+  <template id="tpl-profiles">
+    <header class="topbar">
+      <h1>Profiles</h1>
+      <button class="icon-btn" id="search-btn" aria-label="Search"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg></button>
+      <button class="icon-btn filter-btn" id="filter-btn" aria-label="Sort and filter"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M7 12h10M10 19h4"/></svg></button>
+      <button class="icon-btn settings-btn" id="settings-btn" aria-label="Menu"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/></svg></button>
+    </header>
+    <div class="page-body">
+      <div class="profile-card-grid" id="profiles-grid"></div>
+    </div>
+    <button class="fab" id="add-profile-btn" aria-label="New profile"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"/></svg></button>
+  </template>
+
+  <template id="tpl-profile-card">
+    <button class="profile-card">
+      <span class="profile-card-avatar-wrap">
+        <span class="profile-card-avatar"></span>
+        <span class="profile-card-badge hidden"></span>
+      </span>
+      <p class="profile-card-name"></p>
+      <p class="profile-card-meta"></p>
+    </button>
+  </template>
+
+  <template id="tpl-profiles-filter">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Sort &amp; filter</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <div class="sort-option-list" id="profiles-sort-list"></div>
+      <p class="card-detail-section-label" style="margin-top:16px;">Tags</p>
+      <div class="board-chip-list" id="profiles-filter-tag-row"></div>
+      <div class="form-actions">
+        <button type="button" class="text-btn secondary" id="profiles-filter-clear-btn">Clear tag filter</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-search-profiles">
+    <div class="sheet search-sheet">
+      <header class="sheet-header">
+        <h2>Search</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <label class="field">
+        <input type="text" id="profile-search-input" placeholder="Search your profiles…" autocomplete="off" />
+      </label>
+      <p class="empty-state hidden" id="profile-search-empty"></p>
+      <div class="profile-card-grid" id="profile-search-results"></div>
+    </div>
   </template>
 
   <!-- ===== Tags list ===== -->
@@ -83,9 +141,10 @@
     <header class="topbar">
       <button class="icon-btn back-btn" aria-label="Back"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 105.4-105.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></button>
       <h1 id="tag-title"></h1>
-      <button class="icon-btn" id="tag-pin-btn" aria-label="Edit pinned note" title="Edit pinned note"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M352.9 21.2L308 66.1 445.9 204 490.8 159.1C504.4 145.6 512 127.2 512 108s-7.6-37.6-21.2-51.1L455.1 21.2C441.6 7.6 423.2 0 404 0s-37.6 7.6-51.1 21.2zM274.1 100L58.9 315.1c-10.7 10.7-18.5 24.1-22.6 38.7L.9 481.6c-2.3 8.3 0 17.3 6.2 23.4s15.1 8.5 23.4 6.2l127.8-35.5c14.6-4.1 27.9-11.8 38.7-22.6L412 237.9 274.1 100z"/></svg></button>
+      <button class="icon-btn" id="tag-pin-btn" aria-label="Edit tag" title="Edit tag"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M352.9 21.2L308 66.1 445.9 204 490.8 159.1C504.4 145.6 512 127.2 512 108s-7.6-37.6-21.2-51.1L455.1 21.2C441.6 7.6 423.2 0 404 0s-37.6 7.6-51.1 21.2zM274.1 100L58.9 315.1c-10.7 10.7-18.5 24.1-22.6 38.7L.9 481.6c-2.3 8.3 0 17.3 6.2 23.4s15.1 8.5 23.4 6.2l127.8-35.5c14.6-4.1 27.9-11.8 38.7-22.6L412 237.9 274.1 100z"/></svg></button>
     </header>
     <div class="page-body">
+      <div class="tag-cover-image hidden" id="tag-cover-image"></div>
       <p class="tag-pinned-note hidden" id="tag-pinned-note"></p>
       <div class="profile-row" id="tag-profile-row"></div>
       <div class="card-grid" id="tag-snippets-grid"></div>
@@ -93,29 +152,80 @@
     <button class="fab" id="tag-add-snippet-btn" aria-label="Save something new"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"/></svg></button>
   </template>
 
-  <template id="tpl-tag-pinned-editor">
+  <template id="tpl-tag-editor">
     <div class="sheet">
       <header class="sheet-header">
-        <h2>Pinned note</h2>
+        <h2>Edit tag</h2>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
-      <p class="import-hint">A short reflection on this theme itself, shown at the top of its page.</p>
+
+      <div class="cover-picker">
+        <div class="cover-picker-box" id="tag-editor-cover-box">
+          <img id="tag-editor-cover-img" class="hidden" alt="" />
+          <span class="cover-picker-placeholder" id="tag-editor-cover-placeholder"></span>
+        </div>
+        <div class="avatar-picker-actions">
+          <button type="button" class="text-btn secondary" id="tag-editor-cover-camera-btn">Camera</button>
+          <button type="button" class="text-btn secondary" id="tag-editor-cover-library-btn">Library</button>
+          <button type="button" class="text-btn hidden" id="tag-editor-cover-clear-btn">Remove</button>
+        </div>
+        <input type="file" accept="image/*" capture="environment" id="tag-editor-cover-camera-input" hidden />
+        <input type="file" accept="image/*" id="tag-editor-cover-library-input" hidden />
+      </div>
+
       <label class="field">
-        <textarea id="tag-pinned-note-input" maxlength="1000" rows="5" placeholder="What draws you to this theme…"></textarea>
+        <span>Name</span>
+        <input type="text" id="tag-editor-name" maxlength="40" />
       </label>
+      <label class="field">
+        <span>Pinned note</span>
+        <textarea id="tag-editor-pinned-note" maxlength="1000" rows="5" placeholder="What draws you to this theme…"></textarea>
+      </label>
+      <p class="import-message error hidden" id="tag-editor-save-error"></p>
       <div class="form-actions">
-        <button type="button" class="text-btn primary" id="tag-pinned-note-save-btn">Save</button>
+        <button type="button" class="text-btn primary" id="tag-editor-save-btn">Save</button>
       </div>
     </div>
   </template>
 
-  <template id="tpl-tag-filter">
+  <template id="tpl-snippet-filter">
     <div class="sheet">
       <header class="sheet-header">
-        <h2>Filter by tag</h2>
+        <h2>Filter</h2>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
-      <div class="sort-option-list" id="tag-filter-list"></div>
+      <p class="card-detail-section-label">Tags</p>
+      <div class="board-chip-list" id="filter-tag-row"></div>
+      <p class="card-detail-section-label" style="margin-top:8px;">Type</p>
+      <div class="type-chip-row" id="filter-type-row"></div>
+      <p class="card-detail-section-label" style="margin-top:8px;">Date range</p>
+      <div class="field-row">
+        <label class="field">
+          <span>From</span>
+          <input type="date" id="filter-date-from" />
+        </label>
+        <label class="field">
+          <span>To</span>
+          <input type="date" id="filter-date-to" />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="text-btn secondary" id="filter-clear-btn">Clear filters</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-search-snippets">
+    <div class="sheet search-sheet">
+      <header class="sheet-header">
+        <h2>Search</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <label class="field">
+        <input type="text" id="snippet-search-input" placeholder="Search your snippets…" autocomplete="off" />
+      </label>
+      <p class="empty-state hidden" id="snippet-search-empty"></p>
+      <div class="card-grid" id="snippet-search-results"></div>
     </div>
   </template>
 
@@ -137,24 +247,6 @@
     </div>
   </template>
 
-  <template id="tpl-profile-create">
-    <div class="sheet">
-      <header class="sheet-header">
-        <h2>New profile</h2>
-        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
-      </header>
-      <form id="profile-create-form">
-        <label class="field">
-          <span>Name</span>
-          <input type="text" name="name" maxlength="80" required autocomplete="off" placeholder="Who are you curious about?" />
-        </label>
-        <div class="form-actions">
-          <button type="submit" class="text-btn primary">Save</button>
-        </div>
-      </form>
-    </div>
-  </template>
-
   <!-- ===== Profile page ===== -->
   <template id="tpl-profile">
     <header class="topbar">
@@ -163,6 +255,7 @@
       <button class="icon-btn" id="profile-edit-btn" aria-label="Edit" title="Edit"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M352.9 21.2L308 66.1 445.9 204 490.8 159.1C504.4 145.6 512 127.2 512 108s-7.6-37.6-21.2-51.1L455.1 21.2C441.6 7.6 423.2 0 404 0s-37.6 7.6-51.1 21.2zM274.1 100L58.9 315.1c-10.7 10.7-18.5 24.1-22.6 38.7L.9 481.6c-2.3 8.3 0 17.3 6.2 23.4s15.1 8.5 23.4 6.2l127.8-35.5c14.6-4.1 27.9-11.8 38.7-22.6L412 237.9 274.1 100z"/></svg></button>
     </header>
     <div class="page-body">
+      <div class="profile-avatar-large" id="profile-avatar"><span id="profile-avatar-initial"></span></div>
       <p class="profile-note hidden" id="profile-note"></p>
       <p class="card-detail-section-label" id="profile-channels-label">Channels</p>
       <div class="channel-view-list" id="profile-channels"></div>
@@ -181,6 +274,21 @@
         <h2 id="profile-editor-heading">New profile</h2>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
+
+      <div class="avatar-picker">
+        <div class="avatar-picker-circle" id="profile-editor-avatar-circle">
+          <img id="profile-editor-avatar-img" class="hidden" alt="" />
+          <span id="profile-editor-avatar-initial"></span>
+        </div>
+        <div class="avatar-picker-actions">
+          <button type="button" class="text-btn secondary" id="profile-editor-avatar-camera-btn">Camera</button>
+          <button type="button" class="text-btn secondary" id="profile-editor-avatar-library-btn">Library</button>
+          <button type="button" class="text-btn hidden" id="profile-editor-avatar-clear-btn">Remove</button>
+        </div>
+        <input type="file" accept="image/*" capture="environment" id="profile-editor-avatar-camera-input" hidden />
+        <input type="file" accept="image/*" id="profile-editor-avatar-library-input" hidden />
+      </div>
+
       <label class="field">
         <span>Name</span>
         <input type="text" id="profile-editor-name" maxlength="80" placeholder="Who are you curious about?" />
@@ -246,9 +354,6 @@
       <p class="card-detail-section-label">Tags</p>
       <div class="board-chip-list" id="editor-tag-chips"></div>
 
-      <p class="card-detail-section-label">Profiles</p>
-      <div class="board-chip-list" id="editor-profile-chips"></div>
-
       <p class="import-message error hidden" id="editor-save-error"></p>
       <div class="form-actions">
         <button type="button" class="text-btn primary" id="editor-save-btn">Save</button>
@@ -260,11 +365,12 @@
   <template id="tpl-pin-card">
     <article class="pin">
       <img class="pin-media hidden" loading="lazy" />
-      <div class="pin-media-placeholder hidden"></div>
       <div class="pin-body">
-        <h3 class="pin-title"></h3>
+        <div class="pin-head">
+          <span class="pin-type-icon"></span>
+          <h3 class="pin-title"></h3>
+        </div>
         <span class="pin-source hidden"></span>
-        <span class="pin-badge hidden"></span>
       </div>
     </article>
   </template>
@@ -287,10 +393,14 @@
         <svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h12v12"/><path d="M21 3L10 14"/><path d="M17 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6"/></svg>
       </a>
       <p class="card-detail-note hidden" id="detail-comment"></p>
-      <p class="card-detail-section-label">Tags</p>
-      <div class="board-chip-list" id="detail-tag-chips"></div>
-      <p class="card-detail-section-label">Profiles</p>
-      <div class="board-chip-list" id="detail-profile-chips"></div>
+      <div class="hidden" id="detail-tags-section">
+        <p class="card-detail-section-label">Tags</p>
+        <div class="board-chip-list" id="detail-tag-chips"></div>
+      </div>
+      <div class="hidden" id="detail-profiles-section">
+        <p class="card-detail-section-label">Profiles</p>
+        <div class="board-chip-list" id="detail-profile-chips"></div>
+      </div>
     </div>
   </template>
 

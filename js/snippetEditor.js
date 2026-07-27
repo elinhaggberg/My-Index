@@ -1,10 +1,14 @@
 import { createEmptySnippet, saveSnippet } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { renderTagChips } from "./tagChips.js";
-import { renderProfileChips } from "./profileChips.js";
 import { SNIPPET_TYPES, typeFor } from "./snippetTypes.js";
 import { hostnameFor } from "./util.js";
 
+// Linking a Snippet to a Profile only happens from that Profile's own "add
+// snippet" button (presetProfileId, applied silently below) -- picking
+// profiles here in the capture flow read as confusing next to Tags, so
+// there's no "Profiles" section in this editor at all. To link an existing
+// snippet to a profile later, add it from the Profile page.
 export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileId, presetTagId, autoFetch }) {
   const draft = { ...snippet, tagIds: [...(snippet.tagIds || [])], profileIds: [...(snippet.profileIds || [])] };
   if (presetProfileId && !draft.profileIds.includes(presetProfileId)) draft.profileIds.push(presetProfileId);
@@ -133,22 +137,13 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     draft.comment = commentInput.value;
   });
 
-  // ---- Tags / Profiles ----
+  // ---- Tags ----
   renderTagChips(el.querySelector("#editor-tag-chips"), {
     selectedIds: draft.tagIds,
     onToggle: (tagId) => {
       const idx = draft.tagIds.indexOf(tagId);
       if (idx >= 0) draft.tagIds.splice(idx, 1);
       else draft.tagIds.push(tagId);
-    },
-  });
-
-  renderProfileChips(el.querySelector("#editor-profile-chips"), {
-    selectedIds: draft.profileIds,
-    onToggle: (profileId) => {
-      const idx = draft.profileIds.indexOf(profileId);
-      if (idx >= 0) draft.profileIds.splice(idx, 1);
-      else draft.profileIds.push(profileId);
     },
   });
 }

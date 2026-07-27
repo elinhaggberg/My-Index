@@ -248,7 +248,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   font-size: 1.4rem;
   font-weight: 700;
   font-family: var(--font-heading);
+  background-size: cover;
+  background-position: center;
 }
+.profile-tile-avatar.has-image { color: transparent; }
 .profile-tile-badge {
   position: absolute;
   top: -4px;
@@ -310,22 +313,32 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   background: var(--surface-2);
   object-fit: cover;
 }
-.pin-media-placeholder {
-  width: 100%;
-  aspect-ratio: 4 / 3;
+.pin-body { padding: 12px; }
+/* The type icon sits inline beside the title as a small badge, rather than
+   a fixed-size placeholder box standing in for a photo the snippet almost
+   certainly doesn't have -- this app is a register of links/quotes/notes,
+   not a photo library, so the card shouldn't look shaped around one. */
+.pin-head { display: flex; align-items: flex-start; gap: 8px; }
+.pin-type-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-2);
-  color: var(--text-dim);
-  font-size: 1.8rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
-.pin-body { padding: 10px 12px 12px; }
 .pin-title {
+  flex: 1;
+  min-width: 0;
   font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.35;
-  margin: 0 0 4px;
+  margin: 0;
+  padding-top: 2px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -373,6 +386,75 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   gap: 12px;
   padding: 4px 16px 16px;
 }
+
+/* Profiles view grid -- a bigger card than Home's small avatar-row tile,
+   with room for a note/tag preview. */
+.profile-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 4px 16px 16px;
+}
+.profile-card-grid > .empty-state { grid-column: 1 / -1; }
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 20px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+:root[data-theme="playful"] .profile-card {
+  background: var(--card-tint);
+  border-color: color-mix(in srgb, var(--bg) 85%, black);
+}
+.profile-card-avatar-wrap { position: relative; }
+.profile-card-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  background-size: cover;
+  background-position: center;
+}
+.profile-card-avatar.has-image { color: transparent; }
+.profile-card-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
+}
+.profile-card-name { font-size: 0.95rem; font-weight: 700; margin: 0; }
+.profile-card-meta {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .board-tile {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -396,8 +478,41 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   justify-content: center;
   background: var(--surface-2);
   color: var(--accent);
+  background-size: cover;
+  background-position: center;
 }
 .tag-tile-icon .icon { width: 2rem; height: 2rem; }
+.tag-tile-icon.has-image .icon { display: none; }
+
+/* Tag cover image (Tag detail page) -- only rendered when a cover is set;
+   unlike the grid tile, there's no icon placeholder box here when there
+   isn't one, since a whole-width empty banner has nothing to anchor. */
+.tag-cover-image {
+  width: calc(100% - 32px);
+  margin: 4px 16px 14px;
+  aspect-ratio: 2.2;
+  border-radius: var(--radius);
+  background-color: var(--surface-2);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Cover image picker (Tag editor) -- same idea as the avatar picker, but a
+   wide rectangle matching the tag tile's own aspect ratio. */
+.cover-picker { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; }
+.cover-picker-box {
+  width: 100%;
+  aspect-ratio: 1.8;
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.cover-picker-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover-picker-placeholder .icon { width: 2rem; height: 2rem; }
 
 /* Tag page: pinned note */
 .tag-pinned-note {
@@ -489,6 +604,46 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .channel-remove-btn { width: 32px; height: 32px; }
 .add-channel-btn { width: 100%; text-align: center; margin-bottom: 4px; }
 
+/* Avatar picker (Profile editor) */
+.avatar-picker { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; }
+.avatar-picker-circle {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar-picker-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-picker-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.avatar-picker-actions .text-btn { padding: 6px 12px; font-size: 0.85rem; }
+
+/* Profile page header avatar */
+.profile-avatar-large {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  background-size: cover;
+  background-position: center;
+  margin: 4px 16px 14px;
+}
+.profile-avatar-large.has-image span { display: none; }
+
 /* Save choice / type picker */
 .type-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .type-chip {
@@ -511,6 +666,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .field input[type="text"],
 .field input[type="number"],
 .field input[type="url"],
+.field input[type="date"],
 .field textarea,
 .field select {
   background: var(--surface-2);
@@ -635,6 +791,30 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   padding: 0 16px;
 }
 .sheet .card-detail-section-label { padding: 0; }
+
+/* Home headline -- becomes an accent-colored description of the active
+   filter (with a Clear button alongside) instead of the plain "Recently
+   saved" label, so it's obvious at a glance that the grid below isn't
+   showing everything. */
+.home-headline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+}
+.home-headline-row .card-detail-section-label { margin: 0; }
+#home-headline.filtered-headline {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+#home-filter-clear-btn { padding: 4px 10px; font-size: 0.85rem; flex-shrink: 0; }
+
+/* Search sheet */
+.search-sheet { min-height: 70dvh; }
 
 /* Filter & sort / pinned-note sheets */
 .sort-option-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
@@ -829,6 +1009,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 :root[data-theme="playful"] .pin,
 :root[data-theme="playful"] .board-tile,
 :root[data-theme="playful"] .profile-tile,
+:root[data-theme="playful"] .profile-card,
 :root[data-theme="playful"] .tab-btn {
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -838,4 +1019,5 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 :root[data-theme="playful"] .theme-option:active { transform: scale(0.96); }
 :root[data-theme="playful"] .pin:active,
 :root[data-theme="playful"] .board-tile:active,
-:root[data-theme="playful"] .profile-tile:active { transform: scale(0.96); }
+:root[data-theme="playful"] .profile-tile:active,
+:root[data-theme="playful"] .profile-card:active { transform: scale(0.96); }

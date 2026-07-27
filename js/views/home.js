@@ -1,18 +1,16 @@
 import {
   getProfiles,
   getSnippets,
-  getSnippetsForTag,
   getTags,
   getHomeTitle,
-  getHomeTagFilter,
-  setHomeTagFilter,
+  getHomeFilterPref,
+  setHomeFilterPref,
   createEmptySnippet,
   saveProfile,
   exportBackupData,
   markBackedUp,
   dismissBackupBanner,
   shouldShowBackupBanner,
-  UNCATEGORIZED_TAG_ID,
 } from "../storage.js";
 import { renderTabbar } from "../tabbar.js";
 import { renderMasonry } from "../masonry.js";
@@ -21,9 +19,10 @@ import { createProfileTileNode } from "../profileTile.js";
 import { openSnippetDetail } from "../snippetDetail.js";
 import { openSnippetEditor } from "../snippetEditor.js";
 import { openSettingsMenu } from "../settingsMenu.js";
-import { openSheet } from "../sheet.js";
 import { shareOrDownload } from "../share.js";
 import { fetchAndMergeCounts } from "../feedSync.js";
+import { applySnippetFilter, isSnippetFilterActive, describeSnippetFilter, openSnippetFilterSheet } from "../snippetFilter.js";
+import { openSnippetSearch } from "../snippetSearch.js";
 
 export async function renderHome(root, nav) {
   const tpl = document.getElementById("tpl-home");
@@ -35,7 +34,12 @@ export async function renderHome(root, nav) {
     openSnippetEditor(nav, { snippet: createEmptySnippet(), isNew: true, refresh: renderAll });
   });
   document.getElementById("settings-btn").addEventListener("click", () => openSettingsMenu(nav, renderAll));
-  document.getElementById("filter-btn").addEventListener("click", () => openTagFilter(renderSnippetGrid));
+  document.getElementById("search-btn").addEventListener("click", () => openSnippetSearch(nav, renderAll));
+  document.getElementById("filter-btn").addEventListener("click", () => openSnippetFilterSheet(renderSnippetGrid));
+  document.getElementById("home-filter-clear-btn").addEventListener("click", () => {
+    setHomeFilterPref({ tagIds: [], types: [], dateFrom: "", dateTo: "" });
+    renderSnippetGrid();
+  });
 
   async function renderProfileRow() {
     // Best-effort and inert unless the optional backend is configured (see
@@ -54,24 +58,34 @@ export async function renderHome(root, nav) {
 
   async function renderSnippetGrid() {
     const grid = document.getElementById("home-grid");
-    const filterTagId = getHomeTagFilter();
-    updateFilterButtonState(filterTagId);
+    const headlineEl = document.getElementById("home-headline");
+    const clearBtn = document.getElementById("home-filter-clear-btn");
+    const filterBtn = document.getElementById("filter-btn");
 
-    const snippets = filterTagId ? await getSnippetsForTag(filterTagId) : (await getSnippets()).sort((a, b) => b.createdAt - a.createdAt);
+    const pref = getHomeFilterPref();
+    const active = isSnippetFilterActive(pref);
+    filterBtn.classList.toggle("active", active);
+    clearBtn.classList.toggle("hidden", !active);
+    headlineEl.classList.toggle("filtered-headline", active);
+
+    const allSnippets = (await getSnippets()).sort((a, b) => b.createdAt - a.createdAt);
+    const snippets = active ? applySnippetFilter(allSnippets, pref) : allSnippets;
+
+    if (active) {
+      const tagsById = new Map((await getTags()).map((t) => [t.id, t]));
+      headlineEl.textContent = describeSnippetFilter(pref, tagsById);
+    } else {
+      headlineEl.textContent = "Recently saved";
+    }
+
     if (snippets.length === 0) {
       const empty = document.createElement("p");
       empty.className = "empty-state";
-      empty.textContent = filterTagId
-        ? "Nothing saved under this tag yet."
-        : "Nothing saved yet. Tap + to save your first link, quote, or note.";
+      empty.textContent = active ? "Nothing matches this filter." : "Nothing saved yet. Tap + to save your first link, quote, or note.";
       grid.replaceChildren(empty);
       return;
     }
     renderMasonry(grid, snippets, (snippet) => createSnippetNode(snippet, (s) => openSnippetDetail(nav, s, renderAll)));
-  }
-
-  function updateFilterButtonState(filterTagId) {
-    document.getElementById("filter-btn").classList.toggle("active", !!filterTagId);
   }
 
   async function renderAll() {
@@ -95,32 +109,4 @@ export async function renderHome(root, nav) {
       banner.classList.add("hidden");
     });
   }
-}
-
-async function openTagFilter(onChange) {
-  const sheet = openSheet("tpl-tag-filter");
-  const el = sheet.el;
-  el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
-
-  const current = getHomeTagFilter();
-  const tags = await getTags();
-  const list = el.querySelector("#tag-filter-list");
-
-  function select(tagId) {
-    setHomeTagFilter(tagId);
-    sheet.close();
-    onChange();
-  }
-
-  const options = [{ id: "", name: "All" }, { id: UNCATEGORIZED_TAG_ID, name: "Uncategorized" }, ...tags];
-  list.replaceChildren(
-    ...options.map((opt) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "sort-option" + (current === opt.id ? " active" : "");
-      btn.textContent = opt.name;
-      btn.addEventListener("click", () => select(opt.id));
-      return btn;
-    })
-  );
 }

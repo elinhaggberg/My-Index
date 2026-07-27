@@ -13,6 +13,7 @@ import { renderTagRefChips } from "../refChips.js";
 import { hostnameFor } from "../util.js";
 import { ICON_EXTERNAL, ICON_RSS } from "../icons.js";
 import { clearServerCounts } from "../feedSync.js";
+import { resolveImageUrl } from "../imageBlob.js";
 
 const CHANNEL_TYPE_LABELS = { blog: "Blog", podcast: "Podcast", newsletter: "Newsletter", social: "Social", other: "Other" };
 
@@ -35,6 +36,18 @@ export async function renderProfile(root, nav, id) {
     clearServerCounts(id);
 
     document.getElementById("profile-title").textContent = profile.name || "Untitled";
+
+    const avatarEl = document.getElementById("profile-avatar");
+    const avatarInitialEl = document.getElementById("profile-avatar-initial");
+    if (profile.image) {
+      avatarEl.style.backgroundImage = `url("${resolveImageUrl(profile.image)}")`;
+      avatarEl.classList.add("has-image");
+      avatarInitialEl.textContent = "";
+    } else {
+      avatarEl.style.backgroundImage = "";
+      avatarEl.classList.remove("has-image");
+      avatarInitialEl.textContent = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
+    }
 
     const noteEl = document.getElementById("profile-note");
     if (profile.note) {

@@ -1,4 +1,5 @@
 import { renderHome } from "./views/home.js";
+import { renderProfiles } from "./views/profiles.js";
 import { renderTags } from "./views/tags.js";
 import { renderTag } from "./views/tag.js";
 import { renderProfile } from "./views/profile.js";
@@ -16,6 +17,9 @@ const root = document.getElementById("app");
 const nav = {
   toHome: () => {
     location.hash = "#/home";
+  },
+  toProfiles: () => {
+    location.hash = "#/profiles";
   },
   toTags: () => {
     location.hash = "#/tags";
@@ -35,6 +39,9 @@ function route() {
   const param = match && match[2] ? decodeURIComponent(match[2]) : null;
 
   switch (view) {
+    case "profiles":
+      renderProfiles(root, nav);
+      break;
     case "tags":
       renderTags(root, nav);
       break;

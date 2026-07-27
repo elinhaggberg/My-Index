@@ -38,8 +38,17 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
     commentEl.classList.remove("hidden");
   }
 
-  await renderTagRefChips(el.querySelector("#detail-tag-chips"), snippet.tagIds, nav, () => sheet.close());
-  await renderProfileRefChips(el.querySelector("#detail-profile-chips"), snippet.profileIds, nav, () => sheet.close());
+  const tagsSection = el.querySelector("#detail-tags-section");
+  if (snippet.tagIds?.length) {
+    await renderTagRefChips(el.querySelector("#detail-tag-chips"), snippet.tagIds, nav, () => sheet.close());
+    tagsSection.classList.remove("hidden");
+  }
+
+  const profilesSection = el.querySelector("#detail-profiles-section");
+  if (snippet.profileIds?.length) {
+    await renderProfileRefChips(el.querySelector("#detail-profile-chips"), snippet.profileIds, nav, () => sheet.close());
+    profilesSection.classList.remove("hidden");
+  }
 
   el.querySelector("#detail-edit-btn").addEventListener("click", () => {
     sheet.close();

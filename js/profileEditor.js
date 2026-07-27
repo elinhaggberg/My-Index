@@ -4,6 +4,7 @@ import { renderTagChips } from "./tagChips.js";
 import { shareOrDownload, filenameFor } from "./share.js";
 import { ICON_CLOSE_SMALL } from "./icons.js";
 import { syncProfileChannels, unsubscribeChannel } from "./feedSync.js";
+import { readAndResizeImage, resolveImageUrl } from "./imageBlob.js";
 
 const CHANNEL_TYPES = ["blog", "podcast", "newsletter", "social", "other"];
 const CHANNEL_TYPE_LABELS = { blog: "Blog", podcast: "Podcast", newsletter: "Newsletter", social: "Social", other: "Other" };
@@ -48,8 +49,51 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
     refresh(finalProfile);
   });
 
+  // ---- Avatar ----
+  const avatarImg = el.querySelector("#profile-editor-avatar-img");
+  const avatarInitial = el.querySelector("#profile-editor-avatar-initial");
+  const avatarClearBtn = el.querySelector("#profile-editor-avatar-clear-btn");
+  function renderAvatar() {
+    if (draft.image) {
+      avatarImg.src = resolveImageUrl(draft.image);
+      avatarImg.classList.remove("hidden");
+      avatarInitial.classList.add("hidden");
+      avatarClearBtn.classList.remove("hidden");
+    } else {
+      avatarImg.classList.add("hidden");
+      avatarInitial.textContent = (nameInput.value || "?").trim().charAt(0).toUpperCase() || "?";
+      avatarInitial.classList.remove("hidden");
+      avatarClearBtn.classList.add("hidden");
+    }
+  }
+
+  const avatarCameraInput = el.querySelector("#profile-editor-avatar-camera-input");
+  const avatarLibraryInput = el.querySelector("#profile-editor-avatar-library-input");
+  el.querySelector("#profile-editor-avatar-camera-btn").addEventListener("click", () => avatarCameraInput.click());
+  el.querySelector("#profile-editor-avatar-library-btn").addEventListener("click", () => avatarLibraryInput.click());
+  async function handleAvatarFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      draft.image = await readAndResizeImage(file);
+      renderAvatar();
+    } catch {
+      // Unreadable file -- leave the picker as-is so they can retry.
+    }
+  }
+  avatarCameraInput.addEventListener("change", () => handleAvatarFile(avatarCameraInput));
+  avatarLibraryInput.addEventListener("change", () => handleAvatarFile(avatarLibraryInput));
+  avatarClearBtn.addEventListener("click", () => {
+    draft.image = null;
+    renderAvatar();
+  });
+
   const nameInput = el.querySelector("#profile-editor-name");
   nameInput.value = draft.name || "";
+  nameInput.addEventListener("input", () => {
+    if (!draft.image) renderAvatar();
+  });
+  renderAvatar();
 
   const noteInput = el.querySelector("#profile-editor-note");
   noteInput.value = draft.note || "";
