@@ -15,7 +15,7 @@ export const ICON_LINK =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><rect x="1.8" y="9" width="10" height="6" rx="3" transform="rotate(-45 6.8 12)"/><rect x="12.2" y="9" width="10" height="6" rx="3" transform="rotate(-45 17.2 12)"/></svg>';
 
 export const ICON_QUOTE =
-  '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2" stroke-linejoin="round"><path d="M7 8c-2 1-3 2.5-3 4.5S5.5 16 7.5 16 11 14.5 11 12.5 9.5 9 7 9"/><path d="M16 8c-2 1-3 2.5-3 4.5S14.5 16 16.5 16 20 14.5 20 12.5 18.5 9 16 9"/></svg>';
+  '<svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M0 216C0 149.7 53.7 96 120 96h8c17.7 0 32 14.3 32 32s-14.3 32-32 32h-8c-30.9 0-56 25.1-56 56v8h64c35.3 0 64 28.7 64 64v64c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V216zm256 0c0-66.3 53.7-120 120-120h8c17.7 0 32 14.3 32 32s-14.3 32-32 32h-8c-30.9 0-56 25.1-56 56v8h64c35.3 0 64 28.7 64 64v64c0 35.3-28.7 64-64 64H320c-35.3 0-64-28.7-64-64V216z"/></svg>';
 
 export const ICON_NOTE =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><path d="M9 13h7M9 17h5"/></svg>';
