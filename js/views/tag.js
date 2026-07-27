@@ -3,6 +3,7 @@ import {
   getProfilesForTag,
   getSnippetsForTag,
   saveTagDetails,
+  deleteTag,
   createEmptySnippet,
   UNCATEGORIZED_TAG_ID,
 } from "../storage.js";
@@ -39,13 +40,17 @@ export async function renderTag(root, nav, id) {
     }
 
     const pinBtn = document.getElementById("tag-pin-btn");
+    const deleteBtn = document.getElementById("tag-delete-btn");
     const pinnedEl = document.getElementById("tag-pinned-note");
     if (tag.isSystem) {
       pinBtn.classList.add("hidden");
+      deleteBtn.classList.add("hidden");
       pinnedEl.classList.add("hidden");
     } else {
       pinBtn.classList.remove("hidden");
       pinBtn.onclick = () => openTagEditor(tag, load);
+      deleteBtn.classList.remove("hidden");
+      deleteBtn.onclick = () => confirmDeleteTag(tag, nav);
       if (tag.pinnedNote) {
         pinnedEl.textContent = tag.pinnedNote;
         pinnedEl.classList.remove("hidden");
@@ -85,6 +90,23 @@ export async function renderTag(root, nav, id) {
   }
 
   await load();
+}
+
+// Only removes the tag itself -- any Profile or Snippet that had it just
+// loses that one tag (falling back to Uncategorized if it was their only
+// one), same as deleteTag's cascade in storage.js. Nothing referencing it
+// is ever deleted outright, so this is safe to use to clean up an empty or
+// unused tag.
+function confirmDeleteTag(tag, nav) {
+  const confirmSheet = openSheet("tpl-confirm-delete");
+  confirmSheet.el.querySelector(".confirm-message").textContent =
+    `Delete "${tag.name}"? Profiles and Snippets keep their other tags -- this only removes the tag itself. This can't be undone.`;
+  confirmSheet.el.querySelector(".cancel-btn").addEventListener("click", () => confirmSheet.close());
+  confirmSheet.el.querySelector(".confirm-btn").addEventListener("click", async () => {
+    await deleteTag(tag.id);
+    confirmSheet.close();
+    nav.toTags();
+  });
 }
 
 function openTagEditor(tag, refresh) {
