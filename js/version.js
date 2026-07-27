@@ -3,9 +3,19 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.07.28";
+export const APP_VERSION = "2026.07.29";
 
 export const CHANGELOG = [
+  {
+    version: "2026.07.29",
+    date: "July 29, 2026",
+    changes: [
+      "Added YouTube and Website as Profile channel types.",
+      "Added a Video snippet type, and fixed link fetching for YouTube URLs (it now uses YouTube's own oEmbed data instead of scraping the page, which YouTube often blocks).",
+      "Other and Quote snippets now have their own distinct icons instead of sharing one with Link.",
+      "Profile names in the Home row can wrap to two lines instead of cutting off.",
+    ],
+  },
   {
     version: "2026.07.28",
     date: "July 28, 2026",

@@ -69,6 +69,43 @@ function messageForStatus(status) {
   return `Couldn't fetch that page (HTTP ${status}).`;
 }
 
+// YouTube watch pages are handled separately, via YouTube's own public
+// oEmbed endpoint, rather than the generic HTML-scraping path below.
+// Scraping the watch page directly is unreliable: YouTube often serves a
+// cookie-consent or bot-check interstitial to non-browser requests instead
+// of the real page, which has no video info on it at all -- that's why a
+// plain scrape reported "no image" even though the real video page
+// normally has one. oEmbed is unauthenticated, stable, and built for
+// exactly this (title + thumbnail), so it sidesteps the problem entirely.
+function extractYouTubeVideoId(parsed) {
+  const host = parsed.hostname.replace(/^www\./, "").replace(/^m\./, "");
+  if (host === "youtu.be") {
+    return parsed.pathname.slice(1).split("/")[0] || null;
+  }
+  if (host === "youtube.com" || host === "youtube-nocookie.com") {
+    if (parsed.pathname === "/watch") return parsed.searchParams.get("v");
+    const shortsMatch = parsed.pathname.match(/^\/shorts\/([^/]+)/);
+    if (shortsMatch) return shortsMatch[1];
+    const embedMatch = parsed.pathname.match(/^\/embed\/([^/]+)/);
+    if (embedMatch) return embedMatch[1];
+  }
+  return null;
+}
+
+async function fetchYouTubeOEmbed(parsed, signal) {
+  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(parsed.toString())}&format=json`;
+  const response = await fetch(oembedUrl, { signal });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return {
+    title: data.title || "",
+    image: data.thumbnail_url || "",
+    description: data.author_name ? `By ${data.author_name}` : "",
+    siteName: "YouTube",
+    sourceUrl: parsed.toString(),
+  };
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -99,6 +136,24 @@ module.exports = async (req, res) => {
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
+    const youTubeVideoId = extractYouTubeVideoId(parsed);
+    if (youTubeVideoId) {
+      const result = await fetchYouTubeOEmbed(parsed, controller.signal);
+      if (result) {
+        res.status(200).json(result);
+        return;
+      }
+      res.status(200).json({
+        error: "Couldn't find that YouTube video — it may be private, age-restricted, or deleted.",
+        title: "",
+        image: "",
+        description: "",
+        siteName: "YouTube",
+        sourceUrl: parsed.toString(),
+      });
+      return;
+    }
+
     const response = await fetch(parsed.toString(), {
       signal: controller.signal,
       redirect: "follow",

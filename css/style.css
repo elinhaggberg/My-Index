@@ -276,11 +276,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .profile-tile-name {
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1.25;
   text-align: center;
   width: 100%;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Card grid (Pinterest-style masonry via flex columns, see masonry.js) */

@@ -14,8 +14,7 @@ import { hostnameFor } from "../util.js";
 import { ICON_EXTERNAL, ICON_RSS } from "../icons.js";
 import { clearServerCounts } from "../feedSync.js";
 import { resolveImageUrl } from "../imageBlob.js";
-
-const CHANNEL_TYPE_LABELS = { blog: "Blog", podcast: "Podcast", newsletter: "Newsletter", social: "Social", other: "Other" };
+import { CHANNEL_TYPE_LABELS } from "../channelTypes.js";
 
 export async function renderProfile(root, nav, id) {
   const tpl = document.getElementById("tpl-profile");

@@ -26,6 +26,15 @@ export const ICON_BOOK =
 export const ICON_PODCAST =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3.2"/><path d="M9.5 16.5c-2.6 0-4.7 2.1-4.7 4.5M14.5 16.5c2.6 0 4.7 2.1 4.7 4.5"/><path d="M12 13.2V21"/></svg>';
 
+export const ICON_VIDEO =
+  '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.3l6.2 3.7-6.2 3.7z" fill="currentColor" stroke="none"/></svg>';
+
+// A generic bookmark -- deliberately distinct from ICON_LINK's chain-link
+// shape, since "Other" and "Link" used to share that icon and were nearly
+// impossible to tell apart at the small size cards render it at.
+export const ICON_OTHER =
+  '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1z"/></svg>';
+
 export const ICON_RSS =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5c7.7 0 14 6.3 14 14"/><path d="M5 11c4.4 0 8 3.6 8 8"/><circle cx="6.5" cy="17.5" r="1.6" fill="currentColor" stroke="none"/></svg>';
 

@@ -5,9 +5,7 @@ import { shareOrDownload, filenameFor } from "./share.js";
 import { ICON_CLOSE_SMALL } from "./icons.js";
 import { syncProfileChannels, unsubscribeChannel } from "./feedSync.js";
 import { readAndResizeImage, resolveImageUrl } from "./imageBlob.js";
-
-const CHANNEL_TYPES = ["blog", "podcast", "newsletter", "social", "other"];
-const CHANNEL_TYPE_LABELS = { blog: "Blog", podcast: "Podcast", newsletter: "Newsletter", social: "Social", other: "Other" };
+import { CHANNEL_TYPES, CHANNEL_TYPE_LABELS } from "./channelTypes.js";
 
 export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
   const draft = {
