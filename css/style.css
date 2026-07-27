@@ -53,7 +53,11 @@
   --warn: #c98424;
   --font-heading: ui-serif, Georgia, "Times New Roman", serif;
   --radius: 22px;
-  --card-tint: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  /* Fixed warm beige rather than accent-tinted, so card surfaces stay
+     neutral parchment regardless of which accent color is picked -- only
+     interactive/accent elements (buttons, badges, the icon strip) should
+     carry the chosen color. */
+  --card-tint: var(--surface-2);
 }
 
 * { box-sizing: border-box; }
@@ -314,31 +318,32 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   object-fit: cover;
 }
 .pin-body { padding: 16px; }
-/* The type icon sits inline beside the title as a small badge, rather than
-   a fixed-size placeholder box standing in for a photo the snippet almost
-   certainly doesn't have -- this app is a register of links/quotes/notes,
-   not a photo library, so the card shouldn't look shaped around one. */
-.pin-head { display: flex; align-items: flex-start; gap: 10px; }
+/* A slim tinted strip carries the type icon, like the very first design's
+   media-placeholder slot -- but shallow rather than a full aspect-ratio box
+   standing in for a photo the snippet almost certainly doesn't have. The
+   tint is accent-based (unlike the card body itself, which stays a fixed
+   neutral beige) so it still reads as a highlight. */
+.pin-icon-strip {
+  width: 100%;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
 .pin-type-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .pin-title {
-  flex: 1;
-  min-width: 0;
   font-size: 0.98rem;
   font-weight: 600;
   line-height: 1.4;
   margin: 0;
-  padding-top: 2px;
   display: -webkit-box;
   -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
