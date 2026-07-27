@@ -663,7 +663,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   font-weight: 600;
 }
 .type-chip .icon { width: 1em; height: 1em; }
-.type-chip.active { border-color: var(--accent); color: var(--accent-text); background: var(--accent); }
+/* Muted rather than a solid accent fill, so a selected chip doesn't read as
+   loudly as an actual primary action (e.g. the Save button below it). */
+.type-chip.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
 
 /* Form fields (shared) */
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
@@ -752,7 +754,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   font-weight: 600;
 }
 .board-chip .icon { width: 0.9em; height: 0.9em; }
-.board-chip.active { border-color: var(--accent); color: var(--accent-text); background: var(--accent); }
+/* Muted rather than a solid accent fill, so a selected chip doesn't read as
+   loudly as an actual primary action (e.g. the Save button below it). */
+.board-chip.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
 .board-chip.new-chip { border-style: dashed; }
 
 /* Card/snippet detail sheet */
