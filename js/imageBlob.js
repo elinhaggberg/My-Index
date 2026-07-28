@@ -57,9 +57,21 @@ export function dataUrlToBlob(dataUrl) {
 // by getProfile/getTag/etc.), so this is a synchronous wrap -- no async
 // lookup like the sibling apps' resolveImageSrc needs for their IndexedDB
 // image store.
+//
+// Some browsers (WebKit/Safari has a known history of this) can drop a
+// Blob's MIME type on a round trip through IndexedDB -- the bytes survive
+// fine, but `.type` comes back empty, so the browser no longer knows it's
+// an image and <img> shows a broken-image icon instead of rendering it.
+// Every avatar/cover image here is always saved as a JPEG (see
+// readAndResizeImage below), so re-wrapping a type-less Blob with that
+// type back is safe and fixes the display without needing to know which
+// browser is affected.
 export function resolveImageUrl(image) {
   if (!image) return "";
-  if (image instanceof Blob) return URL.createObjectURL(image);
+  if (image instanceof Blob) {
+    const blob = image.type ? image : new Blob([image], { type: "image/jpeg" });
+    return URL.createObjectURL(blob);
+  }
   if (typeof image === "string") return image; // legacy/imported data: URI, still usable directly
   return "";
 }
