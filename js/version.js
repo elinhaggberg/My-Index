@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.07.29";
+export const APP_VERSION = "2026.07.30";
 
 export const CHANGELOG = [
+  {
+    version: "2026.07.30",
+    date: "July 30, 2026",
+    changes: [
+      "Profiles now have a \"Recent mentions on Google\" link, searching that person's name restricted to the past month.",
+    ],
+  },
   {
     version: "2026.07.29",
     date: "July 29, 2026",

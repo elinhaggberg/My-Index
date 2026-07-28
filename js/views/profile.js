@@ -11,7 +11,7 @@ import { createEmptySnippet } from "../storage.js";
 import { openProfileEditor } from "../profileEditor.js";
 import { renderTagRefChips } from "../refChips.js";
 import { hostnameFor } from "../util.js";
-import { ICON_EXTERNAL, ICON_RSS } from "../icons.js";
+import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH } from "../icons.js";
 import { clearServerCounts } from "../feedSync.js";
 import { resolveImageUrl } from "../imageBlob.js";
 import { CHANNEL_TYPE_LABELS } from "../channelTypes.js";
@@ -54,6 +54,16 @@ export async function renderProfile(root, nav, id) {
       noteEl.classList.remove("hidden");
     } else {
       noteEl.classList.add("hidden");
+    }
+
+    const searchLink = document.getElementById("profile-search-mentions-link");
+    const name = (profile.name || "").trim();
+    if (name) {
+      searchLink.href = `https://www.google.com/search?q=${encodeURIComponent(`"${name}"`)}&tbs=qdr:m`;
+      document.getElementById("profile-search-mentions-icon").innerHTML = ICON_SEARCH + ICON_EXTERNAL;
+      searchLink.classList.remove("hidden");
+    } else {
+      searchLink.classList.add("hidden");
     }
 
     const channelsEl = document.getElementById("profile-channels");
