@@ -10,6 +10,7 @@ const FIRST_OPEN_KEY = "mi_first_open_at_v1";
 const ONBOARDING_SEEN_KEY = "mi_onboarding_seen_v1";
 const HOME_FILTER_KEY = "mi_home_filter_v1";
 const PROFILES_FILTER_KEY = "mi_profiles_filter_v1";
+const IMAGES_MIGRATED_KEY = "mi_images_migrated_v1";
 
 export const UNCATEGORIZED_TAG_ID = "uncategorized";
 
@@ -362,6 +363,32 @@ export async function importData(data) {
     tagCount: importedTags.length,
     preferencesApplied,
   };
+}
+
+// One-time cleanup for anyone who saved a Profile avatar or Tag cover image
+// before storage switched from raw Blobs to data: URI strings (Blobs stored
+// in IndexedDB have a real WebKit/Safari readback bug -- see imageBlob.js).
+// Converts each one in place and re-saves it. Runs once (gated by a flag)
+// and just does nothing on every later run once there's nothing left with
+// a Blob image.
+export async function migrateLegacyImages() {
+  if (localStorage.getItem(IMAGES_MIGRATED_KEY) === "true") return;
+
+  const profiles = await getAll("profiles");
+  for (const profile of profiles) {
+    if (profile.image instanceof Blob) {
+      await putOne("profiles", { ...profile, image: await blobToDataUrl(profile.image) });
+    }
+  }
+
+  const tags = await getAll("tags");
+  for (const tag of tags) {
+    if (tag.image instanceof Blob) {
+      await putOne("tags", { ...tag, image: await blobToDataUrl(tag.image) });
+    }
+  }
+
+  localStorage.setItem(IMAGES_MIGRATED_KEY, "true");
 }
 
 // ---- Preferences ----

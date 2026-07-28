@@ -4,7 +4,7 @@ import { renderTags } from "./views/tags.js";
 import { renderTag } from "./views/tag.js";
 import { renderProfile } from "./views/profile.js";
 import { applyTheme } from "./theme.js";
-import { createEmptySnippet, saveSnippet } from "./storage.js";
+import { createEmptySnippet, saveSnippet, migrateLegacyImages } from "./storage.js";
 import { openSnippetEditor } from "./snippetEditor.js";
 import { checkWhatsNew } from "./whatsNew.js";
 import { checkOnboarding } from "./onboarding.js";
@@ -103,8 +103,13 @@ async function importQueuedCaptures() {
 
 window.addEventListener("hashchange", route);
 
-route();
-handleIncomingShare();
+// Runs before the first render so anyone with a Profile/Tag image saved in
+// the old (Blob-based) format sees it fixed immediately, not just after
+// visiting that page a second time. A no-op after the first run.
+migrateLegacyImages().finally(() => {
+  route();
+  handleIncomingShare();
+});
 importQueuedCaptures();
 checkOnboarding();
 checkWhatsNew();
