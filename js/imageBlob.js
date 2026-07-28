@@ -1,10 +1,12 @@
-// Profile avatars and Tag cover images are stored as plain Blobs directly on
-// their IndexedDB record (unlike My Bookshelf/My Closet, which keep an
-// "idb:<id>" reference into a separate image store) -- there's no
-// localStorage quota pressure here to design around, since the records
-// already live in IndexedDB. These helpers just handle picking/resizing a
-// photo and converting to/from a data: URI at the export/import boundary,
-// where JSON can't hold a Blob directly.
+// Profile avatars and Tag cover images are stored as data: URI strings
+// directly on their IndexedDB record. An earlier version stored them as
+// raw Blobs instead, which turned out to hit a real WebKit/Safari bug:
+// a Blob just written to IndexedDB isn't reliably readable again on the
+// *same* database connection -- it renders broken (a question-mark icon)
+// until the app is fully restarted, which opens a fresh connection and
+// reads it correctly. A plain string doesn't go through IndexedDB's
+// special Blob-handling path at all, so it doesn't hit that bug -- the
+// ~33% base64 size overhead is a non-issue at these dimensions/quality.
 const MAX_DIMENSION = 960;
 const JPEG_QUALITY = 0.82;
 
@@ -28,11 +30,7 @@ export function readAndResizeImage(file) {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => (blob ? resolve(blob) : reject(new Error("Couldn't process that image."))),
-          "image/jpeg",
-          JPEG_QUALITY
-        );
+        resolve(canvas.toDataURL("image/jpeg", JPEG_QUALITY));
       };
       img.src = reader.result;
     };
@@ -40,6 +38,8 @@ export function readAndResizeImage(file) {
   });
 }
 
+// Only still needed for exporting a profile/tag saved by an earlier
+// version of the app, which may still have a real Blob on it.
 export function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -49,29 +49,14 @@ export function blobToDataUrl(blob) {
   });
 }
 
-export function dataUrlToBlob(dataUrl) {
-  return fetch(dataUrl).then((r) => r.blob());
-}
-
-// The Blob is already in memory (it came straight off the record returned
-// by getProfile/getTag/etc.), so this is a synchronous wrap -- no async
-// lookup like the sibling apps' resolveImageSrc needs for their IndexedDB
-// image store.
-//
-// Some browsers (WebKit/Safari has a known history of this) can drop a
-// Blob's MIME type on a round trip through IndexedDB -- the bytes survive
-// fine, but `.type` comes back empty, so the browser no longer knows it's
-// an image and <img> shows a broken-image icon instead of rendering it.
-// Every avatar/cover image here is always saved as a JPEG (see
-// readAndResizeImage below), so re-wrapping a type-less Blob with that
-// type back is safe and fixes the display without needing to know which
-// browser is affected.
+// A data: URI is already directly usable as an <img src> or a CSS
+// background-image -- no object URL, no lookup. Blob is still handled here
+// for any profile/tag saved by an earlier version of the app before this
+// storage format changed; it isn't produced by anything anymore, but
+// existing saved data shouldn't break.
 export function resolveImageUrl(image) {
   if (!image) return "";
-  if (image instanceof Blob) {
-    const blob = image.type ? image : new Blob([image], { type: "image/jpeg" });
-    return URL.createObjectURL(blob);
-  }
-  if (typeof image === "string") return image; // legacy/imported data: URI, still usable directly
+  if (typeof image === "string") return image;
+  if (image instanceof Blob) return URL.createObjectURL(image);
   return "";
 }

@@ -1,5 +1,5 @@
 import { getAll, getOne, putOne, deleteOne } from "./db.js";
-import { blobToDataUrl, dataUrlToBlob } from "./imageBlob.js";
+import { blobToDataUrl } from "./imageBlob.js";
 
 const THEME_KEY = "mi_theme_v1";
 const HOME_TITLE_KEY = "mi_home_title_v1";
@@ -280,15 +280,13 @@ export async function exportSnippetData(snippet) {
 // shared taxonomy, like My Closet's boards); profiles and snippets are
 // richer individual records so they always import as new, with their
 // cross-references remapped to the freshly-created local ids.
-async function reviveImage(image) {
-  if (typeof image === "string" && image.startsWith("data:")) {
-    try {
-      return await dataUrlToBlob(image);
-    } catch {
-      return null; // Couldn't decode it -- import still succeeds, just without this image.
-    }
-  }
-  return null;
+// Imported images are already a data: URI (that's what export produces) --
+// kept as a plain string rather than converted to a Blob, since Blobs
+// stored in IndexedDB have a real WebKit/Safari readback bug (see
+// imageBlob.js). Anything else (missing, or some unexpected shape) just
+// means no image; import still succeeds either way.
+function reviveImage(image) {
+  return typeof image === "string" && image.startsWith("data:") ? image : null;
 }
 
 export async function importData(data) {
