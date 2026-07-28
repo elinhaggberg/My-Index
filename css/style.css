@@ -558,9 +558,12 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   background: var(--card-tint);
   border-color: color-mix(in srgb, var(--bg) 85%, black);
 }
-.channel-view-row.profile-search-link {
+.channel-view-row.profile-search-link,
+:root[data-theme="playful"] .channel-view-row.profile-search-link {
   margin: 0 16px 16px;
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  /* Same recipe as .pin-icon-strip, so this reads as the same accent
+     highlight the snippet cards use, not a one-off color. */
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
 }
 .channel-view-row.profile-search-link .channel-view-type,
