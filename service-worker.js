@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v3";
+const CACHE_NAME = "my-index-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -29,6 +29,8 @@ const APP_SHELL = [
   "./js/profileFilter.js",
   "./js/profileSearch.js",
   "./js/tagChips.js",
+  "./js/pickerField.js",
+  "./js/profilePicker.js",
   "./js/refChips.js",
   "./js/settingsMenu.js",
   "./js/onboarding.js",

@@ -230,21 +230,36 @@
     </div>
   </template>
 
-  <template id="tpl-tag-create">
+  <template id="tpl-tag-picker">
     <div class="sheet">
       <header class="sheet-header">
-        <h2>New tag</h2>
+        <h2>Tags</h2>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
-      <form id="tag-create-form">
-        <label class="field">
-          <span>Name</span>
-          <input type="text" name="name" maxlength="40" required autocomplete="off" placeholder="e.g. Philosophy" />
-        </label>
-        <div class="form-actions">
-          <button type="submit" class="text-btn primary">Save</button>
-        </div>
-      </form>
+      <label class="field">
+        <input type="text" id="tag-picker-search" placeholder="Search or create a tag…" autocomplete="off" />
+      </label>
+      <div class="board-chip-list" id="tag-picker-cloud"></div>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="tag-picker-done-btn">Done</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-profile-picker">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Connect profile</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <label class="field">
+        <input type="text" id="profile-picker-search" placeholder="Search your profiles…" autocomplete="off" />
+      </label>
+      <p class="empty-state hidden" id="profile-picker-empty">No profiles match that search.</p>
+      <div class="profile-picker-list" id="profile-picker-list"></div>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="profile-picker-done-btn">Done</button>
+      </div>
     </div>
   </template>
 
@@ -343,6 +358,13 @@
       </div>
       <p class="import-message hidden" id="editor-fetch-message"></p>
 
+      <div class="form-actions hidden" id="editor-image-upload-actions">
+        <button type="button" class="text-btn secondary" id="editor-image-camera-btn">Camera</button>
+        <button type="button" class="text-btn secondary" id="editor-image-library-btn">Library</button>
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="editor-image-camera-input" hidden />
+      <input type="file" accept="image/*" id="editor-image-library-input" hidden />
+
       <div class="photo-preview-wrap hidden" id="editor-image-preview-wrap">
         <img class="photo-preview" id="editor-image-preview" alt="" />
         <button type="button" class="photo-preview-clear" id="editor-image-clear-btn" aria-label="Remove image"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
@@ -359,6 +381,9 @@
 
       <p class="card-detail-section-label">Tags</p>
       <div class="board-chip-list" id="editor-tag-chips"></div>
+
+      <p class="card-detail-section-label">Profiles</p>
+      <div class="board-chip-list" id="editor-profile-chips"></div>
 
       <p class="import-message error hidden" id="editor-save-error"></p>
       <div class="form-actions">

@@ -1,14 +1,11 @@
 import { createEmptySnippet, saveSnippet } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { renderTagChips } from "./tagChips.js";
+import { renderProfileChips } from "./profilePicker.js";
+import { readAndResizeImage } from "./imageBlob.js";
 import { SNIPPET_TYPES, typeFor } from "./snippetTypes.js";
 import { hostnameFor } from "./util.js";
 
-// Linking a Snippet to a Profile only happens from that Profile's own "add
-// snippet" button (presetProfileId, applied silently below) -- picking
-// profiles here in the capture flow read as confusing next to Tags, so
-// there's no "Profiles" section in this editor at all. To link an existing
-// snippet to a profile later, add it from the Profile page.
 export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileId, presetTagId, autoFetch }) {
   const draft = { ...snippet, tagIds: [...(snippet.tagIds || [])], profileIds: [...(snippet.profileIds || [])] };
   if (presetProfileId && !draft.profileIds.includes(presetProfileId)) draft.profileIds.push(presetProfileId);
@@ -39,10 +36,12 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   // ---- Type ----
   const typeRow = el.querySelector("#editor-type-segmented");
   const contentInput = el.querySelector("#editor-content");
+  const imageUploadActions = el.querySelector("#editor-image-upload-actions");
   function renderContentField() {
     const type = typeFor(draft.type);
     contentInput.placeholder = type.contentPlaceholder;
     contentInput.rows = type.long ? 5 : 2;
+    imageUploadActions.classList.toggle("hidden", draft.type !== "image");
   }
   typeRow.replaceChildren(
     ...SNIPPET_TYPES.map((t) => {
@@ -90,6 +89,23 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     renderImagePreview();
   });
 
+  const imgCameraInput = el.querySelector("#editor-image-camera-input");
+  const imgLibraryInput = el.querySelector("#editor-image-library-input");
+  el.querySelector("#editor-image-camera-btn").addEventListener("click", () => imgCameraInput.click());
+  el.querySelector("#editor-image-library-btn").addEventListener("click", () => imgLibraryInput.click());
+  async function handleImageFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      draft.image = await readAndResizeImage(file);
+      renderImagePreview();
+    } catch {
+      // Unreadable file -- leave the picker as-is so they can retry.
+    }
+  }
+  imgCameraInput.addEventListener("change", () => handleImageFile(imgCameraInput));
+  imgLibraryInput.addEventListener("change", () => handleImageFile(imgLibraryInput));
+
   const fetchBtn = el.querySelector("#editor-fetch-btn");
   const msgEl = el.querySelector("#editor-fetch-message");
   async function runFetch() {
@@ -111,6 +127,9 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
       renderImagePreview();
       if (data.error) {
         msgEl.textContent = `${data.error} You can still fill in the details yourself.`;
+        msgEl.classList.add("error");
+      } else if (draft.type === "image" && !data.image) {
+        msgEl.textContent = "Couldn't find an image on that page — add one from Camera or Library instead.";
         msgEl.classList.add("error");
       } else {
         msgEl.textContent = "Got it — details filled in below.";
@@ -142,6 +161,16 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
       const idx = draft.tagIds.indexOf(tagId);
       if (idx >= 0) draft.tagIds.splice(idx, 1);
       else draft.tagIds.push(tagId);
+    },
+  });
+
+  // ---- Profiles ----
+  renderProfileChips(el.querySelector("#editor-profile-chips"), {
+    selectedIds: draft.profileIds,
+    onToggle: (profileId) => {
+      const idx = draft.profileIds.indexOf(profileId);
+      if (idx >= 0) draft.profileIds.splice(idx, 1);
+      else draft.profileIds.push(profileId);
     },
   });
 }

@@ -772,6 +772,54 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .board-chip.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
 .board-chip.new-chip { border-style: dashed; }
 
+/* A selected tag/profile shown in an editor's summary row -- has its own
+   small remove button rather than needing to reopen the picker sheet just
+   to take something off. */
+.board-chip.removable-chip { padding-right: 8px; }
+.board-chip.removable-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+.board-chip.removable-chip .icon { width: 0.85em; height: 0.85em; }
+
+/* Profile picker sheet -- a searchable row list (unlike the tag cloud),
+   since profiles don't have a small fixed vocabulary to scan at a glance. */
+.profile-picker-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.profile-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  width: 100%;
+}
+.profile-picker-row.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.profile-picker-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.profile-picker-name { flex: 1; font-weight: 600; }
+.profile-picker-check { display: flex; color: var(--accent); flex-shrink: 0; visibility: hidden; }
+.profile-picker-check .icon { width: 1.1rem; height: 1.1rem; }
+.profile-picker-row.active .profile-picker-check { visibility: visible; }
+
 /* Card/snippet detail sheet */
 .card-detail-media {
   width: 100%;

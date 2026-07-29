@@ -55,3 +55,6 @@ export const ICON_CLOSE_SMALL =
 
 export const ICON_SEARCH =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg>';
+
+export const ICON_IMAGE =
+  '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.8" fill="currentColor" stroke="none"/><path d="M3.5 17l5.5-5.5 3 3L18 8.5l2.5 2.5"/></svg>';

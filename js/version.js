@@ -3,9 +3,18 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.07.30";
+export const APP_VERSION = "2026.07.31";
 
 export const CHANGELOG = [
+  {
+    version: "2026.07.31",
+    date: "July 31, 2026",
+    changes: [
+      "Saving a snippet can connect it to a Profile again, now via a searchable picker underneath Tags.",
+      "Added an Image snippet type — upload a photo from Camera/Library, or fetch one from a link.",
+      "Tags and Profiles in the Snippet/Profile editors now open in a search-and-pick sheet instead of listing every option inline, so they stay usable as your lists grow.",
+    ],
+  },
   {
     version: "2026.07.30",
     date: "July 30, 2026",
