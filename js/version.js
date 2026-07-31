@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.07.31";
+export const APP_VERSION = "2026.08.01";
 
 export const CHANGELOG = [
+  {
+    version: "2026.08.01",
+    date: "August 1, 2026",
+    changes: [
+      "Added an App Library link in the gear menu, pointing to the Make it Local App Library of sibling apps.",
+    ],
+  },
   {
     version: "2026.07.31",
     date: "July 31, 2026",
