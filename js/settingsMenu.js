@@ -27,6 +27,15 @@ export function openSettingsMenu(nav, refresh) {
     sheet.close();
     openImport(refresh);
   });
+  el.querySelector("#app-library-link-btn").addEventListener("click", () => {
+    sheet.close();
+    openAppLibraryPromo();
+  });
+}
+
+function openAppLibraryPromo() {
+  const sheet = openSheet("tpl-app-library-promo");
+  sheet.el.querySelector(".cancel-btn").addEventListener("click", () => sheet.close());
 }
 
 function openInstructions() {
