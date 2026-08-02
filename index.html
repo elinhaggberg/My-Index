@@ -456,6 +456,10 @@
         <svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M64 0C28.7 0 0 28.7 0 64l0 240 182.1 0-31-31c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l72 72c9.4 9.4 9.4 24.6 0 33.9l-72 72c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l31-31-182.1 0 0 96c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-277.5c0-17-6.7-33.3-18.7-45.3L258.7 18.7C246.7 6.7 230.5 0 213.5 0L64 0zM325.5 176L232 176c-13.3 0-24-10.7-24-24L208 58.5 325.5 176z"/></svg>
         <span>Import</span>
       </button>
+      <button type="button" class="menu-item" id="cloud-sync-btn">
+        <svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M144 224c-53 0-96 43-96 96s43 96 96 96l288 0c44.2 0 80-35.8 80-80c0-38.8-27.6-71.1-64.3-78.4c.2-2.5 .3-5 .3-7.6c0-53-43-96-96-96c-19.6 0-37.9 5.9-53.1 16.1C185.5 130.6 145.5 96 96 96C43 96 0 139 0 192c0 20.3 6.3 39.1 17 54.6C7.4 261.3 0 279.5 0 300z"/></svg>
+        <span>Cloud sync</span>
+      </button>
       <button type="button" class="menu-item" id="app-library-link-btn">
         <svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M64 32C28.7 32 0 60.7 0 96l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64L64 32zM64 224c-35.3 0-64 28.7-64 64l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64l-64 0zM256 96l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64l-64 0c-35.3 0-64 28.7-64 64zM320 224c-35.3 0-64 28.7-64 64l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64l-64 0z"/></svg>
         <span>App Library</span>
@@ -569,6 +573,28 @@
       <div class="form-actions">
         <button type="button" class="text-btn secondary cancel-btn">Close</button>
         <a class="text-btn primary" href="https://makeitlocal.app" target="_blank" rel="noopener">Visit library</a>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-cloud-sync">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Cloud sync</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <p class="cloud-sync-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges without giving up the local-first design.</p>
+      <p class="import-message hidden" id="cloud-sync-message"></p>
+      <div class="hidden" id="cloud-sync-disconnected">
+        <div class="form-actions">
+          <button type="button" class="text-btn primary" id="cloud-sync-connect-btn">Connect Supabase</button>
+        </div>
+      </div>
+      <div class="hidden" id="cloud-sync-connected">
+        <p class="cloud-sync-status">✓ Connected<span id="cloud-sync-project-name"></span></p>
+        <div class="form-actions">
+          <button type="button" class="text-btn secondary" id="cloud-sync-disconnect-btn">Disconnect</button>
+        </div>
       </div>
     </div>
   </template>

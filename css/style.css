@@ -1046,6 +1046,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .import-message { font-size: 0.88rem; color: var(--accent); min-height: 1.2em; margin: 14px 0 0; }
 .import-message.error { color: var(--danger); }
 
+.cloud-sync-intro { color: var(--text-dim); font-size: 0.92rem; margin: 0 0 18px; }
+.cloud-sync-status { color: var(--good); font-weight: 600; margin: 0 0 18px; }
+.cloud-sync-status span { color: var(--text); font-weight: 400; margin-left: 6px; }
+
 .hidden { display: none !important; }
 
 /* Playful theme: rounder, friendlier shapes across the board. */

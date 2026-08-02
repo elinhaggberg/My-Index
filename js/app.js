@@ -9,6 +9,8 @@ import { openSnippetEditor } from "./snippetEditor.js";
 import { checkWhatsNew } from "./whatsNew.js";
 import { checkOnboarding } from "./onboarding.js";
 import { consumeQueuedCaptures } from "./feedSync.js";
+import { consumeOAuthRedirect } from "./supabaseOAuth.js";
+import { openCloudSyncSheet } from "./settingsMenu.js";
 
 applyTheme();
 
@@ -103,12 +105,20 @@ async function importQueuedCaptures() {
 
 window.addEventListener("hashchange", route);
 
+// Picks up the redirect back from Supabase's consent screen (see
+// supabaseOAuth.js / api/oauth-callback.js) before anything else touches
+// location.hash -- clears the token fragment out of the URL either way, and
+// reopens the Cloud Sync sheet with the result if this load was one of
+// those redirects.
+const oauthResult = consumeOAuthRedirect();
+
 // Runs before the first render so anyone with a Profile/Tag image saved in
 // the old (Blob-based) format sees it fixed immediately, not just after
 // visiting that page a second time. A no-op after the first run.
 migrateLegacyImages().finally(() => {
   route();
   handleIncomingShare();
+  if (oauthResult) openCloudSyncSheet(oauthResult);
 });
 importQueuedCaptures();
 checkOnboarding();

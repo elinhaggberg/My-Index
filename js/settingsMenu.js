@@ -2,6 +2,7 @@ import { openSheet } from "./sheet.js";
 import { exportBackupData, importData, getHomeTitle, setHomeTitle, markBackedUp } from "./storage.js";
 import { shareOrDownload } from "./share.js";
 import { getTheme, setTheme, PLAYFUL_SWATCHES } from "./theme.js";
+import { getConnectUrl, isCloudSyncConnected, disconnectCloudSync, listSupabaseProjects } from "./supabaseOAuth.js";
 
 export function openSettingsMenu(nav, refresh) {
   const sheet = openSheet("tpl-settings-menu");
@@ -31,6 +32,62 @@ export function openSettingsMenu(nav, refresh) {
     sheet.close();
     openAppLibraryPromo();
   });
+  el.querySelector("#cloud-sync-btn").addEventListener("click", () => {
+    sheet.close();
+    openCloudSyncSheet();
+  });
+}
+
+// Exported so app.js can jump straight here (with a connect/error message)
+// right after the redirect back from Supabase's consent screen -- the whole
+// point of showing feedback immediately rather than making the user dig
+// back into Settings to find out whether it worked.
+export function openCloudSyncSheet(oauthResult) {
+  const sheet = openSheet("tpl-cloud-sync");
+  const el = sheet.el;
+  el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
+
+  const messageEl = el.querySelector("#cloud-sync-message");
+  const disconnectedEl = el.querySelector("#cloud-sync-disconnected");
+  const connectedEl = el.querySelector("#cloud-sync-connected");
+
+  if (oauthResult === "connected") {
+    messageEl.textContent = "Connected!";
+    messageEl.classList.remove("hidden", "error");
+  } else if (oauthResult === "error") {
+    messageEl.textContent = "Couldn't finish connecting to Supabase. Please try again.";
+    messageEl.classList.remove("hidden");
+    messageEl.classList.add("error");
+  }
+
+  async function render() {
+    const connected = isCloudSyncConnected();
+    disconnectedEl.classList.toggle("hidden", connected);
+    connectedEl.classList.toggle("hidden", !connected);
+    if (!connected) return;
+
+    // First real proof the connection works end-to-end: ask Supabase's own
+    // Management API who this token belongs to, via api/supabase-management.js.
+    const nameEl = el.querySelector("#cloud-sync-project-name");
+    const result = await listSupabaseProjects();
+    if (result && Array.isArray(result) && result.length > 0) {
+      nameEl.textContent = `— ${result.map((p) => p.name).join(", ")}`;
+    } else if (result && Array.isArray(result)) {
+      nameEl.textContent = "— no projects found on this account";
+    } else {
+      nameEl.textContent = "";
+    }
+  }
+
+  el.querySelector("#cloud-sync-connect-btn").addEventListener("click", () => {
+    location.href = getConnectUrl();
+  });
+  el.querySelector("#cloud-sync-disconnect-btn").addEventListener("click", () => {
+    disconnectCloudSync();
+    render();
+  });
+
+  render();
 }
 
 function openAppLibraryPromo() {
