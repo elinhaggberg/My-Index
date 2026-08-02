@@ -9,7 +9,9 @@ import {
   listSupabaseProjects,
   getSelectedProject,
   setSelectedProject,
+  getApiConfig,
 } from "./supabaseOAuth.js";
+import { installCloudSync, INSTALL_STEPS } from "./cloudSyncInstall.js";
 import { ICON_CHECK } from "./icons.js";
 
 export function openSettingsMenu(nav, refresh) {
@@ -68,6 +70,45 @@ export function openCloudSyncSheet(oauthResult) {
     messageEl.classList.add("error");
   }
 
+  const installSectionEl = el.querySelector("#cloud-sync-install-section");
+  const installStepsEl = el.querySelector("#cloud-sync-install-steps");
+  const installBtn = el.querySelector("#cloud-sync-install-btn");
+
+  function renderSteps(statusByLabel) {
+    installStepsEl.replaceChildren(
+      ...INSTALL_STEPS.map((label) => {
+        const status = statusByLabel.get(label) || "pending";
+        const row = document.createElement("div");
+        row.className = "cloud-sync-step " + status;
+        const mark = document.createElement("span");
+        mark.className = "cloud-sync-step-mark";
+        mark.textContent = status === "done" ? "✓" : status === "error" ? "✕" : status === "running" ? "…" : "○";
+        const text = document.createElement("span");
+        text.textContent = label;
+        row.append(mark, text);
+        return row;
+      })
+    );
+  }
+
+  async function runInstall() {
+    installBtn.disabled = true;
+    const statusByLabel = new Map();
+    renderSteps(statusByLabel);
+    try {
+      await installCloudSync((label, status) => {
+        statusByLabel.set(label, status);
+        renderSteps(statusByLabel);
+      });
+      installBtn.textContent = "Reinstall RSS sync";
+    } catch {
+      // The failed step is already marked in the list above -- nothing
+      // more to say here, and the whole sequence is safe to just re-run.
+    } finally {
+      installBtn.disabled = false;
+    }
+  }
+
   async function render() {
     const connected = isCloudSyncConnected();
     disconnectedEl.classList.toggle("hidden", connected);
@@ -86,11 +127,13 @@ export function openCloudSyncSheet(oauthResult) {
     if (!projects || !Array.isArray(projects)) {
       statusLine.textContent = "✓ Connected";
       pickerEl.replaceChildren();
+      installSectionEl.classList.add("hidden");
       return;
     }
     if (projects.length === 0) {
       statusLine.textContent = "✓ Connected — no projects found on this account yet.";
       pickerEl.replaceChildren();
+      installSectionEl.classList.add("hidden");
       return;
     }
 
@@ -99,19 +142,28 @@ export function openCloudSyncSheet(oauthResult) {
       ...projects.map((p) => {
         const row = document.createElement("button");
         row.type = "button";
-        row.className = "project-picker-row" + (selected?.ref === p.id ? " active" : "");
+        row.className = "project-picker-row" + (selected?.ref === p.ref ? " active" : "");
         const name = document.createElement("span");
         name.textContent = p.name;
         const check = document.createElement("span");
         check.innerHTML = ICON_CHECK;
         row.append(name, check);
         row.addEventListener("click", () => {
-          setSelectedProject({ ref: p.id, name: p.name });
+          setSelectedProject({ ref: p.ref, name: p.name });
           render();
         });
         return row;
       })
     );
+
+    installSectionEl.classList.toggle("hidden", !selected);
+    if (selected) {
+      const apiConfig = getApiConfig();
+      const alreadyInstalled = apiConfig?.ref === selected.ref;
+      const statusByLabel = new Map(alreadyInstalled ? INSTALL_STEPS.map((label) => [label, "done"]) : []);
+      renderSteps(statusByLabel);
+      installBtn.textContent = alreadyInstalled ? "Reinstall RSS sync" : "Install RSS sync";
+    }
   }
 
   el.querySelector("#cloud-sync-connect-btn").addEventListener("click", () => {
@@ -121,6 +173,7 @@ export function openCloudSyncSheet(oauthResult) {
     disconnectCloudSync();
     render();
   });
+  installBtn.addEventListener("click", runInstall);
 
   render();
 }

@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.08.02";
+export const APP_VERSION = "2026.08.03";
 
 export const CHANGELOG = [
+  {
+    version: "2026.08.03",
+    date: "August 3, 2026",
+    changes: [
+      "Cloud Sync now finishes the job: once you've connected and picked a project, \"Install RSS sync\" sets up the database tables, deploys the two sync functions, and schedules the hourly feed check automatically via Supabase's own API — no SQL editor or CLI needed. The app wires itself up to actually use it as soon as install finishes.",
+    ],
+  },
   {
     version: "2026.08.02",
     date: "August 2, 2026",

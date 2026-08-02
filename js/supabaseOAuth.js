@@ -9,6 +9,7 @@ const CLIENT_ID = "366ba718-1824-41e2-b90f-faa4b5136d14";
 const TOKEN_KEY = "mi_supabase_oauth_v1";
 const STATE_KEY = "mi_supabase_oauth_state_v1";
 const PROJECT_KEY = "mi_supabase_project_v1";
+const API_CONFIG_KEY = "mi_supabase_api_config_v1";
 
 function redirectUri() {
   return `${location.origin}/api/oauth-callback`;
@@ -50,9 +51,28 @@ export function setSelectedProject(project) {
   localStorage.setItem(PROJECT_KEY, JSON.stringify(project));
 }
 
+// Runtime feed-sync API config (project URL + publishable key) that
+// feedSync.js calls the deployed sync-index/check-feeds functions with --
+// distinct from the OAuth access token above, which is only ever used for
+// Management API install calls, never for normal day-to-day feed sync.
+// Written once by js/cloudSyncInstall.js right after a successful install.
+export function getApiConfig() {
+  try {
+    const raw = localStorage.getItem(API_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setApiConfig(config) {
+  localStorage.setItem(API_CONFIG_KEY, JSON.stringify(config));
+}
+
 export function disconnectCloudSync() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(PROJECT_KEY);
+  localStorage.removeItem(API_CONFIG_KEY);
 }
 
 // Builds the URL to send the user to Supabase's own consent screen.

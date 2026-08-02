@@ -1,5 +1,16 @@
 # Optional add-on: new-content badges + Shortcut capture
 
+**As of the Cloud Sync feature in Settings, you shouldn't need any of this
+manual walkthrough anymore** — connecting your own Supabase project there
+(Settings → Cloud sync → Connect Supabase → pick a project → Install RSS
+sync) runs every step below automatically via Supabase's Management API,
+using an OAuth connection instead of you pasting keys or running SQL by
+hand. This file is kept as a reference for what that automated install
+actually does under the hood, and as a manual fallback if the automated
+path ever breaks (e.g. Supabase changes something the install calls
+depend on) — the two approaches produce the identical end state, so
+either one is fine to have run.
+
 Everything in this folder is written; these are the manual steps in the
 Supabase dashboard that only you can do (they need your account login).
 **None of this is required** — My Index works fully as a static

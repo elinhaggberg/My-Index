@@ -1,15 +1,16 @@
-// Client side of the optional "new content" add-on (see supabase/SETUP.md).
-// Left unconfigured (both values blank) by default, which makes every
-// export here a silent no-op -- the app works identically without any of
-// this, per the spec's "must work fully as a static local-storage register
-// without it." Fill these in only after completing supabase/SETUP.md.
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+// Client side of the optional "new content" add-on (see supabase/SETUP.md,
+// or the automated Cloud Sync flow in js/cloudSyncInstall.js). Project
+// URL + publishable key come from getApiConfig() -- unset until someone
+// connects and installs Cloud Sync, which makes every export here a silent
+// no-op until then, per the spec's "must work fully as a static
+// local-storage register without it."
+import { getApiConfig } from "./supabaseOAuth.js";
 
 const DEVICE_ID_KEY = "mi_device_id_v1";
 
 function isConfigured() {
-  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+  const config = getApiConfig();
+  return Boolean(config?.url && config?.anonKey);
 }
 
 export function isFeedSyncConfigured() {
@@ -26,11 +27,12 @@ function getDeviceId() {
 }
 
 async function callSync(action, payload) {
-  if (!isConfigured()) return null;
+  const config = getApiConfig();
+  if (!config?.url || !config?.anonKey) return null;
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/sync-index`, {
+    const res = await fetch(`${config.url}/functions/v1/sync-index`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      headers: { "Content-Type": "application/json", apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
       body: JSON.stringify({ action, deviceId: getDeviceId(), ...payload }),
     });
     if (!res.ok) return null;

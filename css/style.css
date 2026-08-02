@@ -1072,6 +1072,13 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .project-picker-row .icon { width: 1.1rem; height: 1.1rem; color: var(--accent); visibility: hidden; flex-shrink: 0; }
 .project-picker-row.active .icon { visibility: visible; }
 
+.cloud-sync-steps { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
+.cloud-sync-step { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-dim); }
+.cloud-sync-step-mark { width: 1.2em; flex-shrink: 0; text-align: center; font-weight: 700; }
+.cloud-sync-step.running { color: var(--accent); }
+.cloud-sync-step.done { color: var(--good); }
+.cloud-sync-step.error { color: var(--danger); }
+
 .hidden { display: none !important; }
 
 /* Playful theme: rounder, friendlier shapes across the board. */

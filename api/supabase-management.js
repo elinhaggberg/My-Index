@@ -6,9 +6,15 @@
 // supabaseOAuth.js) just passes through untouched; this function never
 // needs the OAuth app's client secret, since the token was already minted
 // by oauth-callback.js. Only GET, and only a small allowlist of read-only
-// paths for now -- widen this once the actual schema/function/cron
-// "install" flow is built on top of the connection.
-const ALLOWED_GET_PATHS = [/^\/v1\/projects$/];
+// paths.
+const ALLOWED_GET_PATHS = [
+  /^\/v1\/projects$/,
+  // Used once after install to read back the project's publishable key, so
+  // js/cloudSyncInstall.js can wire up feedSync.js automatically -- never
+  // matches the "secret" (service role) key entry in the response, only
+  // read here, never written.
+  /^\/v1\/projects\/[a-z]+\/api-keys(\?.*)?$/,
+];
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
