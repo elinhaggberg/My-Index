@@ -8,6 +8,7 @@
 const CLIENT_ID = "366ba718-1824-41e2-b90f-faa4b5136d14";
 const TOKEN_KEY = "mi_supabase_oauth_v1";
 const STATE_KEY = "mi_supabase_oauth_state_v1";
+const PROJECT_KEY = "mi_supabase_project_v1";
 
 function redirectUri() {
   return `${location.origin}/api/oauth-callback`;
@@ -30,8 +31,28 @@ export function isCloudSyncConnected() {
   return Boolean(readTokens());
 }
 
+// The OAuth grant is per-organization, not per-project (see the consent
+// screen's "ORGANIZATION" picker) -- it can see every project in that org,
+// including unrelated ones (e.g. a sibling Make It Local app's). This is
+// how the user explicitly says which one is My Index's, stored separately
+// from the connection itself so switching projects doesn't need a
+// reconnect.
+export function getSelectedProject() {
+  try {
+    const raw = localStorage.getItem(PROJECT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setSelectedProject(project) {
+  localStorage.setItem(PROJECT_KEY, JSON.stringify(project));
+}
+
 export function disconnectCloudSync() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(PROJECT_KEY);
 }
 
 // Builds the URL to send the user to Supabase's own consent screen.

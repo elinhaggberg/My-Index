@@ -1047,8 +1047,30 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .import-message.error { color: var(--danger); }
 
 .cloud-sync-intro { color: var(--text-dim); font-size: 0.92rem; margin: 0 0 18px; }
-.cloud-sync-status { color: var(--good); font-weight: 600; margin: 0 0 18px; }
-.cloud-sync-status span { color: var(--text); font-weight: 400; margin-left: 6px; }
+.cloud-sync-status { color: var(--good); font-weight: 600; margin: 0 0 12px; }
+
+/* The OAuth connection is granted per-organization, not per-project, so it
+   can see every project in that org (e.g. a sibling app's) -- this list is
+   how the user explicitly says which one is My Index's, rather than the
+   app silently assuming the first (or only) one it can see. */
+.project-picker-list { display: flex; flex-direction: column; gap: 8px; margin: 0 0 18px; }
+.project-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  width: 100%;
+  font-weight: 600;
+}
+.project-picker-row.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.project-picker-row .icon { width: 1.1rem; height: 1.1rem; color: var(--accent); visibility: hidden; flex-shrink: 0; }
+.project-picker-row.active .icon { visibility: visible; }
 
 .hidden { display: none !important; }
 

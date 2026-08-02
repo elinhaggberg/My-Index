@@ -2,7 +2,15 @@ import { openSheet } from "./sheet.js";
 import { exportBackupData, importData, getHomeTitle, setHomeTitle, markBackedUp } from "./storage.js";
 import { shareOrDownload } from "./share.js";
 import { getTheme, setTheme, PLAYFUL_SWATCHES } from "./theme.js";
-import { getConnectUrl, isCloudSyncConnected, disconnectCloudSync, listSupabaseProjects } from "./supabaseOAuth.js";
+import {
+  getConnectUrl,
+  isCloudSyncConnected,
+  disconnectCloudSync,
+  listSupabaseProjects,
+  getSelectedProject,
+  setSelectedProject,
+} from "./supabaseOAuth.js";
+import { ICON_CHECK } from "./icons.js";
 
 export function openSettingsMenu(nav, refresh) {
   const sheet = openSheet("tpl-settings-menu");
@@ -66,17 +74,44 @@ export function openCloudSyncSheet(oauthResult) {
     connectedEl.classList.toggle("hidden", !connected);
     if (!connected) return;
 
-    // First real proof the connection works end-to-end: ask Supabase's own
-    // Management API who this token belongs to, via api/supabase-management.js.
-    const nameEl = el.querySelector("#cloud-sync-project-name");
-    const result = await listSupabaseProjects();
-    if (result && Array.isArray(result) && result.length > 0) {
-      nameEl.textContent = `— ${result.map((p) => p.name).join(", ")}`;
-    } else if (result && Array.isArray(result)) {
-      nameEl.textContent = "— no projects found on this account";
-    } else {
-      nameEl.textContent = "";
+    // The OAuth grant is per-organization, not per-project (see the consent
+    // screen's own "ORGANIZATION" picker) -- it can see every project in
+    // that org, including unrelated ones (e.g. a sibling app's). So this
+    // list is never auto-selected; the user has to explicitly tap one.
+    const statusLine = el.querySelector("#cloud-sync-status-line");
+    const pickerEl = el.querySelector("#cloud-sync-project-picker");
+    const projects = await listSupabaseProjects();
+    const selected = getSelectedProject();
+
+    if (!projects || !Array.isArray(projects)) {
+      statusLine.textContent = "✓ Connected";
+      pickerEl.replaceChildren();
+      return;
     }
+    if (projects.length === 0) {
+      statusLine.textContent = "✓ Connected — no projects found on this account yet.";
+      pickerEl.replaceChildren();
+      return;
+    }
+
+    statusLine.textContent = selected ? `✓ Connected — ${selected.name}` : "Connected — which project is My Index's?";
+    pickerEl.replaceChildren(
+      ...projects.map((p) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "project-picker-row" + (selected?.ref === p.id ? " active" : "");
+        const name = document.createElement("span");
+        name.textContent = p.name;
+        const check = document.createElement("span");
+        check.innerHTML = ICON_CHECK;
+        row.append(name, check);
+        row.addEventListener("click", () => {
+          setSelectedProject({ ref: p.id, name: p.name });
+          render();
+        });
+        return row;
+      })
+    );
   }
 
   el.querySelector("#cloud-sync-connect-btn").addEventListener("click", () => {

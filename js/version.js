@@ -10,7 +10,7 @@ export const CHANGELOG = [
     version: "2026.08.02",
     date: "August 2, 2026",
     changes: [
-      "Early first step of \"bring your own database\" Cloud Sync: a new Cloud sync entry in the gear menu can connect your own Supabase project via OAuth. The connection itself works; the actual schema/RSS-sync setup on top of it is still to come, so this is just the plumbing for now.",
+      "Early first step of \"bring your own database\" Cloud Sync: a new Cloud sync entry in the gear menu can connect your own Supabase project via OAuth, then pick which of your Supabase projects is My Index's (the connection can see every project in your account, not just one). The actual schema/RSS-sync setup on top of it is still to come, so this is just the plumbing for now.",
     ],
   },
   {
