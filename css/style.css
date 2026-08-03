@@ -642,6 +642,25 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .channel-remove-btn { width: 32px; height: 32px; }
 .add-channel-btn { width: 100%; text-align: center; margin-bottom: 4px; }
 
+.channel-rss-checking, .channel-rss-found, .channel-rss-manual-msg {
+  font-size: 0.82rem;
+  margin: -2px 0 0;
+  color: var(--text-dim);
+}
+.channel-rss-found { color: var(--accent); }
+.channel-rss-change-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 2px;
+  color: var(--text-dim);
+  text-decoration: underline;
+  font-size: inherit;
+  font-family: inherit;
+}
+.channel-rss-manual-msg.error { color: var(--danger); }
+.channel-rss-manual { display: flex; flex-direction: column; gap: 6px; }
+
 /* Avatar picker (Profile editor) */
 .avatar-picker { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; }
 .avatar-picker-circle {

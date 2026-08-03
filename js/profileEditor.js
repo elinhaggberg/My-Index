@@ -6,6 +6,7 @@ import { ICON_CLOSE_SMALL } from "./icons.js";
 import { syncProfileChannels, unsubscribeChannel } from "./feedSync.js";
 import { readAndResizeImage, resolveImageUrl } from "./imageBlob.js";
 import { CHANNEL_TYPES, CHANNEL_TYPE_LABELS } from "./channelTypes.js";
+import { discoverFeed } from "./discoverFeed.js";
 
 export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
   const draft = {
@@ -97,6 +98,10 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
   noteInput.value = draft.note || "";
 
   // ---- Channels ----
+  // Auto-discovery status per channel is transient UI state, never something
+  // that belongs on the channel object itself (which gets spread verbatim
+  // into what's actually saved) -- keeping it out-of-band here means the
+  // save-time mapping never needs to know to strip it back out.
   const channelsEl = el.querySelector("#profile-editor-channels");
   function renderChannels() {
     channelsEl.replaceChildren(
@@ -116,24 +121,6 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
           channel.type = select.value;
         });
 
-        const urlInput = document.createElement("input");
-        urlInput.type = "url";
-        urlInput.placeholder = "https://…";
-        urlInput.autocomplete = "off";
-        urlInput.value = channel.url || "";
-        urlInput.addEventListener("input", () => {
-          channel.url = urlInput.value;
-        });
-
-        const rssInput = document.createElement("input");
-        rssInput.type = "url";
-        rssInput.placeholder = "RSS feed URL (optional)";
-        rssInput.autocomplete = "off";
-        rssInput.value = channel.rssUrl || "";
-        rssInput.addEventListener("input", () => {
-          channel.rssUrl = rssInput.value;
-        });
-
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "icon-btn channel-remove-btn";
@@ -147,7 +134,106 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
         const topRow = document.createElement("div");
         topRow.className = "channel-row-top";
         topRow.append(select, removeBtn);
-        row.append(topRow, urlInput, rssInput);
+
+        const urlInput = document.createElement("input");
+        urlInput.type = "url";
+        urlInput.placeholder = "https://…";
+        urlInput.autocomplete = "off";
+        urlInput.value = channel.url || "";
+        urlInput.addEventListener("input", () => {
+          channel.url = urlInput.value;
+        });
+
+        // ---- RSS: auto-discovered on leaving the url field, manual field
+        // as the fallback (and override) ----
+        const checkingEl = document.createElement("p");
+        checkingEl.className = "channel-rss-checking hidden";
+        checkingEl.textContent = "Checking for an RSS feed…";
+
+        const foundEl = document.createElement("p");
+        foundEl.className = "channel-rss-found hidden";
+        const foundChangeBtn = document.createElement("button");
+        foundChangeBtn.type = "button";
+        foundChangeBtn.className = "channel-rss-change-btn";
+        foundChangeBtn.textContent = "Change";
+        foundEl.append("✓ RSS feed found automatically ", foundChangeBtn);
+
+        const manualBlock = document.createElement("div");
+        manualBlock.className = "channel-rss-manual";
+
+        const rssInput = document.createElement("input");
+        rssInput.type = "url";
+        rssInput.placeholder = "RSS feed URL (optional)";
+        rssInput.autocomplete = "off";
+        rssInput.value = channel.rssUrl || "";
+
+        const manualMsgEl = document.createElement("p");
+        manualMsgEl.className = "channel-rss-manual-msg hidden";
+
+        function showChecking() {
+          checkingEl.classList.remove("hidden");
+          foundEl.classList.add("hidden");
+          manualBlock.classList.add("hidden");
+        }
+        function showFound() {
+          checkingEl.classList.add("hidden");
+          foundEl.classList.remove("hidden");
+          manualBlock.classList.add("hidden");
+        }
+        function showManual(value) {
+          checkingEl.classList.add("hidden");
+          foundEl.classList.add("hidden");
+          manualBlock.classList.remove("hidden");
+          rssInput.value = value ?? channel.rssUrl ?? "";
+          manualMsgEl.classList.add("hidden");
+        }
+        // Neither found nor showing the manual field yet -- nothing's been
+        // checked (a brand-new empty channel), so there's nothing to render
+        // beyond the plain manual field, same as before auto-discovery
+        // existed.
+        if (channel.rssUrl) showFound();
+        else showManual("");
+
+        urlInput.addEventListener("blur", async () => {
+          const url = urlInput.value.trim();
+          // Only auto-runs for a channel that doesn't already have an RSS
+          // url -- an existing one (auto-found or typed by hand) is left
+          // alone rather than silently overwritten if the page url changes;
+          // clearing the RSS field first re-opens the door to a fresh check.
+          if (!url || channel.rssUrl) return;
+          showChecking();
+          const result = await discoverFeed(url);
+          channel.rssUrl = result.ok ? result.feedUrl : "";
+          if (result.ok) showFound();
+          else showManual("");
+        });
+
+        foundChangeBtn.addEventListener("click", () => showManual(channel.rssUrl));
+
+        rssInput.addEventListener("input", () => {
+          channel.rssUrl = rssInput.value;
+        });
+        rssInput.addEventListener("blur", async () => {
+          const value = rssInput.value.trim();
+          channel.rssUrl = value;
+          manualMsgEl.classList.add("hidden");
+          if (!value) return;
+          manualMsgEl.textContent = "Checking…";
+          manualMsgEl.classList.remove("hidden", "error");
+          const result = await discoverFeed(value);
+          if (result.ok) {
+            channel.rssUrl = result.feedUrl;
+            rssInput.value = result.feedUrl;
+            manualMsgEl.textContent = "✓ Working RSS feed.";
+            manualMsgEl.classList.remove("error");
+          } else {
+            manualMsgEl.textContent = "Couldn't verify this as an RSS feed — saved as entered anyway.";
+            manualMsgEl.classList.add("error");
+          }
+        });
+
+        manualBlock.append(rssInput, manualMsgEl);
+        row.append(topRow, urlInput, checkingEl, foundEl, manualBlock);
         return row;
       })
     );
