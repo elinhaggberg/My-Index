@@ -3,6 +3,7 @@ import { blobToDataUrl } from "./imageBlob.js";
 
 const THEME_KEY = "mi_theme_v1";
 const HOME_TITLE_KEY = "mi_home_title_v1";
+const SHOW_PROFILE_ROW_KEY = "mi_show_profile_row_v1";
 const LAST_SEEN_VERSION_KEY = "mi_last_seen_version_v1";
 const LAST_BACKUP_KEY = "mi_last_backup_at_v1";
 const BACKUP_BANNER_DISMISSED_KEY = "mi_backup_banner_dismissed_at_v1";
@@ -298,6 +299,7 @@ export async function exportBackupData() {
     snippets: await getSnippets(),
     theme: getThemePref(),
     homeTitle: getHomeTitle(),
+    showProfileRow: getShowProfileRow(),
   };
 }
 
@@ -400,14 +402,16 @@ export async function importData(data) {
   }));
   for (const snippet of newSnippets) await putOne("snippets", snippet);
 
-  // Theme and home title are single current-state settings, not a list, so a
-  // full backup restore applies them directly rather than merging -- that's
-  // what "restore my backup" means for a device's preferences.
+  // Theme, home title, and the profile-row toggle are single current-state
+  // settings, not a list, so a full backup restore applies them directly
+  // rather than merging -- that's what "restore my backup" means for a
+  // device's preferences.
   let preferencesApplied = false;
   if (data.type === "backup") {
     if (data.theme) setThemePref(data.theme);
     if (data.homeTitle) setHomeTitle(data.homeTitle);
-    preferencesApplied = Boolean(data.theme || data.homeTitle);
+    if (typeof data.showProfileRow === "boolean") setShowProfileRow(data.showProfileRow);
+    preferencesApplied = Boolean(data.theme || data.homeTitle || typeof data.showProfileRow === "boolean");
   }
 
   return {
@@ -462,6 +466,17 @@ export function setHomeTitle(value) {
   const trimmed = (value || "").trim();
   if (trimmed) localStorage.setItem(HOME_TITLE_KEY, trimmed);
   else localStorage.removeItem(HOME_TITLE_KEY);
+}
+
+// On by default -- absence of the key (never toggled, or a pre-existing
+// install from before this setting existed) means "on," only an explicit
+// "0" means someone opted out.
+export function getShowProfileRow() {
+  return localStorage.getItem(SHOW_PROFILE_ROW_KEY) !== "0";
+}
+
+export function setShowProfileRow(value) {
+  localStorage.setItem(SHOW_PROFILE_ROW_KEY, value ? "1" : "0");
 }
 
 export function getLastSeenVersion() {

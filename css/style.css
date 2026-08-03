@@ -1133,6 +1133,15 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .cloud-sync-step.error { color: var(--danger); }
 .cloud-sync-step-error { margin: -4px 0 0 1.9em; font-size: 0.82rem; color: var(--danger); }
 
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 0;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
 .cloud-sync-feature-row {
   display: flex;
   align-items: flex-start;

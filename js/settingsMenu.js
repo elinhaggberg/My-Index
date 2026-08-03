@@ -12,6 +12,8 @@ import {
   getTombstones,
   clearTombstones,
   applyRemoteDeletion,
+  getShowProfileRow,
+  setShowProfileRow,
 } from "./storage.js";
 import { shareOrDownload } from "./share.js";
 import { getTheme, setTheme, PLAYFUL_SWATCHES } from "./theme.js";
@@ -44,7 +46,7 @@ export function openSettingsMenu(nav, refresh) {
   });
   el.querySelector("#customize-btn").addEventListener("click", () => {
     sheet.close();
-    openCustomize();
+    openCustomize(refresh);
   });
   el.querySelector("#export-all-btn").addEventListener("click", async () => {
     const data = await exportBackupData();
@@ -411,7 +413,7 @@ function openInstructions() {
   sheet.el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
 }
 
-function openCustomize() {
+function openCustomize(refresh) {
   const sheet = openSheet("tpl-customize");
   const el = sheet.el;
   el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
@@ -422,6 +424,17 @@ function openCustomize() {
     setHomeTitle(titleInput.value);
     const homeTitleEl = document.getElementById("home-title");
     if (homeTitleEl) homeTitleEl.textContent = getHomeTitle();
+  });
+
+  // Only meaningfully affects Home (the only view with a profile row to
+  // toggle) -- refresh is a no-op if this sheet happened to be opened from
+  // Profiles/Tags/a Tag page instead, same as it is for every other
+  // per-view settings action.
+  const showProfileRowToggle = el.querySelector("#customize-show-profile-row");
+  showProfileRowToggle.checked = getShowProfileRow();
+  showProfileRowToggle.addEventListener("change", () => {
+    setShowProfileRow(showProfileRowToggle.checked);
+    if (refresh) refresh();
   });
 
   const accentPicker = el.querySelector("#playful-accent-picker");
