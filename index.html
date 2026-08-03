@@ -615,7 +615,13 @@
           </div>
           <p class="cloud-sync-intro"><button type="button" class="text-btn-inline" id="cloud-wizard-step3-back-btn">Back</button></p>
         </div>
-        <p class="cloud-sync-intro">Setting up a second device that already has Cloud Backup elsewhere? <button type="button" class="text-btn secondary" id="cloud-sync-restore-btn">Restore from Cloud</button> instead — no Supabase login needed on this device.</p>
+        <div class="cloud-sync-restore-section">
+          <p class="card-detail-section-label">Already set up elsewhere?</p>
+          <p class="cloud-sync-intro">If another device already has Cloud Backup running, you can pull your data down here instead — no Supabase login needed on this device.</p>
+          <div class="form-actions">
+            <button type="button" class="text-btn secondary" id="cloud-sync-restore-btn">Restore from Cloud</button>
+          </div>
+        </div>
       </div>
       <div class="hidden" id="cloud-sync-connected">
         <p class="cloud-sync-status" id="cloud-sync-status-line"></p>

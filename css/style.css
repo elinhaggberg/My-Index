@@ -902,6 +902,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .sheet .card-detail-section-label { padding: 0; }
 
 #cloud-sync-disconnected h3 { font-size: 1.05rem; margin: 0 0 8px; }
+.cloud-sync-restore-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
 
 .text-btn-inline {
   background: none;
