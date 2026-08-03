@@ -144,6 +144,26 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .text-btn.secondary { color: var(--text-dim); border: 1px solid var(--border); }
 .text-btn.danger { color: #fff; background: var(--danger); }
 .text-btn:active { opacity: 0.8; }
+/* Declared after .primary/.secondary/.danger so it wins the tie -- a
+   button mid-async-work (install, resync, link fetch) should read as
+   "busy," not just inert, since disabled alone looked identical to normal
+   and gave no sign anything was happening. */
+.text-btn:disabled { cursor: not-allowed; }
+.text-btn.loading { background: var(--surface-2); color: var(--text-dim); border-color: var(--border); }
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
 
 /* Topbar */
 .topbar {

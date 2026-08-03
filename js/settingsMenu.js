@@ -78,6 +78,22 @@ export function openCloudSyncSheet(oauthResult) {
   const resyncBtn = el.querySelector("#cloud-sync-resync-btn");
   const resyncMessageEl = el.querySelector("#cloud-sync-resync-message");
 
+  // Disabled alone looked identical to a normal button, giving no sign a
+  // tap had registered while the (multi-second, several-requests) install
+  // or resync was actually running. Grays the button out, adds a spinner,
+  // and swaps in a "working" label until restoreButton puts it back.
+  function setButtonBusy(btn, busyText) {
+    btn.dataset.restoreText = btn.textContent;
+    btn.disabled = true;
+    btn.classList.add("loading");
+    btn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>${busyText}`;
+  }
+  function restoreButton(btn, finalText) {
+    btn.disabled = false;
+    btn.classList.remove("loading");
+    btn.textContent = finalText ?? btn.dataset.restoreText;
+  }
+
   function renderSteps(statusByLabel, messageByLabel) {
     installStepsEl.replaceChildren(
       ...INSTALL_STEPS.flatMap((label) => {
@@ -102,7 +118,7 @@ export function openCloudSyncSheet(oauthResult) {
   }
 
   async function runInstall() {
-    installBtn.disabled = true;
+    setButtonBusy(installBtn, "Installing…");
     const statusByLabel = new Map();
     const messageByLabel = new Map();
     renderSteps(statusByLabel, messageByLabel);
@@ -112,18 +128,20 @@ export function openCloudSyncSheet(oauthResult) {
         if (message) messageByLabel.set(label, message);
         renderSteps(statusByLabel, messageByLabel);
       });
-      installBtn.textContent = "Reinstall RSS sync";
+      restoreButton(installBtn, "Reinstall RSS sync");
+      // Reveals the "Resync all channels" section immediately rather than
+      // only after closing and reopening the sheet.
+      await render();
     } catch {
       // The failed step is already marked (with its error message) in the
       // list above -- nothing more to say here, and the whole sequence is
       // safe to just re-run.
-    } finally {
-      installBtn.disabled = false;
+      restoreButton(installBtn);
     }
   }
 
   async function runResync() {
-    resyncBtn.disabled = true;
+    setButtonBusy(resyncBtn, "Resyncing…");
     resyncMessageEl.classList.add("hidden");
     try {
       const count = await resyncAllChannels(getProfiles);
@@ -134,7 +152,7 @@ export function openCloudSyncSheet(oauthResult) {
       resyncMessageEl.classList.remove("hidden");
       resyncMessageEl.classList.add("error");
     } finally {
-      resyncBtn.disabled = false;
+      restoreButton(resyncBtn);
     }
   }
 
