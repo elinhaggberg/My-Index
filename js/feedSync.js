@@ -30,9 +30,13 @@ async function callSync(action, payload) {
   const config = getApiConfig();
   if (!config?.url || !config?.anonKey) return null;
   try {
+    // apikey only, deliberately no Authorization header -- the new-format
+    // publishable key (sb_publishable_...) isn't a JWT, and sending it as a
+    // Bearer token makes Supabase's gateway try to parse it as one and
+    // reject the request as "Invalid JWT."
     const res = await fetch(`${config.url}/functions/v1/sync-index`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
+      headers: { "Content-Type": "application/json", apikey: config.anonKey },
       body: JSON.stringify({ action, deviceId: getDeviceId(), ...payload }),
     });
     if (!res.ok) return null;

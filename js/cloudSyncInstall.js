@@ -104,7 +104,14 @@ export async function installCloudSync(onProgress) {
       label: syncFnLabel,
       run: async () => {
         const source = await loadTemplate("/supabase/functions/sync-index/index.ts");
-        await deployFunction(token, ref, { slug: "sync-index", verifyJwt: true, source });
+        // Not true: the gateway's verify_jwt check only understands the
+        // legacy JWT-shaped anon key, and this project's publishable key
+        // (sb_publishable_...) isn't one -- every real call would get
+        // rejected as "Invalid JWT" otherwise. There's no meaningful
+        // security loss here either way: the anon/publishable key was
+        // never a secret boundary, the tables it can't reach directly are
+        // what actually protects the data (see schema.sql's RLS comment).
+        await deployFunction(token, ref, { slug: "sync-index", verifyJwt: false, source });
       },
     },
     {

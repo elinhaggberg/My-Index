@@ -62,21 +62,31 @@ supabase functions deploy check-feeds
 (If you'd rather not use the CLI, you can create each function in the
 dashboard and paste `index.ts`'s contents into its editor instead.)
 
-## 4. Turn off JWT verification for check-feeds, then schedule the cron job
+## 4. Turn off JWT verification for BOTH functions, then schedule the cron job
 
-**Important:** `check-feeds` is called by `pg_cron`, not by a logged-in user,
-so it can't present a real user JWT. Supabase's Edge Function gateway
-enforces JWT verification by default, and the new-format Secret key
-(`sb_secret_...`) isn't JWT-shaped — so with verification left on, every cron
-call gets rejected at the gateway with a `401 UNAUTHORIZED_INVALID_JWT_FORMAT`
-before the function's own code ever runs (you'll see this in the function's
-Invocations/Logs tab if it happens).
+**Important:** Supabase's Edge Function gateway enforces JWT verification by
+default, but it only understands the *legacy* JWT-shaped anon/service_role
+keys — the new-format Publishable (`sb_publishable_...`) and Secret
+(`sb_secret_...`) keys aren't JWTs at all. On a project using the new key
+system (any project created recently), leaving verification on for *either*
+function gets every real call rejected at the gateway with a `401
+UNAUTHORIZED_INVALID_JWT_FORMAT`/"Invalid JWT" before the function's own code
+ever runs (you'll see this in the function's Invocations/Logs tab if it
+happens) — this caught out the automated install's first live test too, see
+the git history around js/cloudSyncInstall.js if you want the full story.
 
-Find **Enforce JWT Verification** in `check-feeds`' function settings
-(dashboard → Edge Functions → check-feeds → Settings) and turn it **off**.
-Leave it **on** for `sync-index` — that one's fine, since it's called with
-the Publishable key from the app itself, which the client already sends as a
-normal Bearer token that passes gateway checks correctly.
+Find **Enforce JWT Verification** in each function's settings (dashboard →
+Edge Functions → check-feeds / sync-index → Settings) and turn it **off**
+for **both**. Neither loses anything security-wise from this — the
+anon/publishable key was never a secret access boundary to begin with; what
+actually protects the tables is that RLS has no policies granting the anon
+key any direct access at all (see schema.sql's comment) — only the two Edge
+Functions, using the service role key, can reach them.
+
+If you're on `sync-index`'s client side (`js/feedSync.js`), send the
+publishable key on the `apikey` header only, never `Authorization: Bearer` —
+the gateway tries to parse whatever's on `Authorization` as a JWT and
+rejects it the same way if it isn't one.
 
 With JWT verification off, `check-feeds` would otherwise be callable by
 anyone on the internet, so it checks its own shared secret internally instead
