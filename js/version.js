@@ -15,6 +15,7 @@ export const CHANGELOG = [
       "Added \"Resync all channels\" to Cloud Sync, for anyone who added RSS feeds to profiles before installing — those were never registered while it was off, so this fixes them all at once instead of re-saving every profile by hand.",
       "Install/Resync buttons now show a spinner and gray out while working, instead of looking identical to normal while quietly doing several seconds of work in the background.",
       "Home's top profile row now surfaces profiles with new RSS content first, instead of just sitting in their usual place with a badge — the Profiles tab's own sort is unchanged.",
+      "New-content badges are now tinted in your accent color instead of red, so \"something new\" doesn't read as an urgent alert.",
     ],
   },
   {
