@@ -74,9 +74,9 @@ export function openCloudSyncSheet(oauthResult) {
   const installStepsEl = el.querySelector("#cloud-sync-install-steps");
   const installBtn = el.querySelector("#cloud-sync-install-btn");
 
-  function renderSteps(statusByLabel) {
+  function renderSteps(statusByLabel, messageByLabel) {
     installStepsEl.replaceChildren(
-      ...INSTALL_STEPS.map((label) => {
+      ...INSTALL_STEPS.flatMap((label) => {
         const status = statusByLabel.get(label) || "pending";
         const row = document.createElement("div");
         row.className = "cloud-sync-step " + status;
@@ -86,7 +86,13 @@ export function openCloudSyncSheet(oauthResult) {
         const text = document.createElement("span");
         text.textContent = label;
         row.append(mark, text);
-        return row;
+
+        const message = status === "error" ? messageByLabel?.get(label) : null;
+        if (!message) return [row];
+        const detail = document.createElement("p");
+        detail.className = "cloud-sync-step-error";
+        detail.textContent = message;
+        return [row, detail];
       })
     );
   }
@@ -94,16 +100,19 @@ export function openCloudSyncSheet(oauthResult) {
   async function runInstall() {
     installBtn.disabled = true;
     const statusByLabel = new Map();
-    renderSteps(statusByLabel);
+    const messageByLabel = new Map();
+    renderSteps(statusByLabel, messageByLabel);
     try {
-      await installCloudSync((label, status) => {
+      await installCloudSync((label, status, message) => {
         statusByLabel.set(label, status);
-        renderSteps(statusByLabel);
+        if (message) messageByLabel.set(label, message);
+        renderSteps(statusByLabel, messageByLabel);
       });
       installBtn.textContent = "Reinstall RSS sync";
     } catch {
-      // The failed step is already marked in the list above -- nothing
-      // more to say here, and the whole sequence is safe to just re-run.
+      // The failed step is already marked (with its error message) in the
+      // list above -- nothing more to say here, and the whole sequence is
+      // safe to just re-run.
     } finally {
       installBtn.disabled = false;
     }
