@@ -284,8 +284,8 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: var(--danger);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   font-size: 0.68rem;
   font-weight: 700;
   display: flex;
@@ -464,8 +464,8 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: var(--danger);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   font-size: 0.68rem;
   font-weight: 700;
   display: flex;
@@ -598,8 +598,8 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: var(--danger);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   font-size: 0.68rem;
   font-weight: 700;
   display: flex;
