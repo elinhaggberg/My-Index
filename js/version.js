@@ -14,6 +14,7 @@ export const CHANGELOG = [
       "Fixed several install bugs found during the first real tests against a live project: a scheduling step that failed on every brand-new project, that same step failing again on a second install attempt, and JWT verification silently rejecting every real sync call on projects using Supabase's newer API key format.",
       "Added \"Resync all channels\" to Cloud Sync, for anyone who added RSS feeds to profiles before installing — those were never registered while it was off, so this fixes them all at once instead of re-saving every profile by hand.",
       "Install/Resync buttons now show a spinner and gray out while working, instead of looking identical to normal while quietly doing several seconds of work in the background.",
+      "Home's top profile row now surfaces profiles with new RSS content first, instead of just sitting in their usual place with a badge — the Profiles tab's own sort is unchanged.",
     ],
   },
   {

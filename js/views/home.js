@@ -46,8 +46,14 @@ export async function renderHome(root, nav) {
     // supabase/SETUP.md) -- merges any server-tracked badge counts in first.
     await fetchAndMergeCounts(getProfiles, saveProfile);
 
+    // Home's row only -- profiles with unread RSS content float to the
+    // front (most new items first), so this is the one place "what's
+    // worth checking on" is visible at a glance. The Profiles tab keeps
+    // its own separate, explicit sort (alphabetical/recent) untouched.
     const row = document.getElementById("profile-row");
-    const profiles = (await getProfiles()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const profiles = (await getProfiles()).sort(
+      (a, b) => (b.newCount || 0) - (a.newCount || 0) || (b.createdAt || 0) - (a.createdAt || 0)
+    );
     if (profiles.length === 0) {
       row.classList.add("hidden");
       return;
