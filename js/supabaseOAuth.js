@@ -10,6 +10,7 @@ const TOKEN_KEY = "mi_supabase_oauth_v1";
 const STATE_KEY = "mi_supabase_oauth_state_v1";
 const PROJECT_KEY = "mi_supabase_project_v1";
 const API_CONFIG_KEY = "mi_supabase_api_config_v1";
+const WIZARD_STEP_KEY = "mi_cloud_wizard_step_v1";
 
 function redirectUri() {
   return `${location.origin}/api/oauth-callback`;
@@ -73,6 +74,22 @@ export function disconnectCloudSync() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(PROJECT_KEY);
   localStorage.removeItem(API_CONFIG_KEY);
+  // Deliberately not clearing the wizard step -- someone who's disconnected
+  // and reconnects already has a Supabase account and project, so there's
+  // no reason to walk them through creating either again.
+}
+
+// Tracks how far someone's gotten through the account/project walkthrough
+// in the Cloud Sync sheet (see js/settingsMenu.js) -- 0 = hasn't started, 1
+// = has a Supabase account, 2 = has a project too (ready for/already past
+// the Connect step). Never reset by disconnecting (see above), only ever
+// moves forward.
+export function getWizardStep() {
+  return Number(localStorage.getItem(WIZARD_STEP_KEY)) || 0;
+}
+
+export function setWizardStep(step) {
+  localStorage.setItem(WIZARD_STEP_KEY, String(step));
 }
 
 // Builds the URL to send the user to Supabase's own consent screen.
@@ -110,6 +127,7 @@ export function consumeOAuthRedirect() {
     refreshToken: params.get("refresh_token") || "",
     expiresAt: Date.now() + Number(params.get("expires_in") || 3600) * 1000,
   });
+  setWizardStep(2);
   return "connected";
 }
 

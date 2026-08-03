@@ -20,6 +20,8 @@ import {
   getSelectedProject,
   setSelectedProject,
   getApiConfig,
+  getWizardStep,
+  setWizardStep,
 } from "./supabaseOAuth.js";
 import { installCloudSync, getInstallSteps, getInstalledFeatures } from "./cloudSyncInstall.js";
 import { resyncAllChannels } from "./feedSync.js";
@@ -91,6 +93,35 @@ export function openCloudSyncSheet(oauthResult) {
   const messageEl = el.querySelector("#cloud-sync-message");
   const disconnectedEl = el.querySelector("#cloud-sync-disconnected");
   const connectedEl = el.querySelector("#cloud-sync-connected");
+  const wizardSteps = [
+    el.querySelector("#cloud-wizard-step-1"),
+    el.querySelector("#cloud-wizard-step-2"),
+    el.querySelector("#cloud-wizard-step-3"),
+  ];
+
+  // Only ever shown pre-connection -- someone who's connected before (even
+  // if currently disconnected) skips straight to step 3's Connect button,
+  // see getWizardStep's own comment in supabaseOAuth.js.
+  function renderWizard() {
+    const step = getWizardStep();
+    wizardSteps.forEach((stepEl, i) => stepEl.classList.toggle("hidden", i !== step));
+  }
+  el.querySelector("#cloud-wizard-step1-continue-btn").addEventListener("click", () => {
+    setWizardStep(1);
+    renderWizard();
+  });
+  el.querySelector("#cloud-wizard-step2-continue-btn").addEventListener("click", () => {
+    setWizardStep(2);
+    renderWizard();
+  });
+  el.querySelector("#cloud-wizard-step2-back-btn").addEventListener("click", () => {
+    setWizardStep(0);
+    renderWizard();
+  });
+  el.querySelector("#cloud-wizard-step3-back-btn").addEventListener("click", () => {
+    setWizardStep(1);
+    renderWizard();
+  });
 
   if (oauthResult === "connected") {
     messageEl.textContent = "Connected!";
@@ -238,7 +269,10 @@ export function openCloudSyncSheet(oauthResult) {
     const connected = isCloudSyncConnected();
     disconnectedEl.classList.toggle("hidden", connected);
     connectedEl.classList.toggle("hidden", !connected);
-    if (!connected) return;
+    if (!connected) {
+      renderWizard();
+      return;
+    }
 
     // The OAuth grant is per-organization, not per-project (see the consent
     // screen's own "ORGANIZATION" picker) -- it can see every project in

@@ -586,8 +586,34 @@
       <p class="cloud-sync-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges and/or a full cloud backup, without giving up the local-first design.</p>
       <p class="import-message hidden" id="cloud-sync-message"></p>
       <div class="hidden" id="cloud-sync-disconnected">
-        <div class="form-actions">
-          <button type="button" class="text-btn primary" id="cloud-sync-connect-btn">Connect Supabase</button>
+        <div id="cloud-wizard-step-1">
+          <p class="card-detail-section-label">Step 1 of 3</p>
+          <h3>Create a free Supabase account</h3>
+          <p class="cloud-sync-intro">Supabase hosts your own private database — free, no credit card needed. My Index never sees or stores this data itself; it only ever talks to the one project you create and connect below.</p>
+          <div class="form-actions">
+            <a class="text-btn secondary" href="https://supabase.com/dashboard/sign-up" target="_blank" rel="noopener">Open supabase.com</a>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="text-btn primary" id="cloud-wizard-step1-continue-btn">Continue</button>
+          </div>
+        </div>
+        <div class="hidden" id="cloud-wizard-step-2">
+          <p class="card-detail-section-label">Step 2 of 3</p>
+          <h3>Create a new project</h3>
+          <p class="cloud-sync-intro">In your Supabase dashboard, click <strong>New project</strong>. Name it anything (e.g. "my-index"), pick any region, and set a database password — the free tier is more than enough for this.</p>
+          <div class="form-actions">
+            <button type="button" class="text-btn primary" id="cloud-wizard-step2-continue-btn">Continue</button>
+          </div>
+          <p class="cloud-sync-intro"><button type="button" class="text-btn-inline" id="cloud-wizard-step2-back-btn">Back</button></p>
+        </div>
+        <div class="hidden" id="cloud-wizard-step-3">
+          <p class="card-detail-section-label">Step 3 of 3</p>
+          <h3>Connect your project</h3>
+          <p class="cloud-sync-intro">Supabase will ask you to approve access, then you'll pick which specific project is My Index's on the next screen — the approval covers your whole account, not just one project.</p>
+          <div class="form-actions">
+            <button type="button" class="text-btn primary" id="cloud-sync-connect-btn">Connect Supabase</button>
+          </div>
+          <p class="cloud-sync-intro"><button type="button" class="text-btn-inline" id="cloud-wizard-step3-back-btn">Back</button></p>
         </div>
         <p class="cloud-sync-intro">Setting up a second device that already has Cloud Backup elsewhere? <button type="button" class="text-btn secondary" id="cloud-sync-restore-btn">Restore from Cloud</button> instead — no Supabase login needed on this device.</p>
       </div>

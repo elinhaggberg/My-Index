@@ -21,6 +21,7 @@ import { openSnippetEditor } from "../snippetEditor.js";
 import { openSettingsMenu } from "../settingsMenu.js";
 import { shareOrDownload } from "../share.js";
 import { fetchAndMergeCounts } from "../feedSync.js";
+import { isBackupConfigured } from "../cloudBackup.js";
 import { applySnippetFilter, isSnippetFilterActive, describeSnippetFilter, openSnippetFilterSheet } from "../snippetFilter.js";
 import { openSnippetSearch } from "../snippetSearch.js";
 
@@ -100,8 +101,11 @@ export async function renderHome(root, nav) {
 
   await renderAll();
 
+  // Cloud Backup already keeps a live copy elsewhere, on its own schedule --
+  // nagging for a manual export on top of that would be telling someone
+  // who's already backed up that they aren't.
   const banner = document.getElementById("backup-banner");
-  if (await shouldShowBackupBanner()) {
+  if (!isBackupConfigured() && (await shouldShowBackupBanner())) {
     banner.classList.remove("hidden");
     banner.querySelector("#backup-now-btn").addEventListener("click", async () => {
       const data = await exportBackupData();
