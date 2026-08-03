@@ -1100,6 +1100,31 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .cloud-sync-step.error { color: var(--danger); }
 .cloud-sync-step-error { margin: -4px 0 0 1.9em; font-size: 0.82rem; color: var(--danger); }
 
+.cloud-sync-feature-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.cloud-sync-feature-row input { margin-top: 3px; flex-shrink: 0; }
+.cloud-sync-feature-row:has(input:disabled) { color: var(--text-dim); }
+
+.pairing-code-box {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  resize: none;
+  margin: 0 0 12px;
+  word-break: break-all;
+}
+
 .hidden { display: none !important; }
 
 /* Playful theme: rounder, friendlier shapes across the board. */

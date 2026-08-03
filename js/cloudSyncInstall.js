@@ -1,27 +1,73 @@
 // Runs the actual "install" on top of a connected Cloud Sync project --
-// everything supabase/SETUP.md used to walk through by hand (run the
-// schema, set a secret, deploy two Edge Functions, schedule the cron job)
-// happens here instead, via the Management API endpoints in api/cloud-sync-*.
+// everything supabase/SETUP.md used to walk through by hand happens here
+// instead, via the Management API endpoints in api/cloud-sync-*. RSS sync
+// and Cloud Backup are independent, separately-selectable feature sets
+// (different tables, different Edge Functions); the "connect the app"
+// step is shared and always runs last, once, regardless of which of the
+// two were picked.
 //
 // Every step is an upsert (create-table-if-not-exists, deploy-or-update,
 // unschedule-then-reschedule), so the whole sequence is safe to run again
 // from scratch if it fails partway -- there's no separate "resume" logic,
 // just re-run.
 import { getValidAccessToken, getSelectedProject, setApiConfig } from "./supabaseOAuth.js";
+import { getBackupPassphrase, setBackupPassphrase } from "./cloudBackup.js";
 
 const CRON_SECRET_NAME = "CRON_SECRET";
+const BACKUP_PASSPHRASE_NAME = "BACKUP_PASSPHRASE";
+const INSTALLED_FEATURES_KEY = "mi_installed_features_v1";
 
-// Exported so the UI can render the full step list upfront (as pending)
-// before install even starts, guaranteed to match what installCloudSync
-// actually reports progress against below.
-export const INSTALL_STEPS = [
+// Tracked locally (keyed by project ref, so switching projects doesn't
+// carry over a stale "already installed" state) since there's no cheap way
+// to ask the project itself "which of these two independent feature sets
+// did I already set up here" -- used to pre-check/disable the feature
+// checkboxes and reveal each feature's own section once it's live.
+export function getInstalledFeatures(ref) {
+  try {
+    const raw = localStorage.getItem(INSTALLED_FEATURES_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || parsed.ref !== ref) return { rssSync: false, backup: false };
+    return { rssSync: Boolean(parsed.rssSync), backup: Boolean(parsed.backup) };
+  } catch {
+    return { rssSync: false, backup: false };
+  }
+}
+
+function markFeaturesInstalled(ref, features) {
+  const current = getInstalledFeatures(ref);
+  localStorage.setItem(
+    INSTALLED_FEATURES_KEY,
+    JSON.stringify({
+      ref,
+      rssSync: current.rssSync || Boolean(features?.rssSync),
+      backup: current.backup || Boolean(features?.backup),
+    })
+  );
+}
+
+export const RSS_SYNC_STEPS = [
   "Setting up database tables",
   "Creating a secret for scheduled checks",
   "Deploying the sync function",
   "Deploying the feed-check function",
   "Scheduling hourly feed checks",
-  "Connecting the app to your project",
 ];
+
+export const BACKUP_STEPS = ["Setting up backup tables", "Creating a backup passphrase", "Deploying the backup function"];
+
+const CONNECT_STEP = "Connecting the app to your project";
+
+// Exported so the UI can render the full (pending) step list upfront,
+// matching exactly what installCloudSync will report progress against --
+// depends on which feature(s) are selected, so it's a function, not a
+// fixed constant like before.
+export function getInstallSteps({ rssSync, backup }) {
+  const steps = [];
+  if (rssSync) steps.push(...RSS_SYNC_STEPS);
+  if (backup) steps.push(...BACKUP_STEPS);
+  steps.push(CONNECT_STEP);
+  return steps;
+}
 
 function randomSecret() {
   if (crypto.randomUUID) return crypto.randomUUID().replace(/-/g, "");
@@ -69,24 +115,10 @@ async function fetchPublishableKey(token, ref) {
   return publishable.api_key;
 }
 
-// onProgress(stepLabel, status) is called with status "running", "done", or
-// "error" as each step starts/finishes, so the UI can show live checkmarks
-// rather than one long spinner for what's actually ~6 sequential requests.
-export async function installCloudSync(onProgress) {
-  const token = await getValidAccessToken();
-  if (!token) throw new Error("Not connected to Supabase.");
-  const project = getSelectedProject();
-  if (!project?.ref) throw new Error("No project selected.");
-  const { ref } = project;
-
-  // Generated once and reused in both the CRON_SECRET Edge Function secret
-  // and the vault secret cron_setup.sql schedules the cron job with --
-  // those two have to match, since check-feeds compares the header pg_cron
-  // sends against this same value.
+function rssSyncSteps(token, ref) {
   const cronSecret = randomSecret();
-
-  const [dbLabel, secretLabel, syncFnLabel, checkFnLabel, cronLabel, connectLabel] = INSTALL_STEPS;
-  const steps = [
+  const [dbLabel, secretLabel, syncFnLabel, checkFnLabel, cronLabel] = RSS_SYNC_STEPS;
+  return [
     {
       label: dbLabel,
       run: async () => {
@@ -132,8 +164,63 @@ export async function installCloudSync(onProgress) {
         await runSql(token, ref, sql);
       },
     },
+  ];
+}
+
+function backupSteps(token, ref) {
+  const [dbLabel, passphraseLabel, fnLabel] = BACKUP_STEPS;
+  return [
     {
-      label: connectLabel,
+      label: dbLabel,
+      run: async () => {
+        const sql = await loadTemplate("/supabase/backup_schema.sql");
+        await runSql(token, ref, sql);
+      },
+    },
+    {
+      label: passphraseLabel,
+      run: async () => {
+        // Reuse the existing passphrase on a reinstall rather than
+        // generating a new one -- rotating it here would silently break
+        // sync on every already-paired second device. Only ever generated
+        // fresh the first time Cloud Backup is turned on for this project.
+        let passphrase = getBackupPassphrase();
+        if (!passphrase) {
+          passphrase = randomSecret();
+          setBackupPassphrase(passphrase);
+        }
+        await setSecret(token, ref, BACKUP_PASSPHRASE_NAME, passphrase);
+      },
+    },
+    {
+      label: fnLabel,
+      run: async () => {
+        const source = await loadTemplate("/supabase/functions/backup-sync/index.ts");
+        // Same verify_jwt reasoning as sync-index -- the passphrase header
+        // check inside the function is the real access control here.
+        await deployFunction(token, ref, { slug: "backup-sync", verifyJwt: false, source });
+      },
+    },
+  ];
+}
+
+// onProgress(stepLabel, status) is called with status "running", "done", or
+// "error" as each step starts/finishes, so the UI can show live checkmarks
+// rather than one long spinner for what's actually several sequential
+// requests. features = { rssSync: boolean, backup: boolean } -- at least
+// one should be true.
+export async function installCloudSync(features, onProgress) {
+  const token = await getValidAccessToken();
+  if (!token) throw new Error("Not connected to Supabase.");
+  const project = getSelectedProject();
+  if (!project?.ref) throw new Error("No project selected.");
+  const { ref } = project;
+
+  const steps = [
+    ...(features?.rssSync ? rssSyncSteps(token, ref) : []),
+    ...(features?.backup ? backupSteps(token, ref) : []),
+    {
+      label: CONNECT_STEP,
       run: async () => {
         const anonKey = await fetchPublishableKey(token, ref);
         setApiConfig({ url: `https://${ref}.supabase.co`, anonKey, ref });
@@ -151,4 +238,6 @@ export async function installCloudSync(onProgress) {
     }
     onProgress?.(step.label, "done");
   }
+
+  markFeaturesInstalled(ref, features);
 }

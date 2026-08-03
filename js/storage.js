@@ -1,4 +1,4 @@
-import { getAll, getOne, putOne, deleteOne } from "./db.js";
+import { getAll, getOne, putOne, putMany, deleteOne } from "./db.js";
 import { blobToDataUrl } from "./imageBlob.js";
 
 const THEME_KEY = "mi_theme_v1";
@@ -219,6 +219,16 @@ export async function getSnippetsForTag(tagId) {
 export async function getUncategorizedCount() {
   const snippets = await getSnippets();
   return snippets.filter((s) => !s.tagIds || s.tagIds.length === 0).length;
+}
+
+// Generic upsert-by-id, used only by Cloud Backup's pull/merge step
+// (js/cloudBackup.js) -- writes each record exactly as given, matching by
+// its own id, unlike importData() below whose always-new-id behavior is
+// only correct for a one-time file import, never for ongoing sync where
+// two devices need to agree on the same id for the same record.
+export async function upsertRecords(store, records) {
+  if (!["profiles", "tags", "snippets"].includes(store) || !records.length) return;
+  await putMany(store, records);
 }
 
 // ---- Export / import ----

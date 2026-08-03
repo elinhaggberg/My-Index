@@ -4,13 +4,22 @@ import { renderTags } from "./views/tags.js";
 import { renderTag } from "./views/tag.js";
 import { renderProfile } from "./views/profile.js";
 import { applyTheme } from "./theme.js";
-import { createEmptySnippet, saveSnippet, migrateLegacyImages } from "./storage.js";
+import {
+  createEmptySnippet,
+  saveSnippet,
+  migrateLegacyImages,
+  getProfiles,
+  getTags,
+  getSnippets,
+  upsertRecords,
+} from "./storage.js";
 import { openSnippetEditor } from "./snippetEditor.js";
 import { checkWhatsNew } from "./whatsNew.js";
 import { checkOnboarding } from "./onboarding.js";
 import { consumeQueuedCaptures } from "./feedSync.js";
 import { consumeOAuthRedirect } from "./supabaseOAuth.js";
 import { openCloudSyncSheet } from "./settingsMenu.js";
+import { startAutoSync } from "./cloudBackup.js";
 
 applyTheme();
 
@@ -123,6 +132,14 @@ migrateLegacyImages().finally(() => {
 importQueuedCaptures();
 checkOnboarding();
 checkWhatsNew();
+
+// Inert unless Cloud Backup has actually been installed and configured
+// (see js/cloudBackup.js) -- a no-op otherwise. Runs a sync immediately,
+// then periodically/on-visibility-change while the app stays open; a
+// background pull doesn't re-render whatever view happens to be open
+// right now, so anything it brings in shows up on the next navigation or
+// reload rather than instantly -- a known limitation, not a bug.
+startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords });
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

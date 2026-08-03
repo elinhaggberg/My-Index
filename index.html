@@ -583,21 +583,30 @@
         <h2>Cloud sync</h2>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
-      <p class="cloud-sync-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges without giving up the local-first design.</p>
+      <p class="cloud-sync-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges and/or a full cloud backup, without giving up the local-first design.</p>
       <p class="import-message hidden" id="cloud-sync-message"></p>
       <div class="hidden" id="cloud-sync-disconnected">
         <div class="form-actions">
           <button type="button" class="text-btn primary" id="cloud-sync-connect-btn">Connect Supabase</button>
         </div>
+        <p class="cloud-sync-intro">Setting up a second device that already has Cloud Backup elsewhere? <button type="button" class="text-btn secondary" id="cloud-sync-restore-btn">Restore from Cloud</button> instead — no Supabase login needed on this device.</p>
       </div>
       <div class="hidden" id="cloud-sync-connected">
         <p class="cloud-sync-status" id="cloud-sync-status-line"></p>
         <div class="project-picker-list" id="cloud-sync-project-picker"></div>
         <div class="hidden" id="cloud-sync-install-section">
-          <p class="card-detail-section-label" style="margin-top:8px;">RSS sync setup</p>
+          <p class="card-detail-section-label" style="margin-top:8px;">Features to enable</p>
+          <label class="cloud-sync-feature-row">
+            <input type="checkbox" id="cloud-sync-feature-rss" />
+            <span>RSS sync — "new content" badges for profiles with RSS feeds</span>
+          </label>
+          <label class="cloud-sync-feature-row">
+            <input type="checkbox" id="cloud-sync-feature-backup" />
+            <span>Cloud Backup — back up and sync all your profiles, tags, and snippets</span>
+          </label>
           <div class="cloud-sync-steps" id="cloud-sync-install-steps"></div>
           <div class="form-actions">
-            <button type="button" class="text-btn primary" id="cloud-sync-install-btn">Install RSS sync</button>
+            <button type="button" class="text-btn primary" id="cloud-sync-install-btn">Install selected</button>
           </div>
         </div>
         <div class="hidden" id="cloud-sync-resync-section">
@@ -607,9 +616,40 @@
             <button type="button" class="text-btn secondary" id="cloud-sync-resync-btn">Resync all channels</button>
           </div>
         </div>
+        <div class="hidden" id="cloud-sync-backup-section">
+          <p class="card-detail-section-label" style="margin-top:8px;">Cloud Backup</p>
+          <p class="cloud-sync-intro" id="cloud-sync-last-synced"></p>
+          <p class="import-message hidden" id="cloud-sync-backup-message"></p>
+          <div class="form-actions">
+            <button type="button" class="text-btn secondary" id="cloud-sync-sync-now-btn">Sync now</button>
+            <button type="button" class="text-btn secondary" id="cloud-sync-show-pairing-btn">Show pairing code</button>
+          </div>
+          <textarea class="pairing-code-box hidden" id="cloud-sync-pairing-code" rows="3" readonly></textarea>
+          <div class="form-actions hidden" id="cloud-sync-copy-pairing-actions">
+            <button type="button" class="text-btn secondary" id="cloud-sync-copy-pairing-btn">Copy pairing code</button>
+          </div>
+        </div>
         <div class="form-actions">
           <button type="button" class="text-btn secondary" id="cloud-sync-disconnect-btn">Disconnect</button>
         </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-cloud-restore">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Restore from Cloud</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <p class="cloud-sync-intro">Paste the pairing code from a device where Cloud Backup is already set up. This device doesn't need its own Supabase login — treat the code like a password, since it grants full access to your backup data.</p>
+      <label class="field">
+        <span>Pairing code</span>
+        <textarea id="cloud-restore-code" rows="4" placeholder="Paste the code here…"></textarea>
+      </label>
+      <p class="import-message hidden" id="cloud-restore-message"></p>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="cloud-restore-apply-btn">Restore</button>
       </div>
     </div>
   </template>

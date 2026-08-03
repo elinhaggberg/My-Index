@@ -1,5 +1,15 @@
 import { openSheet } from "./sheet.js";
-import { exportBackupData, importData, getHomeTitle, setHomeTitle, markBackedUp, getProfiles } from "./storage.js";
+import {
+  exportBackupData,
+  importData,
+  getHomeTitle,
+  setHomeTitle,
+  markBackedUp,
+  getProfiles,
+  getTags,
+  getSnippets,
+  upsertRecords,
+} from "./storage.js";
 import { shareOrDownload } from "./share.js";
 import { getTheme, setTheme, PLAYFUL_SWATCHES } from "./theme.js";
 import {
@@ -11,9 +21,12 @@ import {
   setSelectedProject,
   getApiConfig,
 } from "./supabaseOAuth.js";
-import { installCloudSync, INSTALL_STEPS } from "./cloudSyncInstall.js";
+import { installCloudSync, getInstallSteps, getInstalledFeatures } from "./cloudSyncInstall.js";
 import { resyncAllChannels } from "./feedSync.js";
+import { isBackupConfigured, getPairingCode, getLastSyncedDisplay, syncNow, applyPairingCode } from "./cloudBackup.js";
 import { ICON_CHECK } from "./icons.js";
+
+const STORAGE_FNS = { getProfiles, getTags, getSnippets, upsertRecords };
 
 export function openSettingsMenu(nav, refresh) {
   const sheet = openSheet("tpl-settings-menu");
@@ -49,6 +62,23 @@ export function openSettingsMenu(nav, refresh) {
   });
 }
 
+// Disabled alone looked identical to a normal button, giving no sign a tap
+// had registered while a several-request install/resync/sync was actually
+// running. Grays the button out, adds a spinner, and swaps in a "working"
+// label until restoreButton puts it back. Shared by every Cloud Sync
+// button that does real async work.
+function setButtonBusy(btn, busyText) {
+  btn.dataset.restoreText = btn.textContent;
+  btn.disabled = true;
+  btn.classList.add("loading");
+  btn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>${busyText}`;
+}
+function restoreButton(btn, finalText) {
+  btn.disabled = false;
+  btn.classList.remove("loading");
+  btn.textContent = finalText ?? btn.dataset.restoreText;
+}
+
 // Exported so app.js can jump straight here (with a connect/error message)
 // right after the redirect back from Supabase's consent screen -- the whole
 // point of showing feedback immediately rather than making the user dig
@@ -74,29 +104,27 @@ export function openCloudSyncSheet(oauthResult) {
   const installSectionEl = el.querySelector("#cloud-sync-install-section");
   const installStepsEl = el.querySelector("#cloud-sync-install-steps");
   const installBtn = el.querySelector("#cloud-sync-install-btn");
+  const rssCheckbox = el.querySelector("#cloud-sync-feature-rss");
+  const backupCheckbox = el.querySelector("#cloud-sync-feature-backup");
   const resyncSectionEl = el.querySelector("#cloud-sync-resync-section");
   const resyncBtn = el.querySelector("#cloud-sync-resync-btn");
   const resyncMessageEl = el.querySelector("#cloud-sync-resync-message");
+  const backupSectionEl = el.querySelector("#cloud-sync-backup-section");
+  const lastSyncedEl = el.querySelector("#cloud-sync-last-synced");
+  const syncNowBtn = el.querySelector("#cloud-sync-sync-now-btn");
+  const backupMessageEl = el.querySelector("#cloud-sync-backup-message");
+  const showPairingBtn = el.querySelector("#cloud-sync-show-pairing-btn");
+  const pairingCodeEl = el.querySelector("#cloud-sync-pairing-code");
+  const copyPairingActionsEl = el.querySelector("#cloud-sync-copy-pairing-actions");
+  const copyPairingBtn = el.querySelector("#cloud-sync-copy-pairing-btn");
 
-  // Disabled alone looked identical to a normal button, giving no sign a
-  // tap had registered while the (multi-second, several-requests) install
-  // or resync was actually running. Grays the button out, adds a spinner,
-  // and swaps in a "working" label until restoreButton puts it back.
-  function setButtonBusy(btn, busyText) {
-    btn.dataset.restoreText = btn.textContent;
-    btn.disabled = true;
-    btn.classList.add("loading");
-    btn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>${busyText}`;
-  }
-  function restoreButton(btn, finalText) {
-    btn.disabled = false;
-    btn.classList.remove("loading");
-    btn.textContent = finalText ?? btn.dataset.restoreText;
+  function selectedFeatures() {
+    return { rssSync: rssCheckbox.checked, backup: backupCheckbox.checked };
   }
 
   function renderSteps(statusByLabel, messageByLabel) {
     installStepsEl.replaceChildren(
-      ...INSTALL_STEPS.flatMap((label) => {
+      ...getInstallSteps(selectedFeatures()).flatMap((label) => {
         const status = statusByLabel.get(label) || "pending";
         const row = document.createElement("div");
         row.className = "cloud-sync-step " + status;
@@ -118,20 +146,27 @@ export function openCloudSyncSheet(oauthResult) {
   }
 
   async function runInstall() {
+    const features = selectedFeatures();
+    if (!features.rssSync && !features.backup) return;
     setButtonBusy(installBtn, "Installing…");
     const statusByLabel = new Map();
     const messageByLabel = new Map();
     renderSteps(statusByLabel, messageByLabel);
     try {
-      await installCloudSync((label, status, message) => {
+      await installCloudSync(features, (label, status, message) => {
         statusByLabel.set(label, status);
         if (message) messageByLabel.set(label, message);
         renderSteps(statusByLabel, messageByLabel);
       });
-      restoreButton(installBtn, "Reinstall RSS sync");
-      // Reveals the "Resync all channels" section immediately rather than
-      // only after closing and reopening the sheet.
+      restoreButton(installBtn, "Install selected");
+      // Reveals the Resync/Backup sections immediately rather than only
+      // after closing and reopening the sheet.
       await render();
+      // Otherwise nothing actually reaches the cloud until the user
+      // remembers to hit "Sync now" themselves, or up to 15 minutes pass --
+      // a fresh install should push right away so a pairing code handed to
+      // a second device immediately has something to pull.
+      if (features.backup) await runSyncNow();
     } catch {
       // The failed step is already marked (with its error message) in the
       // list above -- nothing more to say here, and the whole sequence is
@@ -155,6 +190,49 @@ export function openCloudSyncSheet(oauthResult) {
       restoreButton(resyncBtn);
     }
   }
+
+  function renderLastSynced() {
+    const last = getLastSyncedDisplay();
+    lastSyncedEl.textContent = last ? `Last synced ${last.toLocaleString()}.` : "Not synced yet.";
+  }
+
+  async function runSyncNow() {
+    setButtonBusy(syncNowBtn, "Syncing…");
+    backupMessageEl.classList.add("hidden");
+    try {
+      await syncNow(STORAGE_FNS);
+      renderLastSynced();
+      backupMessageEl.textContent = "Synced!";
+      backupMessageEl.classList.remove("hidden", "error");
+    } catch {
+      backupMessageEl.textContent = "Couldn't sync right now. Please try again.";
+      backupMessageEl.classList.remove("hidden");
+      backupMessageEl.classList.add("error");
+    } finally {
+      restoreButton(syncNowBtn, "Sync now");
+    }
+  }
+
+  showPairingBtn.addEventListener("click", () => {
+    const code = getPairingCode();
+    if (!code) return;
+    pairingCodeEl.value = code;
+    pairingCodeEl.classList.remove("hidden");
+    copyPairingActionsEl.classList.remove("hidden");
+  });
+  copyPairingBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(pairingCodeEl.value);
+      copyPairingBtn.textContent = "Copied!";
+    } catch {
+      pairingCodeEl.select();
+      copyPairingBtn.textContent = "Select and copy manually";
+    }
+    setTimeout(() => {
+      copyPairingBtn.textContent = "Copy pairing code";
+    }, 2000);
+  });
+  syncNowBtn.addEventListener("click", runSyncNow);
 
   async function render() {
     const connected = isCloudSyncConnected();
@@ -204,20 +282,35 @@ export function openCloudSyncSheet(oauthResult) {
     );
 
     installSectionEl.classList.toggle("hidden", !selected);
-    let alreadyInstalled = false;
+    let installed = { rssSync: false, backup: false };
     if (selected) {
-      const apiConfig = getApiConfig();
-      alreadyInstalled = apiConfig?.ref === selected.ref;
-      const statusByLabel = new Map(alreadyInstalled ? INSTALL_STEPS.map((label) => [label, "done"]) : []);
-      renderSteps(statusByLabel);
-      installBtn.textContent = alreadyInstalled ? "Reinstall RSS sync" : "Install RSS sync";
+      installed = getInstalledFeatures(selected.ref);
+      rssCheckbox.checked = installed.rssSync;
+      rssCheckbox.disabled = installed.rssSync;
+      backupCheckbox.checked = installed.backup;
+      backupCheckbox.disabled = installed.backup;
+      renderSteps(new Map(getInstallSteps(selectedFeatures()).map((label) => [label, "done"])));
     }
-    resyncSectionEl.classList.toggle("hidden", !alreadyInstalled);
+    resyncSectionEl.classList.toggle("hidden", !installed.rssSync);
     resyncMessageEl.classList.add("hidden");
+    backupSectionEl.classList.toggle("hidden", !installed.backup || !isBackupConfigured());
+    if (installed.backup) {
+      renderLastSynced();
+      backupMessageEl.classList.add("hidden");
+      pairingCodeEl.classList.add("hidden");
+      copyPairingActionsEl.classList.add("hidden");
+    }
   }
+
+  rssCheckbox.addEventListener("change", () => renderSteps(new Map()));
+  backupCheckbox.addEventListener("change", () => renderSteps(new Map()));
 
   el.querySelector("#cloud-sync-connect-btn").addEventListener("click", () => {
     location.href = getConnectUrl();
+  });
+  el.querySelector("#cloud-sync-restore-btn").addEventListener("click", () => {
+    sheet.close();
+    openCloudRestoreSheet();
   });
   el.querySelector("#cloud-sync-disconnect-btn").addEventListener("click", () => {
     disconnectCloudSync();
@@ -227,6 +320,48 @@ export function openCloudSyncSheet(oauthResult) {
   resyncBtn.addEventListener("click", runResync);
 
   render();
+}
+
+// The second-device entry point -- pastes a pairing code (project URL +
+// anon key + backup passphrase, see js/cloudBackup.js) instead of going
+// through the OAuth consent flow. This device never touches the
+// Management API at all, so it doesn't need its own Supabase login.
+function openCloudRestoreSheet() {
+  const sheet = openSheet("tpl-cloud-restore");
+  const el = sheet.el;
+  el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
+
+  const codeInput = el.querySelector("#cloud-restore-code");
+  const messageEl = el.querySelector("#cloud-restore-message");
+  const applyBtn = el.querySelector("#cloud-restore-apply-btn");
+
+  applyBtn.addEventListener("click", async () => {
+    const code = codeInput.value.trim();
+    if (!code) return;
+    setButtonBusy(applyBtn, "Restoring…");
+    messageEl.classList.add("hidden");
+    try {
+      const applied = applyPairingCode(code);
+      if (!applied) {
+        messageEl.textContent = "That doesn't look like a valid pairing code.";
+        messageEl.classList.remove("hidden");
+        messageEl.classList.add("error");
+        return;
+      }
+      const result = await syncNow(STORAGE_FNS);
+      if (!result.synced) {
+        messageEl.textContent = "Connected, but couldn't reach the backup — check the code and try again.";
+        messageEl.classList.remove("hidden");
+        messageEl.classList.add("error");
+        return;
+      }
+      messageEl.textContent = "Restored! Your data should be here now.";
+      messageEl.classList.remove("hidden", "error");
+      setTimeout(() => sheet.close(), 1200);
+    } finally {
+      restoreButton(applyBtn, "Restore");
+    }
+  });
 }
 
 function openAppLibraryPromo() {
