@@ -8,9 +8,18 @@
 -- secret) but you must substitute it with your own value before running it
 -- -- do that only in the SQL editor, never commit the filled-in version.
 --
--- Safe to run even on a completely fresh setup -- it just returns false
--- with nothing to remove.
-select cron.unschedule('check-feeds-hourly');
+-- Safe to run even on a completely fresh setup. cron.unschedule(text) looks
+-- the job up by name internally and RAISES ("could not find valid entry for
+-- job") if it doesn't exist yet, rather than returning false the way the
+-- bigint-id overload does -- easy to miss since the two overloads behave
+-- differently, but a fresh project (no job scheduled yet) hits this every
+-- time. Swallow that one specific case so this is genuinely idempotent.
+do $$
+begin
+  perform cron.unschedule('check-feeds-hourly');
+exception when others then
+  null;
+end $$;
 
 -- 1) Store a shared secret in Supabase's Vault, so the cron job can prove to
 --    the Edge Function it's really pg_cron calling (not a stranger on the
