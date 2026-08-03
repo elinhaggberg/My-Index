@@ -146,17 +146,21 @@ export async function deleteProfile(id) {
 
 // Clears the profile's own badge and every one of its channels' badges at
 // once -- mirrors "unread mail" behavior: opening the profile page is what
-// clears it, not any per-channel action.
+// clears it, not any per-channel action. What's persisted is fully zeroed
+// (so the badge is gone by the next visit), but the returned object keeps
+// the pre-clear per-channel counts -- like an email staying visibly "was
+// unread" for the one screen where you actually open it, rather than
+// disappearing before you ever see which channel it came from.
 export async function clearProfileNewCount(id) {
   const profile = await getOne("profiles", id);
   if (!profile || !profile.newCount) return profile;
-  const updated = {
+  const cleared = {
     ...profile,
     newCount: 0,
     channels: (profile.channels || []).map((c) => ({ ...c, newCount: 0 })),
   };
-  await putOne("profiles", updated);
-  return updated;
+  await putOne("profiles", cleared);
+  return { ...cleared, channels: profile.channels || [] };
 }
 
 export async function getProfilesForTag(tagId) {

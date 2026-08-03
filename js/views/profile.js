@@ -24,8 +24,10 @@ export async function renderProfile(root, nav, id) {
 
   async function load() {
     // Visiting the profile's page is what clears its badge, mirroring
-    // "unread" mail behavior -- done before render so the cleared state is
-    // what's actually shown.
+    // "unread" mail behavior. The stored state is cleared immediately, but
+    // clearProfileNewCount hands back the pre-clear per-channel counts for
+    // this one render, so you can actually see which channel had something
+    // new before the badge disappears on the next visit.
     const profile = await clearProfileNewCount(id);
     if (!profile) {
       nav.toHome();

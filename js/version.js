@@ -16,6 +16,7 @@ export const CHANGELOG = [
       "Install/Resync buttons now show a spinner and gray out while working, instead of looking identical to normal while quietly doing several seconds of work in the background.",
       "Home's top profile row now surfaces profiles with new RSS content first, instead of just sitting in their usual place with a badge — the Profiles tab's own sort is unchanged.",
       "New-content badges are now tinted in your accent color instead of red, so \"something new\" doesn't read as an urgent alert.",
+      "Fixed a Profile page channel badge that could never actually show — it now displays what was new for the one visit where you open it, then clears, instead of always reading zero.",
     ],
   },
   {
