@@ -1,5 +1,5 @@
 import { openSheet } from "./sheet.js";
-import { exportBackupData, importData, getHomeTitle, setHomeTitle, markBackedUp } from "./storage.js";
+import { exportBackupData, importData, getHomeTitle, setHomeTitle, markBackedUp, getProfiles } from "./storage.js";
 import { shareOrDownload } from "./share.js";
 import { getTheme, setTheme, PLAYFUL_SWATCHES } from "./theme.js";
 import {
@@ -12,6 +12,7 @@ import {
   getApiConfig,
 } from "./supabaseOAuth.js";
 import { installCloudSync, INSTALL_STEPS } from "./cloudSyncInstall.js";
+import { resyncAllChannels } from "./feedSync.js";
 import { ICON_CHECK } from "./icons.js";
 
 export function openSettingsMenu(nav, refresh) {
@@ -73,6 +74,9 @@ export function openCloudSyncSheet(oauthResult) {
   const installSectionEl = el.querySelector("#cloud-sync-install-section");
   const installStepsEl = el.querySelector("#cloud-sync-install-steps");
   const installBtn = el.querySelector("#cloud-sync-install-btn");
+  const resyncSectionEl = el.querySelector("#cloud-sync-resync-section");
+  const resyncBtn = el.querySelector("#cloud-sync-resync-btn");
+  const resyncMessageEl = el.querySelector("#cloud-sync-resync-message");
 
   function renderSteps(statusByLabel, messageByLabel) {
     installStepsEl.replaceChildren(
@@ -115,6 +119,22 @@ export function openCloudSyncSheet(oauthResult) {
       // safe to just re-run.
     } finally {
       installBtn.disabled = false;
+    }
+  }
+
+  async function runResync() {
+    resyncBtn.disabled = true;
+    resyncMessageEl.classList.add("hidden");
+    try {
+      const count = await resyncAllChannels(getProfiles);
+      resyncMessageEl.textContent = count > 0 ? `Resynced ${count} channel${count === 1 ? "" : "s"}.` : "No RSS channels found to resync.";
+      resyncMessageEl.classList.remove("hidden", "error");
+    } catch {
+      resyncMessageEl.textContent = "Couldn't resync right now. Please try again.";
+      resyncMessageEl.classList.remove("hidden");
+      resyncMessageEl.classList.add("error");
+    } finally {
+      resyncBtn.disabled = false;
     }
   }
 
@@ -166,13 +186,16 @@ export function openCloudSyncSheet(oauthResult) {
     );
 
     installSectionEl.classList.toggle("hidden", !selected);
+    let alreadyInstalled = false;
     if (selected) {
       const apiConfig = getApiConfig();
-      const alreadyInstalled = apiConfig?.ref === selected.ref;
+      alreadyInstalled = apiConfig?.ref === selected.ref;
       const statusByLabel = new Map(alreadyInstalled ? INSTALL_STEPS.map((label) => [label, "done"]) : []);
       renderSteps(statusByLabel);
       installBtn.textContent = alreadyInstalled ? "Reinstall RSS sync" : "Install RSS sync";
     }
+    resyncSectionEl.classList.toggle("hidden", !alreadyInstalled);
+    resyncMessageEl.classList.add("hidden");
   }
 
   el.querySelector("#cloud-sync-connect-btn").addEventListener("click", () => {
@@ -183,6 +206,7 @@ export function openCloudSyncSheet(oauthResult) {
     render();
   });
   installBtn.addEventListener("click", runInstall);
+  resyncBtn.addEventListener("click", runResync);
 
   render();
 }

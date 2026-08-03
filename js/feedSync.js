@@ -102,6 +102,29 @@ export async function fetchAndMergeCounts(getProfiles, saveProfile) {
   return changed;
 }
 
+// One-off manual utility for Settings -- resyncs every channel that already
+// has an RSS URL, for someone who added feeds before Cloud Sync was ever
+// installed. subscribeChannel silently no-ops while unconfigured (see
+// isConfigured() above), so any channel added/saved before install
+// completed was never actually registered server-side even though it's
+// been sitting in the app the whole time. Same profiles-fetcher-as-argument
+// shape as fetchAndMergeCounts, for the same reason. Returns how many
+// channels it resynced, so the caller can show a real count back.
+export async function resyncAllChannels(getProfiles) {
+  if (!isConfigured()) return 0;
+  const profiles = await getProfiles();
+  let count = 0;
+  for (const profile of profiles) {
+    for (const channel of profile.channels || []) {
+      if (channel.rssUrl) {
+        await subscribeChannel(profile.id, channel);
+        count++;
+      }
+    }
+  }
+  return count;
+}
+
 export async function clearServerCounts(profileId) {
   await callSync("clear-counts", { profileId });
 }

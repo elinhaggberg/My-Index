@@ -12,6 +12,7 @@ export const CHANGELOG = [
     changes: [
       "Cloud Sync now finishes the job: once you've connected and picked a project, \"Install RSS sync\" sets up the database tables, deploys the two sync functions, and schedules the hourly feed check automatically via Supabase's own API — no SQL editor or CLI needed. The app wires itself up to actually use it as soon as install finishes.",
       "Fixed several install bugs found during the first real tests against a live project: a scheduling step that failed on every brand-new project, that same step failing again on a second install attempt, and JWT verification silently rejecting every real sync call on projects using Supabase's newer API key format.",
+      "Added \"Resync all channels\" to Cloud Sync, for anyone who added RSS feeds to profiles before installing — those were never registered while it was off, so this fixes them all at once instead of re-saving every profile by hand.",
     ],
   },
   {
