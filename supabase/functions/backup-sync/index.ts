@@ -28,6 +28,20 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// backup_records never actually drops a row for a deletion (it's a
+// tombstone, not a real delete -- see backup_schema.sql), so without this
+// the table would grow forever as a personal register accumulates years of
+// deletions. 90 days is far more than every device needs to have pulled a
+// given tombstone at least once (sync happens every ~15 minutes while the
+// app is open, plus on every open). Best-effort and silent on failure --
+// this is routine cleanup, never something a push should fail over.
+const TOMBSTONE_RETENTION_DAYS = 90;
+
+async function purgeOldTombstones() {
+  const cutoff = new Date(Date.now() - TOMBSTONE_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from("backup_records").delete().eq("deleted", true).lt("updated_at", cutoff);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -59,6 +73,11 @@ Deno.serve(async (req) => {
           records: Array<{ store: string; recordId: string; data: unknown; updatedAt: string; deleted?: boolean }>;
         };
         if (!Array.isArray(records)) return json({ error: "Missing records" }, 400);
+
+        // Awaited (not fire-and-forget) -- Edge Function isolates aren't
+        // guaranteed to keep running background work after the response is
+        // sent, so an un-awaited call here could just never actually happen.
+        await purgeOldTombstones().catch(() => {});
 
         let applied = 0;
         for (const r of records) {

@@ -12,6 +12,9 @@ import {
   getTags,
   getSnippets,
   upsertRecords,
+  getTombstones,
+  clearTombstones,
+  applyRemoteDeletion,
 } from "./storage.js";
 import { openSnippetEditor } from "./snippetEditor.js";
 import { checkWhatsNew } from "./whatsNew.js";
@@ -139,7 +142,7 @@ checkWhatsNew();
 // background pull doesn't re-render whatever view happens to be open
 // right now, so anything it brings in shows up on the next navigation or
 // reload rather than instantly -- a known limitation, not a bug.
-startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords });
+startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion });
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

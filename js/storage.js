@@ -19,6 +19,25 @@ function uid() {
   return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
 }
 
+// A deleted record leaves no trace in its own store to ever tell another
+// device it's gone -- this is that trace. Recorded on every delete
+// regardless of whether Cloud Backup is even configured (storage.js has no
+// business knowing that), consumed and cleared by js/cloudBackup.js's
+// pushAll once it's actually been synced. Harmless dead weight otherwise:
+// a handful of small {store, recordId, deletedAt} rows for anyone who
+// never turns Cloud Backup on.
+async function recordTombstone(store, recordId) {
+  await putOne("tombstones", { id: `${store}:${recordId}`, store, recordId, deletedAt: Date.now() });
+}
+
+export async function getTombstones() {
+  return getAll("tombstones");
+}
+
+export async function clearTombstones(ids) {
+  for (const id of ids) await deleteOne("tombstones", id);
+}
+
 function readJSON(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -85,8 +104,15 @@ export async function saveTagDetails(id, { name, pinnedNote, image }) {
 // Deleting a tag just un-tags whatever referenced it (profiles fall back to
 // their remaining tags; untagged snippets fall back into Uncategorized) —
 // nothing referencing it is ever deleted outright.
-export async function deleteTag(id) {
+//
+// { tombstone: false } is for js/cloudBackup.js's applyRemoteDeletion only,
+// replaying a deletion that already happened on another device -- recording
+// a *new* tombstone for that would just re-push it right back with a
+// fresher timestamp, and the row would never age out server-side (see
+// backup-sync's GC comment).
+export async function deleteTag(id, { tombstone = true } = {}) {
   await deleteOne("tags", id);
+  if (tombstone) await recordTombstone("tags", id);
   const profiles = await getAll("profiles");
   for (const profile of profiles) {
     if (profile.tagIds?.includes(id)) {
@@ -134,8 +160,9 @@ export async function saveProfile(profile) {
   return withTimestamp;
 }
 
-export async function deleteProfile(id) {
+export async function deleteProfile(id, { tombstone = true } = {}) {
   await deleteOne("profiles", id);
+  if (tombstone) await recordTombstone("profiles", id);
   const snippets = await getAll("snippets");
   for (const snippet of snippets) {
     if (snippet.profileIds?.includes(id)) {
@@ -199,8 +226,20 @@ export async function saveSnippet(snippet) {
   return withTimestamp;
 }
 
-export async function deleteSnippet(id) {
+export async function deleteSnippet(id, { tombstone = true } = {}) {
   await deleteOne("snippets", id);
+  if (tombstone) await recordTombstone("snippets", id);
+}
+
+// The only caller of the { tombstone: false } option above -- js/cloudBackup.js's
+// pullChanges routes a pulled deletion through here rather than calling
+// deleteProfile/deleteTag/deleteSnippet directly, so the sync-only intent
+// is explicit at the call site instead of a bare `{ tombstone: false }`
+// showing up in the middle of feature code.
+export async function applyRemoteDeletion(store, recordId) {
+  if (store === "profiles") return deleteProfile(recordId, { tombstone: false });
+  if (store === "tags") return deleteTag(recordId, { tombstone: false });
+  if (store === "snippets") return deleteSnippet(recordId, { tombstone: false });
 }
 
 export async function getSnippetsForProfile(profileId) {

@@ -9,6 +9,9 @@ import {
   getTags,
   getSnippets,
   upsertRecords,
+  getTombstones,
+  clearTombstones,
+  applyRemoteDeletion,
 } from "./storage.js";
 import { shareOrDownload } from "./share.js";
 import { getTheme, setTheme, PLAYFUL_SWATCHES } from "./theme.js";
@@ -28,7 +31,7 @@ import { resyncAllChannels } from "./feedSync.js";
 import { isBackupConfigured, getPairingCode, getLastSyncedDisplay, syncNow, applyPairingCode } from "./cloudBackup.js";
 import { ICON_CHECK } from "./icons.js";
 
-const STORAGE_FNS = { getProfiles, getTags, getSnippets, upsertRecords };
+const STORAGE_FNS = { getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion };
 
 export function openSettingsMenu(nav, refresh) {
   const sheet = openSheet("tpl-settings-menu");

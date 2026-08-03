@@ -6,8 +6,13 @@
 // is meant to grow, not get pruned — so the collections themselves live here
 // from the start rather than bumping into localStorage's ~5MB cap later.
 const DB_NAME = "my-index-db";
-const DB_VERSION = 1;
-const STORES = ["profiles", "tags", "snippets"];
+const DB_VERSION = 2;
+// "tombstones" holds one row per locally-deleted profile/tag/snippet
+// (id: "<store>:<recordId>") just long enough to tell Cloud Backup about
+// the deletion -- see js/cloudBackup.js and js/storage.js's
+// recordTombstone. Irrelevant to anyone not using Cloud Backup; a no-op
+// store that just quietly holds a few small rows otherwise.
+const STORES = ["profiles", "tags", "snippets", "tombstones"];
 
 let dbPromise = null;
 function openDB() {

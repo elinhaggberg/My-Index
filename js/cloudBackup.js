@@ -5,10 +5,10 @@
 // someone connects a project and installs Cloud Backup specifically (it's
 // a separate opt-in from RSS sync -- see js/cloudSyncInstall.js).
 //
-// A known limitation of this first version: deletions aren't propagated.
-// Deleting a profile/tag/snippet locally doesn't yet tell other devices
-// to remove it too -- only creates and edits sync. Worth revisiting if it
-// turns out to matter in practice.
+// Deletions propagate via tombstones (see js/storage.js's recordTombstone/
+// getTombstones/clearTombstones): pushAll sends them alongside live
+// records, pullChanges applies an incoming one as a real local delete
+// instead of silently ignoring it.
 import { getApiConfig, setApiConfig } from "./supabaseOAuth.js";
 
 const PASSPHRASE_KEY = "mi_backup_passphrase_v1";
@@ -104,6 +104,10 @@ function toRecord(store, record) {
   };
 }
 
+function toTombstoneRecord(t) {
+  return { store: t.store, recordId: t.recordId, data: null, updatedAt: new Date(t.deletedAt).toISOString(), deleted: true };
+}
+
 // Always sends the full current dataset rather than trying to diff "what
 // changed since last sync" client-side -- several local mutations (tag
 // edits, tag deletion's ripple into profiles/snippets) don't reliably bump
@@ -112,37 +116,52 @@ function toRecord(store, record) {
 // the server makes resending everything safe, just a bit more bandwidth
 // than strictly necessary -- an acceptable trade at personal-register
 // scale (dozens to low hundreds of records).
-export async function pushAll({ getProfiles, getTags, getSnippets }) {
+export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones }) {
   if (!isBackupConfigured()) return { applied: 0 };
-  const [profiles, tags, snippets] = await Promise.all([getProfiles(), getTags(), getSnippets()]);
+  const [profiles, tags, snippets, tombstones] = await Promise.all([getProfiles(), getTags(), getSnippets(), getTombstones()]);
   const records = [
     ...profiles.map((p) => toRecord("profiles", p)),
     ...tags.filter((t) => !t.isSystem).map((t) => toRecord("tags", t)),
     ...snippets.map((s) => toRecord("snippets", s)),
+    ...tombstones.map(toTombstoneRecord),
   ];
   if (records.length === 0) return { applied: 0 };
   const result = await callBackupApi("push", { records });
+  // Only clears once the request actually went through -- a failed/dropped
+  // push (result is null, see callBackupApi) leaves the tombstones in place
+  // so the next sync attempt tries them again instead of quietly losing the
+  // deletion. Clears all of them regardless of each one's own applied/skipped
+  // outcome (see backup-sync's last-write-wins check): a tombstone that lost
+  // to a newer edit elsewhere doesn't need to be retried, that's the correct
+  // outcome, not a failure.
+  if (result && tombstones.length) await clearTombstones(tombstones.map((t) => t.id));
   return { applied: result?.applied ?? 0 };
 }
 
 // Pulls everything changed since the last successful sync (or everything,
 // on a fresh/paired device with no prior sync) and writes it straight into
 // local storage via upsertRecords -- matched by the record's own id, so
-// this converges with what's already there rather than duplicating it.
-export async function pullChanges({ upsertRecords }) {
+// this converges with what's already there rather than duplicating it. A
+// deleted row is applied as a real local delete (applyRemoteDeletion, not
+// upsertRecords) so it actually disappears here too, instead of the old
+// behavior of silently dropping it.
+export async function pullChanges({ upsertRecords, applyRemoteDeletion }) {
   if (!isBackupConfigured()) return { pulled: 0 };
   const since = getLastSyncedAt();
   const result = await callBackupApi("pull", since ? { since } : {});
   if (!result?.records) return { pulled: 0 };
 
   const byStore = { profiles: [], tags: [], snippets: [] };
+  const deletions = [];
   for (const r of result.records) {
-    if (r.deleted || !r.data || !SYNCABLE_STORES.includes(r.store)) continue;
-    byStore[r.store].push(r.data);
+    if (!SYNCABLE_STORES.includes(r.store)) continue;
+    if (r.deleted) deletions.push(r);
+    else if (r.data) byStore[r.store].push(r.data);
   }
   for (const store of SYNCABLE_STORES) {
     if (byStore[store].length) await upsertRecords(store, byStore[store]);
   }
+  for (const r of deletions) await applyRemoteDeletion(r.store, r.record_id);
   if (result.pulledAt) setLastSyncedAt(result.pulledAt);
   return { pulled: result.records.length };
 }
