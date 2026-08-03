@@ -25,7 +25,22 @@ end $$;
 --    the Edge Function it's really pg_cron calling (not a stranger on the
 --    internet) without any raw secret ever appearing in this repo. Use the
 --    exact same value you set as the CRON_SECRET Edge Function secret.
-select vault.create_secret('<PASTE_YOUR_CRON_SECRET_HERE>', 'my_index_cron_shared_secret');
+--
+-- vault.create_secret() always INSERTs, so running this a second time (e.g.
+-- re-running install) hits a duplicate-key error on the name -- same
+-- fresh-vs-repeat mismatch as cron.unschedule() above, just a different
+-- shape. Update in place by id if a secret with this name already exists.
+do $$
+declare
+  v_id uuid;
+begin
+  select id into v_id from vault.secrets where name = 'my_index_cron_shared_secret';
+  if v_id is not null then
+    perform vault.update_secret(v_id, '<PASTE_YOUR_CRON_SECRET_HERE>');
+  else
+    perform vault.create_secret('<PASTE_YOUR_CRON_SECRET_HERE>', 'my_index_cron_shared_secret');
+  end if;
+end $$;
 
 -- 2) Schedule the feed check. Replace <YOUR_PROJECT_REF> with your own
 --    Supabase project ref (from your project's URL) -- unlike Medical

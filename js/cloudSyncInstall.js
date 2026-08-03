@@ -128,7 +128,7 @@ export async function installCloudSync(onProgress) {
       label: cronLabel,
       run: async () => {
         const template = await loadTemplate("/supabase/cron_setup.sql");
-        const sql = template.replace("<PASTE_YOUR_CRON_SECRET_HERE>", cronSecret).replaceAll("<YOUR_PROJECT_REF>", ref);
+        const sql = template.replaceAll("<PASTE_YOUR_CRON_SECRET_HERE>", cronSecret).replaceAll("<YOUR_PROJECT_REF>", ref);
         await runSql(token, ref, sql);
       },
     },
