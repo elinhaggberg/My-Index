@@ -24,6 +24,13 @@
 </head>
 <body>
   <div id="app"></div>
+  <!-- Sibling to #app, not inside it, so it survives route()'s per-view
+       template swaps -- a service worker update can land while on any
+       page, not just Home. -->
+  <div class="update-banner hidden" id="update-banner">
+    <span>A new version is available.</span>
+    <button type="button" id="update-banner-refresh-btn">Refresh</button>
+  </div>
 
   <!-- ===== Home ===== -->
   <template id="tpl-home">
