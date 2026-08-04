@@ -1,7 +1,6 @@
-import { saveProfile, deleteProfile, createEmptyChannel, exportProfileData } from "./storage.js";
+import { saveProfile, deleteProfile, createEmptyChannel } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { renderTagChips } from "./tagChips.js";
-import { shareOrDownload, filenameFor } from "./share.js";
 import { ICON_CLOSE_SMALL } from "./icons.js";
 import { syncProfileChannels, unsubscribeChannel } from "./feedSync.js";
 import { readAndResizeImage } from "./imageBlob.js";
@@ -258,17 +257,12 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
     },
   });
 
-  // ---- Share / delete (existing profiles only) ----
-  const shareBtn = el.querySelector("#profile-editor-share-btn");
+  // ---- Delete (existing profiles only) -- Share moved to the Profile
+  // preview page itself (js/views/profile.js), not this editor sheet.
   const deleteBtn = el.querySelector("#profile-editor-delete-btn");
   if (isNew) {
-    shareBtn.classList.add("hidden");
     deleteBtn.classList.add("hidden");
   } else {
-    shareBtn.addEventListener("click", async () => {
-      const data = await exportProfileData(draft);
-      await shareOrDownload(filenameFor(draft.name), JSON.stringify(data, null, 2));
-    });
     deleteBtn.addEventListener("click", () => {
       const confirmSheet = openSheet("tpl-confirm-delete");
       confirmSheet.el.querySelector(".confirm-message").textContent = `Delete "${draft.name || "this profile"}"? Its snippets stay, unlinked. This can't be undone.`;

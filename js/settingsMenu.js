@@ -295,8 +295,25 @@ export function openCloudSyncSheet(oauthResult) {
     // list is never auto-selected; the user has to explicitly tap one.
     const statusLine = el.querySelector("#cloud-sync-status-line");
     const pickerEl = el.querySelector("#cloud-sync-project-picker");
+    const loadingEl = el.querySelector("#cloud-sync-loading");
+
+    // listSupabaseProjects is a real network round-trip (a couple seconds,
+    // not instant) -- without this, the connected panel appears with
+    // nothing in it (blank status line, no picker, every section still
+    // hidden from its default state) for however long that takes, which
+    // reads as "Cloud Sync looks off" rather than "still loading." Hides
+    // every section that's about to be rewritten so there's no flash of
+    // stale content from a previous render either.
+    loadingEl.classList.remove("hidden");
+    statusLine.textContent = "";
+    pickerEl.replaceChildren();
+    installSectionEl.classList.add("hidden");
+    resyncSectionEl.classList.add("hidden");
+    backupSectionEl.classList.add("hidden");
+
     const projects = await listSupabaseProjects();
     const selected = getSelectedProject();
+    loadingEl.classList.add("hidden");
 
     if (!projects || !Array.isArray(projects)) {
       statusLine.textContent = "✓ Connected";

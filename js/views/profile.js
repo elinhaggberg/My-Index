@@ -2,6 +2,7 @@ import {
   getProfile,
   clearProfileNewCount,
   getSnippetsForProfile,
+  exportProfileData,
 } from "../storage.js";
 import { renderMasonry } from "../masonry.js";
 import { createSnippetNode } from "../snippetCard.js";
@@ -14,6 +15,7 @@ import { hostnameFor } from "../util.js";
 import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH } from "../icons.js";
 import { clearServerCounts } from "../feedSync.js";
 import { resolveImageSrc } from "../imageStore.js";
+import { shareOrDownload, filenameFor } from "../share.js";
 import { CHANNEL_TYPE_LABELS } from "../channelTypes.js";
 
 export async function renderProfile(root, nav, id) {
@@ -130,6 +132,10 @@ export async function renderProfile(root, nav, id) {
         refresh: load,
         onDeleted: () => nav.toHome(),
       });
+    };
+    document.getElementById("profile-share-btn").onclick = async () => {
+      const data = await exportProfileData(profile);
+      await shareOrDownload(filenameFor(profile.name), JSON.stringify(data, null, 2));
     };
     document.getElementById("profile-add-snippet-btn").onclick = () => {
       openSnippetEditor(nav, { snippet: createEmptySnippet(), isNew: true, refresh: load, presetProfileId: id });
