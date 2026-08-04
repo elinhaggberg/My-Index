@@ -152,44 +152,8 @@ checkWhatsNew();
 // reload rather than instantly -- a known limitation, not a bug.
 startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion, inlineRecordImage });
 
-// Tells anyone who already has the app open that a new deploy has landed --
-// otherwise a PWA left open for a while (the whole point of adding it to a
-// Home Screen) just keeps running whatever JS it loaded at open time
-// indefinitely, even though the service worker's own network-first fetch
-// already means the *next* fresh load would get the update. This is the
-// only thing that actually needs a manual nudge: reload picks up the new
-// index.html/JS, nothing here does that automatically.
-function showUpdateBanner() {
-  const banner = document.getElementById("update-banner");
-  if (!banner) return;
-  banner.classList.remove("hidden");
-  // Fixed-position, so it doesn't push page content down on its own --
-  // without this it just overlaps whatever's at the top of the current
-  // view (Home's title, a sheet header, etc).
-  document.body.style.paddingTop = `${banner.offsetHeight}px`;
-}
-
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("service-worker.js")
-      .then((registration) => {
-        registration.addEventListener("updatefound", () => {
-          const newWorker = registration.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener("statechange", () => {
-            // A controller already existing means this document was
-            // already running under a previous service worker -- this is
-            // a genuine update, not just the very first-ever install
-            // (which has no controller yet at this point).
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              showUpdateBanner();
-            }
-          });
-        });
-      })
-      .catch(() => {});
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
   });
-
-  document.getElementById("update-banner-refresh-btn")?.addEventListener("click", () => location.reload());
 }

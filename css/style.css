@@ -210,37 +210,6 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .banner-actions { display: flex; gap: 8px; }
 .banner-actions .text-btn { padding: 6px 12px; font-size: 0.85rem; }
 
-/* Persistent update-available toast (index.html, outside #app) -- sits
-   above sheets (z-index 20) and the tab bar (15) since it can be relevant
-   no matter what's open when a new version lands. */
-.update-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: calc(10px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 10px calc(12px + env(safe-area-inset-left));
-  background: var(--accent);
-  color: var(--accent-text);
-  font-size: 0.88rem;
-  font-weight: 600;
-  animation: sheet-up 0.18s ease-out;
-}
-.update-banner button {
-  background: rgba(0, 0, 0, 0.15);
-  border: none;
-  border-radius: 999px;
-  padding: 6px 14px;
-  color: inherit;
-  font-weight: 700;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-}
-
 /* Bottom tab bar */
 .tabbar {
   position: fixed;
