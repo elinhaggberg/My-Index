@@ -1,15 +1,17 @@
 import { hostnameFor } from "./util.js";
 import { typeFor } from "./snippetTypes.js";
 import { ICON_LINK } from "./icons.js";
+import { resolveImageSrc } from "./imageStore.js";
 
 // Builds one Pinterest-style grid tile from the shared <template id="tpl-pin-card">.
-// Unlike My Closet's cards, a snippet's image (when it has one at all) is
-// always a remote URL fetched via unfurl -- never a local upload -- so
-// there's no IndexedDB blob to resolve async here; the <img> can just be
-// set directly. Most snippets have no image at all (this app is a register
-// of links/quotes/notes, not a photo library), so there's no fixed-size
-// placeholder box standing in for one -- the type icon sits inline next to
-// the title instead, sized like a small badge rather than an empty photo.
+// A snippet's image is either a remote URL fetched via unfurl (a Link/Video
+// snippet), or a local upload (an Image snippet, see snippetEditor.js) --
+// resolveImageSrc handles both, async since a local upload needs an
+// IndexedDB lookup. Most snippets have no image at all (this app is a
+// register of links/quotes/notes, not a photo library), so there's no
+// fixed-size placeholder box standing in for one -- the type icon sits
+// inline next to the title instead, sized like a small badge rather than an
+// empty photo.
 export function createSnippetNode(snippet, onOpen) {
   const tpl = document.getElementById("tpl-pin-card");
   const node = tpl.content.cloneNode(true);
@@ -18,9 +20,13 @@ export function createSnippetNode(snippet, onOpen) {
   const type = typeFor(snippet.type);
 
   if (snippet.image) {
-    img.src = snippet.image;
     img.alt = "";
-    img.classList.remove("hidden");
+    resolveImageSrc(snippet.image).then((src) => {
+      if (src) {
+        img.src = src;
+        img.classList.remove("hidden");
+      }
+    });
   }
 
   node.querySelector(".pin-type-icon").innerHTML = type.icon;

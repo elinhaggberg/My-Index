@@ -1,4 +1,4 @@
-import { resolveImageUrl } from "./imageBlob.js";
+import { resolveImageSrc } from "./imageStore.js";
 
 // The bigger grid-card version of a Profile, used on the Profiles view and
 // in profile search results -- shows more than the Home row's small tile
@@ -8,8 +8,10 @@ export function createProfileCardNode(profile, onOpen) {
   const node = tpl.content.cloneNode(true);
   const avatar = node.querySelector(".profile-card-avatar");
   if (profile.image) {
-    avatar.style.backgroundImage = `url("${resolveImageUrl(profile.image)}")`;
     avatar.classList.add("has-image");
+    resolveImageSrc(profile.image).then((src) => {
+      if (src) avatar.style.backgroundImage = `url("${src}")`;
+    });
   } else {
     avatar.textContent = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
   }

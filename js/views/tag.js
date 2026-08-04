@@ -13,7 +13,8 @@ import { createProfileTileNode } from "../profileTile.js";
 import { openSnippetDetail } from "../snippetDetail.js";
 import { openSnippetEditor } from "../snippetEditor.js";
 import { openSheet } from "../sheet.js";
-import { readAndResizeImage, resolveImageUrl } from "../imageBlob.js";
+import { readAndResizeImage } from "../imageBlob.js";
+import { resolveImageSrc } from "../imageStore.js";
 import { ICON_TAG } from "../icons.js";
 
 export async function renderTag(root, nav, id) {
@@ -33,7 +34,7 @@ export async function renderTag(root, nav, id) {
 
     const coverEl = document.getElementById("tag-cover-image");
     if (tag.image) {
-      coverEl.style.backgroundImage = `url("${resolveImageUrl(tag.image)}")`;
+      coverEl.style.backgroundImage = `url("${await resolveImageSrc(tag.image)}")`;
       coverEl.classList.remove("hidden");
     } else {
       coverEl.classList.add("hidden");
@@ -122,7 +123,9 @@ function openTagEditor(tag, refresh) {
 
   function renderCover() {
     if (image) {
-      coverImg.src = resolveImageUrl(image);
+      resolveImageSrc(image).then((src) => {
+        if (src) coverImg.src = src;
+      });
       coverImg.classList.remove("hidden");
       coverPlaceholder.classList.add("hidden");
       clearBtn.classList.remove("hidden");

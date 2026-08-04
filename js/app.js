@@ -8,6 +8,7 @@ import {
   createEmptySnippet,
   saveSnippet,
   migrateLegacyImages,
+  migrateInlineImagesToIndexedDB,
   getProfiles,
   getTags,
   getSnippets,
@@ -15,6 +16,7 @@ import {
   getTombstones,
   clearTombstones,
   applyRemoteDeletion,
+  inlineRecordImage,
 } from "./storage.js";
 import { openSnippetEditor } from "./snippetEditor.js";
 import { checkWhatsNew } from "./whatsNew.js";
@@ -124,14 +126,20 @@ window.addEventListener("hashchange", route);
 // those redirects.
 const oauthResult = consumeOAuthRedirect();
 
-// Runs before the first render so anyone with a Profile/Tag image saved in
-// the old (Blob-based) format sees it fixed immediately, not just after
-// visiting that page a second time. A no-op after the first run.
-migrateLegacyImages().finally(() => {
-  route();
-  handleIncomingShare();
-  if (oauthResult) openCloudSyncSheet(oauthResult);
-});
+// Runs before the first render so anyone with a Profile/Tag/Snippet image
+// saved in an older format sees it fixed immediately, not just after
+// visiting that page a second time -- migrateLegacyImages fixes up ancient
+// Blob-on-record data first (a no-op for everyone else by now), then
+// migrateInlineImagesToIndexedDB moves any still-inlined data: URI image
+// into the separate image store (js/imageStore.js). Both are a no-op after
+// their first run.
+migrateLegacyImages()
+  .then(migrateInlineImagesToIndexedDB)
+  .finally(() => {
+    route();
+    handleIncomingShare();
+    if (oauthResult) openCloudSyncSheet(oauthResult);
+  });
 importQueuedCaptures();
 checkOnboarding();
 checkWhatsNew();
@@ -142,7 +150,7 @@ checkWhatsNew();
 // background pull doesn't re-render whatever view happens to be open
 // right now, so anything it brings in shows up on the next navigation or
 // reload rather than instantly -- a known limitation, not a bug.
-startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion });
+startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion, inlineRecordImage });
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

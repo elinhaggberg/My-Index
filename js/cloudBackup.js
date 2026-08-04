@@ -95,12 +95,18 @@ async function callBackupApi(action, body) {
   }
 }
 
-function toRecord(store, record) {
+// inlineRecordImage turns a device-local idb: image reference into a
+// portable data: URI (or leaves a remote URL/no-image record untouched) --
+// see storage.js's own comment on it. Without this, a synced record's image
+// would just be a meaningless local IndexedDB key on whatever device pulls
+// it.
+async function toRecord(store, record, inlineRecordImage) {
+  const inlined = await inlineRecordImage(record);
   return {
     store,
-    recordId: record.id,
-    data: record,
-    updatedAt: new Date(record.updatedAt || record.createdAt || Date.now()).toISOString(),
+    recordId: inlined.id,
+    data: inlined,
+    updatedAt: new Date(inlined.updatedAt || inlined.createdAt || Date.now()).toISOString(),
   };
 }
 
@@ -116,13 +122,13 @@ function toTombstoneRecord(t) {
 // the server makes resending everything safe, just a bit more bandwidth
 // than strictly necessary -- an acceptable trade at personal-register
 // scale (dozens to low hundreds of records).
-export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones }) {
+export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones, inlineRecordImage }) {
   if (!isBackupConfigured()) return { applied: 0 };
   const [profiles, tags, snippets, tombstones] = await Promise.all([getProfiles(), getTags(), getSnippets(), getTombstones()]);
   const records = [
-    ...profiles.map((p) => toRecord("profiles", p)),
-    ...tags.filter((t) => !t.isSystem).map((t) => toRecord("tags", t)),
-    ...snippets.map((s) => toRecord("snippets", s)),
+    ...(await Promise.all(profiles.map((p) => toRecord("profiles", p, inlineRecordImage)))),
+    ...(await Promise.all(tags.filter((t) => !t.isSystem).map((t) => toRecord("tags", t, inlineRecordImage)))),
+    ...(await Promise.all(snippets.map((s) => toRecord("snippets", s, inlineRecordImage)))),
     ...tombstones.map(toTombstoneRecord),
   ];
   if (records.length === 0) return { applied: 0 };

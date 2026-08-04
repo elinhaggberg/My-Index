@@ -5,6 +5,7 @@ import { hostnameFor } from "./util.js";
 import { typeFor } from "./snippetTypes.js";
 import { openSnippetEditor } from "./snippetEditor.js";
 import { renderTagRefChips, renderProfileRefChips } from "./refChips.js";
+import { resolveImageSrc } from "./imageStore.js";
 
 export async function openSnippetDetail(nav, snippetRef, refresh) {
   const snippet = (await getSnippet(snippetRef.id)) || snippetRef;
@@ -18,9 +19,12 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
 
   const img = el.querySelector("#detail-image");
   if (snippet.image) {
-    img.src = snippet.image;
     img.alt = "";
-    img.classList.remove("hidden");
+    const src = await resolveImageSrc(snippet.image);
+    if (src) {
+      img.src = src;
+      img.classList.remove("hidden");
+    }
   }
 
   el.querySelector("#detail-title").textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");

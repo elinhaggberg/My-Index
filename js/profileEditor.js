@@ -4,7 +4,8 @@ import { renderTagChips } from "./tagChips.js";
 import { shareOrDownload, filenameFor } from "./share.js";
 import { ICON_CLOSE_SMALL } from "./icons.js";
 import { syncProfileChannels, unsubscribeChannel } from "./feedSync.js";
-import { readAndResizeImage, resolveImageUrl } from "./imageBlob.js";
+import { readAndResizeImage } from "./imageBlob.js";
+import { resolveImageSrc } from "./imageStore.js";
 import { CHANNEL_TYPES, CHANNEL_TYPE_LABELS } from "./channelTypes.js";
 import { discoverFeed } from "./discoverFeed.js";
 
@@ -54,7 +55,9 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
   const avatarClearBtn = el.querySelector("#profile-editor-avatar-clear-btn");
   function renderAvatar() {
     if (draft.image) {
-      avatarImg.src = resolveImageUrl(draft.image);
+      resolveImageSrc(draft.image).then((src) => {
+        if (src) avatarImg.src = src;
+      });
       avatarImg.classList.remove("hidden");
       avatarInitial.classList.add("hidden");
       avatarClearBtn.classList.remove("hidden");

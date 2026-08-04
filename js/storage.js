@@ -1,5 +1,5 @@
 import { getAll, getOne, putOne, putMany, deleteOne } from "./db.js";
-import { blobToDataUrl } from "./imageBlob.js";
+import { IDB_PREFIX, putImage, getImage, deleteImage, dataUrlToBlob, blobToDataUrl } from "./imageStore.js";
 
 const THEME_KEY = "mi_theme_v1";
 const HOME_TITLE_KEY = "mi_home_title_v1";
@@ -12,12 +12,39 @@ const ONBOARDING_SEEN_KEY = "mi_onboarding_seen_v1";
 const HOME_FILTER_KEY = "mi_home_filter_v1";
 const PROFILES_FILTER_KEY = "mi_profiles_filter_v1";
 const IMAGES_MIGRATED_KEY = "mi_images_migrated_v1";
+const IMAGES_MIGRATED_TO_IDB_KEY = "mi_images_migrated_to_idb_v1";
 
 export const UNCATEGORIZED_TAG_ID = "uncategorized";
 
 function uid() {
   if (crypto.randomUUID) return crypto.randomUUID();
   return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+}
+
+// A fresh Camera/Library upload arrives as a Blob (see js/imageBlob.js) --
+// moves it into the separate image store (js/imageStore.js) and returns
+// just a reference, since a Blob can't be stored directly on a profile/tag/
+// snippet record. Anything else (a remote URL, an existing idb: reference,
+// or null/empty) passes through untouched. Profiles/tags/snippets each have
+// at most one image, so the record's own id doubles as a stable image-store
+// key -- no separate id needed.
+async function storeImageIfBlob(recordId, image) {
+  if (!(image instanceof Blob)) return image;
+  await putImage(recordId, image);
+  return IDB_PREFIX + recordId;
+}
+
+async function deleteStoredImageIfAny(image) {
+  if (typeof image === "string" && image.startsWith(IDB_PREFIX)) {
+    await deleteImage(image.slice(IDB_PREFIX.length)).catch(() => {});
+  }
+}
+
+// Cleans up whatever was stored for the old image once a record's image
+// field actually changes to something else on save -- otherwise a replaced
+// or cleared photo would just leak forever in the image store.
+async function cleanupOldImage(previousImage, nextImage) {
+  if (previousImage !== nextImage) await deleteStoredImageIfAny(previousImage);
 }
 
 // A deleted record leaves no trace in its own store to ever tell another
@@ -97,7 +124,9 @@ export async function saveTagDetails(id, { name, pinnedNote, image }) {
   const tag = await getOne("tags", id);
   if (!tag) return null;
   const trimmed = normalizeTagName(name);
-  const updated = { ...tag, name: trimmed || tag.name, pinnedNote, image };
+  const resolvedImage = await storeImageIfBlob(id, image);
+  await cleanupOldImage(tag.image, resolvedImage);
+  const updated = { ...tag, name: trimmed || tag.name, pinnedNote, image: resolvedImage };
   await putOne("tags", updated);
   return updated;
 }
@@ -112,8 +141,10 @@ export async function saveTagDetails(id, { name, pinnedNote, image }) {
 // fresher timestamp, and the row would never age out server-side (see
 // backup-sync's GC comment).
 export async function deleteTag(id, { tombstone = true } = {}) {
+  const tag = await getOne("tags", id);
   await deleteOne("tags", id);
   if (tombstone) await recordTombstone("tags", id);
+  await deleteStoredImageIfAny(tag?.image);
   const profiles = await getAll("profiles");
   for (const profile of profiles) {
     if (profile.tagIds?.includes(id)) {
@@ -156,14 +187,19 @@ export function createEmptyChannel() {
 }
 
 export async function saveProfile(profile) {
-  const withTimestamp = { ...profile, updatedAt: Date.now() };
+  const previous = await getOne("profiles", profile.id);
+  const image = await storeImageIfBlob(profile.id, profile.image);
+  await cleanupOldImage(previous?.image, image);
+  const withTimestamp = { ...profile, image, updatedAt: Date.now() };
   await putOne("profiles", withTimestamp);
   return withTimestamp;
 }
 
 export async function deleteProfile(id, { tombstone = true } = {}) {
+  const profile = await getOne("profiles", id);
   await deleteOne("profiles", id);
   if (tombstone) await recordTombstone("profiles", id);
+  await deleteStoredImageIfAny(profile?.image);
   const snippets = await getAll("snippets");
   for (const snippet of snippets) {
     if (snippet.profileIds?.includes(id)) {
@@ -222,14 +258,19 @@ export function createEmptySnippet() {
 }
 
 export async function saveSnippet(snippet) {
-  const withTimestamp = { ...snippet, updatedAt: Date.now() };
+  const previous = await getOne("snippets", snippet.id);
+  const image = await storeImageIfBlob(snippet.id, snippet.image);
+  await cleanupOldImage(previous?.image, image);
+  const withTimestamp = { ...snippet, image, updatedAt: Date.now() };
   await putOne("snippets", withTimestamp);
   return withTimestamp;
 }
 
 export async function deleteSnippet(id, { tombstone = true } = {}) {
+  const snippet = await getOne("snippets", id);
   await deleteOne("snippets", id);
   if (tombstone) await recordTombstone("snippets", id);
+  await deleteStoredImageIfAny(snippet?.image);
 }
 
 // The only caller of the { tombstone: false } option above -- js/cloudBackup.js's
@@ -265,28 +306,57 @@ export async function getUncategorizedCount() {
 // (js/cloudBackup.js) -- writes each record exactly as given, matching by
 // its own id, unlike importData() below whose always-new-id behavior is
 // only correct for a one-time file import, never for ongoing sync where
-// two devices need to agree on the same id for the same record.
+// two devices need to agree on the same id for the same record. A pulled
+// record's image (see pushAll's use of inlineRecordImage below) arrives as
+// a portable data: URI or remote URL, never a device-local idb: reference
+// -- revives it into this device's own image store the same way an
+// imported backup file's image is, keyed by the record's own id so every
+// device agrees on the same image-store key for the same record too.
 export async function upsertRecords(store, records) {
   if (!["profiles", "tags", "snippets"].includes(store) || !records.length) return;
-  await putMany(store, records);
+  const revived = await Promise.all(records.map(async (r) => ({ ...r, image: await reviveImage(r.image, r.id) })));
+  await putMany(store, revived);
 }
 
 // ---- Export / import ----
 
-// Exports inline each Profile/Tag's actual image bytes as a data: URI (a
-// Blob can't survive a JSON.stringify) so an exported file is fully
-// self-contained and portable -- it doesn't depend on this device's
-// IndexedDB to be useful on another device or after a reinstall.
+// Exports inline each record's actual image bytes as a data: URI -- neither
+// a Blob nor an idb: reference can survive a JSON.stringify, or means
+// anything on another device -- so an exported file is fully self-contained
+// and portable, not dependent on this device's image store. A remote URL
+// (an unfurled link's image) or no image at all passes through untouched.
+async function inlineImage(image) {
+  if (image instanceof Blob) return blobToDataUrl(image);
+  if (typeof image === "string" && image.startsWith(IDB_PREFIX)) {
+    const blob = await getImage(image.slice(IDB_PREFIX.length));
+    return blob ? blobToDataUrl(blob) : image;
+  }
+  return image;
+}
+
 async function inlineProfileImages(profiles) {
-  return Promise.all(
-    profiles.map(async (p) => (p.image instanceof Blob ? { ...p, image: await blobToDataUrl(p.image) } : p))
-  );
+  return Promise.all(profiles.map(async (p) => ({ ...p, image: await inlineImage(p.image) })));
 }
 
 async function inlineTagImages(tags) {
-  return Promise.all(
-    tags.map(async (t) => (t.image instanceof Blob ? { ...t, image: await blobToDataUrl(t.image) } : t))
-  );
+  return Promise.all(tags.map(async (t) => ({ ...t, image: await inlineImage(t.image) })));
+}
+
+async function inlineSnippetImages(snippets) {
+  return Promise.all(snippets.map(async (s) => ({ ...s, image: await inlineImage(s.image) })));
+}
+
+// Same idea as inlineProfileImages/inlineTagImages/inlineSnippetImages
+// above, generalized to any single record -- used by js/cloudBackup.js's
+// pushAll (passed in via DI, matching how every other storage.js function
+// reaches cloudBackup.js) so a synced record's image is portable to
+// whatever device pulls it, instead of a meaningless local idb: reference.
+// This is a stopgap: it means Cloud Backup still resends full image bytes
+// on every sync rather than uploading each image once to real object
+// storage, which is planned as a separate, later piece of work -- but it's
+// correct and doesn't regress, which matters more right now.
+export async function inlineRecordImage(record) {
+  return { ...record, image: await inlineImage(record.image) };
 }
 
 export async function exportBackupData() {
@@ -296,7 +366,7 @@ export async function exportBackupData() {
     exportedAt: new Date().toISOString(),
     profiles: await inlineProfileImages(await getProfiles()),
     tags: await inlineTagImages(await getTags()),
-    snippets: await getSnippets(),
+    snippets: await inlineSnippetImages(await getSnippets()),
     theme: getThemePref(),
     homeTitle: getHomeTitle(),
     showProfileRow: getShowProfileRow(),
@@ -314,7 +384,7 @@ export async function exportProfileData(profile) {
     exportedAt: new Date().toISOString(),
     profiles: await inlineProfileImages([profile]),
     tags: await inlineTagImages(tags),
-    snippets,
+    snippets: await inlineSnippetImages(snippets),
   };
 }
 
@@ -327,7 +397,7 @@ export async function exportSnippetData(snippet) {
     exportedAt: new Date().toISOString(),
     profiles: await inlineProfileImages(profiles),
     tags: await inlineTagImages(tags),
-    snippets: [snippet],
+    snippets: await inlineSnippetImages([snippet]),
   };
 }
 
@@ -336,13 +406,21 @@ export async function exportSnippetData(snippet) {
 // shared taxonomy, like My Closet's boards); profiles and snippets are
 // richer individual records so they always import as new, with their
 // cross-references remapped to the freshly-created local ids.
-// Imported images are already a data: URI (that's what export produces) --
-// kept as a plain string rather than converted to a Blob, since Blobs
-// stored in IndexedDB have a real WebKit/Safari readback bug (see
-// imageBlob.js). Anything else (missing, or some unexpected shape) just
-// means no image; import still succeeds either way.
-function reviveImage(image) {
-  return typeof image === "string" && image.startsWith("data:") ? image : null;
+// An imported image is either a data: URI (that's what export produces for
+// anything that was locally uploaded) or a remote URL (an unfurled link's
+// image, never inlined) -- a data: URI gets moved into the image store the
+// same as a fresh upload, keyed by id (the record's own freshly-generated
+// local id, so its image-store key matches). A remote URL passes through
+// untouched; anything else (missing, or some unexpected shape) just means
+// no image -- import still succeeds either way.
+async function reviveImage(image, id) {
+  if (typeof image !== "string" || !image.startsWith("data:")) return image || null;
+  try {
+    await putImage(id, await dataUrlToBlob(image));
+    return IDB_PREFIX + id;
+  } catch {
+    return null;
+  }
 }
 
 export async function importData(data) {
@@ -363,7 +441,7 @@ export async function importData(data) {
     // clobber what's already there.
     if (local.id !== UNCATEGORIZED_TAG_ID && (!local.pinnedNote || !local.image)) {
       const pinnedNote = local.pinnedNote || tag.pinnedNote || "";
-      const image = local.image || (await reviveImage(tag.image));
+      const image = local.image || (await reviveImage(tag.image, local.id));
       if (pinnedNote !== local.pinnedNote || image !== local.image) {
         await saveTagDetails(local.id, { name: local.name, pinnedNote, image });
       }
@@ -381,7 +459,7 @@ export async function importData(data) {
         ...createEmptyProfile(),
         ...p,
         id,
-        image: await reviveImage(p.image),
+        image: await reviveImage(p.image, id),
         tagIds: remapTagIds(p.tagIds),
         channels: (p.channels || []).map((c) => ({ ...c, id: uid(), newCount: 0 })),
         newCount: 0,
@@ -392,14 +470,20 @@ export async function importData(data) {
   for (const profile of newProfiles) await putOne("profiles", profile);
 
   const importedSnippets = Array.isArray(data.snippets) ? data.snippets : [];
-  const newSnippets = importedSnippets.map((s) => ({
-    ...createEmptySnippet(),
-    ...s,
-    id: uid(),
-    tagIds: remapTagIds(s.tagIds),
-    profileIds: (s.profileIds || []).map((id) => oldProfileIdToLocalId.get(id)).filter(Boolean),
-    createdAt: Date.now(),
-  }));
+  const newSnippets = await Promise.all(
+    importedSnippets.map(async (s) => {
+      const id = uid();
+      return {
+        ...createEmptySnippet(),
+        ...s,
+        id,
+        image: await reviveImage(s.image, id),
+        tagIds: remapTagIds(s.tagIds),
+        profileIds: (s.profileIds || []).map((pid) => oldProfileIdToLocalId.get(pid)).filter(Boolean),
+        createdAt: Date.now(),
+      };
+    })
+  );
   for (const snippet of newSnippets) await putOne("snippets", snippet);
 
   // Theme, home title, and the profile-row toggle are single current-state
@@ -446,6 +530,58 @@ export async function migrateLegacyImages() {
   }
 
   localStorage.setItem(IMAGES_MIGRATED_KEY, "true");
+}
+
+// One-time cleanup for anyone who saved a Profile avatar, Tag cover, or
+// Image-snippet photo before storage moved from inline data: URI strings to
+// a separate image store (js/imageStore.js) -- keeping every image inlined
+// directly on its record meant a plain "list all snippets" read pulled
+// every image's bytes into memory too, even ones nowhere near the screen.
+// Separate from migrateLegacyImages above (an older, different migration --
+// Blob-on-record to inline string -- gated by its own flag): this one moves
+// inline strings into the store instead. Converts each one in place and
+// re-saves it. Runs once (gated by its own flag) and skips any record it
+// can't process rather than letting one bad image block startup.
+export async function migrateInlineImagesToIndexedDB() {
+  if (localStorage.getItem(IMAGES_MIGRATED_TO_IDB_KEY) === "true") return;
+
+  const profiles = await getAll("profiles");
+  for (const profile of profiles) {
+    if (typeof profile.image === "string" && profile.image.startsWith("data:")) {
+      try {
+        await putImage(profile.id, await dataUrlToBlob(profile.image));
+        await putOne("profiles", { ...profile, image: IDB_PREFIX + profile.id });
+      } catch {
+        // Leave this one as-is and keep going with the rest.
+      }
+    }
+  }
+
+  const tags = await getAll("tags");
+  for (const tag of tags) {
+    if (typeof tag.image === "string" && tag.image.startsWith("data:")) {
+      try {
+        await putImage(tag.id, await dataUrlToBlob(tag.image));
+        await putOne("tags", { ...tag, image: IDB_PREFIX + tag.id });
+      } catch {
+        // Leave this one as-is and keep going with the rest.
+      }
+    }
+  }
+
+  const snippets = await getAll("snippets");
+  for (const snippet of snippets) {
+    if (typeof snippet.image === "string" && snippet.image.startsWith("data:")) {
+      try {
+        await putImage(snippet.id, await dataUrlToBlob(snippet.image));
+        await putOne("snippets", { ...snippet, image: IDB_PREFIX + snippet.id });
+      } catch {
+        // Leave this one as-is and keep going with the rest.
+      }
+    }
+  }
+
+  localStorage.setItem(IMAGES_MIGRATED_TO_IDB_KEY, "true");
 }
 
 // ---- Preferences ----

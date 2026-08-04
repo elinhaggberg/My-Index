@@ -13,7 +13,7 @@ import { renderTagRefChips } from "../refChips.js";
 import { hostnameFor } from "../util.js";
 import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH } from "../icons.js";
 import { clearServerCounts } from "../feedSync.js";
-import { resolveImageUrl } from "../imageBlob.js";
+import { resolveImageSrc } from "../imageStore.js";
 import { CHANNEL_TYPE_LABELS } from "../channelTypes.js";
 
 export async function renderProfile(root, nav, id) {
@@ -41,7 +41,7 @@ export async function renderProfile(root, nav, id) {
     const avatarEl = document.getElementById("profile-avatar");
     const avatarInitialEl = document.getElementById("profile-avatar-initial");
     if (profile.image) {
-      avatarEl.style.backgroundImage = `url("${resolveImageUrl(profile.image)}")`;
+      avatarEl.style.backgroundImage = `url("${await resolveImageSrc(profile.image)}")`;
       avatarEl.classList.add("has-image");
       avatarInitialEl.textContent = "";
     } else {

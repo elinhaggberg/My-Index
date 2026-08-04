@@ -3,6 +3,7 @@ import { openSheet } from "./sheet.js";
 import { renderTagChips } from "./tagChips.js";
 import { renderProfileChips } from "./profilePicker.js";
 import { readAndResizeImage } from "./imageBlob.js";
+import { resolveImageSrc } from "./imageStore.js";
 import { SNIPPET_TYPES, typeFor } from "./snippetTypes.js";
 import { hostnameFor } from "./util.js";
 
@@ -77,7 +78,9 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   const imgClearBtn = el.querySelector("#editor-image-clear-btn");
   function renderImagePreview() {
     if (draft.image) {
-      imgPreview.src = draft.image;
+      resolveImageSrc(draft.image).then((src) => {
+        if (src) imgPreview.src = src;
+      });
       imgPreviewWrap.classList.remove("hidden");
     } else {
       imgPreviewWrap.classList.add("hidden");

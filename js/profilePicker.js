@@ -1,7 +1,7 @@
 import { getProfiles } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { renderPickerSummary } from "./pickerField.js";
-import { resolveImageUrl } from "./imageBlob.js";
+import { resolveImageSrc } from "./imageStore.js";
 import { ICON_CHECK } from "./icons.js";
 
 // Connects a Snippet to one or more Profiles from the capture/edit modal.
@@ -54,7 +54,9 @@ export async function renderProfileChips(container, { selectedIds, onToggle }) {
           const avatar = document.createElement("span");
           avatar.className = "profile-picker-avatar";
           if (profile.image) {
-            avatar.style.backgroundImage = `url("${resolveImageUrl(profile.image)}")`;
+            resolveImageSrc(profile.image).then((src) => {
+              if (src) avatar.style.backgroundImage = `url("${src}")`;
+            });
           } else {
             avatar.textContent = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
           }
