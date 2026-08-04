@@ -147,6 +147,10 @@ export function openCloudSyncSheet(oauthResult) {
     messageEl.classList.add("error");
   }
 
+  const featureSummaryEl = el.querySelector("#cloud-sync-feature-summary");
+  const manageToggleRowEl = el.querySelector("#cloud-sync-manage-toggle-row");
+  const manageBtn = el.querySelector("#cloud-sync-manage-btn");
+  const manageSectionEl = el.querySelector("#cloud-sync-manage-section");
   const installSectionEl = el.querySelector("#cloud-sync-install-section");
   const installStepsEl = el.querySelector("#cloud-sync-install-steps");
   const installBtn = el.querySelector("#cloud-sync-install-btn");
@@ -167,6 +171,26 @@ export function openCloudSyncSheet(oauthResult) {
   function selectedFeatures() {
     return { rssSync: rssCheckbox.checked, backup: backupCheckbox.checked };
   }
+
+  // Once at least one feature is actually installed, the project picker /
+  // feature checkboxes / install steps / Disconnect are mostly one-time
+  // setup noise, not something worth re-showing on every visit -- collapsed
+  // by default, revealed by "Manage connection." Stays forced-open before
+  // anything's installed (there's nothing to collapse to yet, and the
+  // install flow *is* the primary thing to show) or once the user's
+  // explicitly asked to see it. Resets to collapsed each time this sheet is
+  // freshly opened, along with everything else in this closure.
+  let manageExpanded = false;
+  function updateManageVisibility(hasAnyFeatureInstalled) {
+    const shouldExpand = !hasAnyFeatureInstalled || manageExpanded;
+    manageSectionEl.classList.toggle("hidden", !shouldExpand);
+    manageToggleRowEl.classList.toggle("hidden", !hasAnyFeatureInstalled);
+    manageBtn.textContent = manageExpanded ? "Hide details" : "Manage connection";
+  }
+  manageBtn.addEventListener("click", () => {
+    manageExpanded = !manageExpanded;
+    updateManageVisibility(true);
+  });
 
   function renderSteps(statusByLabel, messageByLabel) {
     installStepsEl.replaceChildren(
@@ -310,6 +334,8 @@ export function openCloudSyncSheet(oauthResult) {
     installSectionEl.classList.add("hidden");
     resyncSectionEl.classList.add("hidden");
     backupSectionEl.classList.add("hidden");
+    featureSummaryEl.classList.add("hidden");
+    manageToggleRowEl.classList.add("hidden");
 
     const projects = await listSupabaseProjects();
     const selected = getSelectedProject();
@@ -366,6 +392,23 @@ export function openCloudSyncSheet(oauthResult) {
       pairingCodeEl.classList.add("hidden");
       copyPairingActionsEl.classList.add("hidden");
     }
+
+    const hasAnyFeatureInstalled = installed.rssSync || installed.backup;
+    featureSummaryEl.replaceChildren(
+      ...[
+        installed.rssSync && "RSS sync",
+        installed.backup && "Cloud Backup",
+      ]
+        .filter(Boolean)
+        .map((label) => {
+          const row = document.createElement("p");
+          row.className = "cloud-sync-feature-summary-row";
+          row.innerHTML = `${ICON_CHECK}<span>${label}</span>`;
+          return row;
+        })
+    );
+    featureSummaryEl.classList.toggle("hidden", !hasAnyFeatureInstalled);
+    updateManageVisibility(hasAnyFeatureInstalled);
   }
 
   rssCheckbox.addEventListener("change", () => renderSteps(new Map()));

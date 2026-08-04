@@ -630,22 +630,8 @@
       <div class="hidden" id="cloud-sync-connected">
         <p class="cloud-sync-status hidden" id="cloud-sync-loading"><span class="btn-spinner" aria-hidden="true"></span>Loading your Supabase projects…</p>
         <p class="cloud-sync-status" id="cloud-sync-status-line"></p>
-        <div class="project-picker-list" id="cloud-sync-project-picker"></div>
-        <div class="hidden" id="cloud-sync-install-section">
-          <p class="card-detail-section-label" style="margin-top:8px;">Features to enable</p>
-          <label class="cloud-sync-feature-row">
-            <input type="checkbox" id="cloud-sync-feature-rss" />
-            <span>RSS sync — "new content" badges for profiles with RSS feeds</span>
-          </label>
-          <label class="cloud-sync-feature-row">
-            <input type="checkbox" id="cloud-sync-feature-backup" />
-            <span>Cloud Backup — back up and sync all your profiles, tags, and snippets</span>
-          </label>
-          <div class="cloud-sync-steps" id="cloud-sync-install-steps"></div>
-          <div class="form-actions">
-            <button type="button" class="text-btn primary" id="cloud-sync-install-btn">Install selected</button>
-          </div>
-        </div>
+        <div class="cloud-sync-feature-summary hidden" id="cloud-sync-feature-summary"></div>
+
         <div class="hidden" id="cloud-sync-resync-section">
           <p class="cloud-sync-intro">Added RSS feeds to profiles before installing? Those were never registered while Cloud Sync was off — resync them now instead of re-saving each profile by hand.</p>
           <p class="import-message hidden" id="cloud-sync-resync-message"></p>
@@ -666,8 +652,30 @@
             <button type="button" class="text-btn secondary" id="cloud-sync-copy-pairing-btn">Copy pairing code</button>
           </div>
         </div>
-        <div class="form-actions">
-          <button type="button" class="text-btn secondary" id="cloud-sync-disconnect-btn">Disconnect</button>
+
+        <div class="hidden form-actions" id="cloud-sync-manage-toggle-row">
+          <button type="button" class="text-btn secondary" id="cloud-sync-manage-btn">Manage connection</button>
+        </div>
+        <div id="cloud-sync-manage-section">
+          <div class="project-picker-list" id="cloud-sync-project-picker"></div>
+          <div class="hidden" id="cloud-sync-install-section">
+            <p class="card-detail-section-label" style="margin-top:8px;">Features to enable</p>
+            <label class="cloud-sync-feature-row">
+              <input type="checkbox" id="cloud-sync-feature-rss" />
+              <span>RSS sync — "new content" badges for profiles with RSS feeds</span>
+            </label>
+            <label class="cloud-sync-feature-row">
+              <input type="checkbox" id="cloud-sync-feature-backup" />
+              <span>Cloud Backup — back up and sync all your profiles, tags, and snippets</span>
+            </label>
+            <div class="cloud-sync-steps" id="cloud-sync-install-steps"></div>
+            <div class="form-actions">
+              <button type="button" class="text-btn primary" id="cloud-sync-install-btn">Install selected</button>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="text-btn secondary" id="cloud-sync-disconnect-btn">Disconnect</button>
+          </div>
         </div>
       </div>
     </div>

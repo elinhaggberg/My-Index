@@ -1102,6 +1102,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .cloud-sync-intro { color: var(--text-dim); font-size: 0.92rem; margin: 0 0 18px; }
 .cloud-sync-status { color: var(--good); font-weight: 600; margin: 0 0 12px; }
 
+.cloud-sync-feature-summary { display: flex; flex-direction: column; gap: 4px; margin: -6px 0 14px; }
+.cloud-sync-feature-summary-row { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: var(--text-dim); }
+.cloud-sync-feature-summary-row .icon { width: 14px; height: 14px; color: var(--good); flex-shrink: 0; }
+
 /* The OAuth connection is granted per-organization, not per-project, so it
    can see every project in that org (e.g. a sibling app's) -- this list is
    how the user explicitly says which one is My Index's, rather than the
