@@ -21,6 +21,7 @@ export function openSnippetSearch(nav, refresh) {
   async function runSearch() {
     const q = input.value.trim().toLowerCase();
     if (!q) {
+      resetLazyGrid();
       resultsEl.replaceChildren();
       emptyEl.textContent = "Start typing to search your snippets.";
       emptyEl.classList.remove("hidden");
@@ -36,6 +37,7 @@ export function openSnippetSearch(nav, refresh) {
       );
     });
     if (matches.length === 0) {
+      resetLazyGrid();
       resultsEl.replaceChildren();
       emptyEl.textContent = "No snippets match that search.";
       emptyEl.classList.remove("hidden");

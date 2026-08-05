@@ -118,6 +118,7 @@ export async function renderProfile(root, nav, id) {
     const snippetsGrid = document.getElementById("profile-snippets-grid");
     const snippets = await getSnippetsForProfile(id);
     if (snippets.length === 0) {
+      resetLazyGrid();
       const empty = document.createElement("p");
       empty.className = "empty-state";
       empty.textContent = "No snippets linked to this profile yet.";
