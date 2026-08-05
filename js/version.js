@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.08.05.2";
+export const APP_VERSION = "2026.08.05.3";
 
 export const CHANGELOG = [
+  {
+    version: "2026.08.05.3",
+    date: "August 5, 2026",
+    changes: [
+      "Cloud Sync now detects when the Supabase project you've picked already has Cloud Backup set up -- by another Make It Local app, or this same app on another device -- and offers to add this app to it with just its passphrase, instead of silently generating a new one and breaking whatever's already using that project. Makes it possible to back up multiple sibling apps to a single free-tier project.",
+    ],
+  },
   {
     version: "2026.08.05.2",
     date: "August 5, 2026",

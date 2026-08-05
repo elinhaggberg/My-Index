@@ -664,6 +664,18 @@
         </div>
         <div id="cloud-sync-manage-section">
           <div class="project-picker-list" id="cloud-sync-project-picker"></div>
+          <div class="hidden" id="cloud-sync-join-section">
+            <p class="card-detail-section-label" style="margin-top:8px;">Cloud Backup</p>
+            <p class="cloud-sync-intro">This project already has Cloud Backup set up — probably from another Make It Local app, or this same app on another device. Enter its passphrase to add this app to it, no new setup needed.</p>
+            <label class="field">
+              <span>Backup passphrase</span>
+              <input type="text" id="cloud-sync-join-passphrase" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            </label>
+            <p class="import-message hidden" id="cloud-sync-join-message"></p>
+            <div class="form-actions">
+              <button type="button" class="text-btn primary" id="cloud-sync-join-btn">Add this app</button>
+            </div>
+          </div>
           <div class="hidden" id="cloud-sync-install-section">
             <p class="card-detail-section-label" style="margin-top:8px;">Features to enable</p>
             <label class="cloud-sync-feature-row">

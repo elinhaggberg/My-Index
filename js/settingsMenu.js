@@ -28,7 +28,13 @@ import {
   getWizardStep,
   setWizardStep,
 } from "./supabaseOAuth.js";
-import { installCloudSync, getInstallSteps, getInstalledFeatures } from "./cloudSyncInstall.js";
+import {
+  installCloudSync,
+  getInstallSteps,
+  getInstalledFeatures,
+  checkExistingBackupSetup,
+  joinExistingBackup,
+} from "./cloudSyncInstall.js";
 import { resyncAllChannels } from "./feedSync.js";
 import { isBackupConfigured, getPairingCode, getLastSyncedDisplay, syncNow, applyPairingCode } from "./cloudBackup.js";
 import { ICON_CHECK } from "./icons.js";
@@ -154,6 +160,11 @@ export function openCloudSyncSheet(oauthResult) {
   const installBtn = el.querySelector("#cloud-sync-install-btn");
   const rssCheckbox = el.querySelector("#cloud-sync-feature-rss");
   const backupCheckbox = el.querySelector("#cloud-sync-feature-backup");
+  const backupFeatureRowEl = backupCheckbox.closest(".cloud-sync-feature-row");
+  const joinSectionEl = el.querySelector("#cloud-sync-join-section");
+  const joinPassphraseInput = el.querySelector("#cloud-sync-join-passphrase");
+  const joinMessageEl = el.querySelector("#cloud-sync-join-message");
+  const joinBtn = el.querySelector("#cloud-sync-join-btn");
   const resyncSectionEl = el.querySelector("#cloud-sync-resync-section");
   const resyncBtn = el.querySelector("#cloud-sync-resync-btn");
   const resyncMessageEl = el.querySelector("#cloud-sync-resync-message");
@@ -240,6 +251,40 @@ export function openCloudSyncSheet(oauthResult) {
       // list above -- nothing more to say here, and the whole sequence is
       // safe to just re-run.
       restoreButton(installBtn);
+    }
+  }
+
+  // The "another app/device already set this project up" path -- verifies
+  // the entered passphrase live (see joinExistingBackup's own comment) so a
+  // typo shows up immediately as "that's not right," rather than silently
+  // failing every sync afterward.
+  async function runJoin() {
+    const passphrase = joinPassphraseInput.value.trim();
+    if (!passphrase) return;
+    setButtonBusy(joinBtn, "Connecting…");
+    joinMessageEl.classList.add("hidden");
+    try {
+      const result = await joinExistingBackup(passphrase);
+      if (result === false) {
+        joinMessageEl.textContent = "That doesn't look like the right passphrase. Please try again.";
+        joinMessageEl.classList.remove("hidden");
+        joinMessageEl.classList.add("error");
+        return;
+      }
+      if (result === null) {
+        joinMessageEl.textContent = "Couldn't reach the project right now. Please try again.";
+        joinMessageEl.classList.remove("hidden");
+        joinMessageEl.classList.add("error");
+        return;
+      }
+      await render();
+      await runSyncNow();
+    } catch (err) {
+      joinMessageEl.textContent = err.message || "Something went wrong. Please try again.";
+      joinMessageEl.classList.remove("hidden");
+      joinMessageEl.classList.add("error");
+    } finally {
+      restoreButton(joinBtn, "Add this app");
     }
   }
 
@@ -330,6 +375,7 @@ export function openCloudSyncSheet(oauthResult) {
     statusLine.textContent = "";
     pickerEl.replaceChildren();
     installSectionEl.classList.add("hidden");
+    joinSectionEl.classList.add("hidden");
     resyncSectionEl.classList.add("hidden");
     backupSectionEl.classList.add("hidden");
     featureSummaryEl.classList.add("hidden");
@@ -337,15 +383,16 @@ export function openCloudSyncSheet(oauthResult) {
 
     const projects = await listSupabaseProjects();
     const selected = getSelectedProject();
-    loadingEl.classList.add("hidden");
 
     if (!projects || !Array.isArray(projects)) {
+      loadingEl.classList.add("hidden");
       statusLine.textContent = "✓ Connected";
       pickerEl.replaceChildren();
       installSectionEl.classList.add("hidden");
       return;
     }
     if (projects.length === 0) {
+      loadingEl.classList.add("hidden");
       statusLine.textContent = "✓ Connected — no projects found on this account yet.";
       pickerEl.replaceChildren();
       installSectionEl.classList.add("hidden");
@@ -371,10 +418,29 @@ export function openCloudSyncSheet(oauthResult) {
       })
     );
 
-    installSectionEl.classList.toggle("hidden", !selected);
     let installed = { rssSync: false, backup: false };
+    // Whether this project already has Cloud Backup's function deployed --
+    // by another Make It Local app, or this same app on a different device
+    // -- so installing here shouldn't blindly generate a new passphrase and
+    // overwrite the one whatever set this up is already using. Only worth
+    // checking (a real network call) when this device hasn't itself
+    // already installed backup on this project -- kept under the same
+    // loading spinner as the project list fetch above, so picking a project
+    // doesn't flash the install section before swapping to the join one.
+    let joinableBackup = false;
     if (selected) {
       installed = getInstalledFeatures(selected.ref);
+      if (!installed.backup) {
+        try {
+          joinableBackup = await checkExistingBackupSetup(selected.ref);
+        } catch {
+          joinableBackup = false;
+        }
+      }
+    }
+    loadingEl.classList.add("hidden");
+
+    if (selected) {
       rssCheckbox.checked = installed.rssSync;
       rssCheckbox.disabled = installed.rssSync;
       // Left enabled (unlike rssCheckbox above) even once installed --
@@ -383,7 +449,23 @@ export function openCloudSyncSheet(oauthResult) {
       // picks up new backup steps added later, like the image-sync
       // function backup-image (see js/cloudImageSync.js).
       backupCheckbox.checked = installed.backup;
+      // Hidden (rather than just left checkable) when this project already
+      // has someone else's Cloud Backup and this device hasn't joined it
+      // yet -- checking it and clicking "Install selected" would generate
+      // a fresh passphrase and silently overwrite the shared one instead.
+      // The join form below is the path in for that case; RSS sync is
+      // unaffected and stays available either way.
+      const showJoin = !installed.backup && joinableBackup;
+      backupFeatureRowEl.classList.toggle("hidden", showJoin);
+      if (showJoin) backupCheckbox.checked = false;
       renderSteps(new Map(getInstallSteps(selectedFeatures()).map((label) => [label, "done"])));
+    }
+    installSectionEl.classList.toggle("hidden", !selected);
+    const showJoin = Boolean(selected) && !installed.backup && joinableBackup;
+    joinSectionEl.classList.toggle("hidden", !showJoin);
+    if (showJoin) {
+      joinMessageEl.classList.add("hidden");
+      joinPassphraseInput.value = "";
     }
     resyncSectionEl.classList.toggle("hidden", !installed.rssSync);
     resyncMessageEl.classList.add("hidden");
@@ -410,7 +492,11 @@ export function openCloudSyncSheet(oauthResult) {
         })
     );
     featureSummaryEl.classList.toggle("hidden", !hasAnyFeatureInstalled);
-    updateManageVisibility(hasAnyFeatureInstalled);
+    // Forces the section open when there's a join opportunity even if RSS
+    // sync (a separate feature) is already installed here -- otherwise the
+    // join form would default to collapsed behind "Manage connection,"
+    // which defeats the point of surfacing it automatically.
+    updateManageVisibility(hasAnyFeatureInstalled && !showJoin);
   }
 
   rssCheckbox.addEventListener("change", () => renderSteps(new Map()));
@@ -429,6 +515,7 @@ export function openCloudSyncSheet(oauthResult) {
   });
   installBtn.addEventListener("click", runInstall);
   resyncBtn.addEventListener("click", runResync);
+  joinBtn.addEventListener("click", runJoin);
 
   render();
 }
