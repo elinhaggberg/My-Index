@@ -32,3 +32,15 @@ alter table backup_records enable row level security;
 -- passphrase is the actual thing protecting real content here, unlike the
 -- RSS tables where a per-device id was an acceptable-enough scope for
 -- low-stakes tracking metadata.
+
+-- Private Storage bucket for Cloud Backup's image sync (see
+-- js/cloudImageSync.js) -- holds the actual bytes of uploaded
+-- Profile/Tag/Snippet photos, keyed by "<store>/<recordId>", so a synced
+-- record only ever carries a small "storage:<store>:<recordId>" reference
+-- instead of its image's full data: URI. No RLS policy is defined here
+-- either, same reasoning as backup_records above -- only the backup-image
+-- Edge Function's service-role client can ever reach this bucket, gated by
+-- the same backup passphrase as every other Cloud Backup call.
+insert into storage.buckets (id, name, public)
+values ('backup-images', 'backup-images', false)
+on conflict (id) do nothing;

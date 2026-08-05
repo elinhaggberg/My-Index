@@ -67,18 +67,37 @@ export function blobToDataUrl(blob) {
   });
 }
 
+// Lets an optional add-on (js/cloudImageSync.js's download side) teach
+// resolveImageSrc how to handle its own reference prefix, without this
+// generic, ported-verbatim-across-apps module needing to import or know
+// anything about Cloud Backup/Supabase itself. Registered once at startup
+// (see app.js) -- every existing resolveImageSrc call site (snippet cards,
+// profile avatars, tag covers...) picks up the new prefix automatically,
+// no call-site changes needed.
+const remoteResolvers = new Map();
+
+export function registerRemoteResolver(prefix, resolve) {
+  remoteResolvers.set(prefix, resolve);
+}
+
 // Turns whatever a record's image field holds into something an <img> or
 // background-image can actually load: a Blob (a fresh, not-yet-saved
 // upload) becomes an object URL directly; an "idb:<id>" reference is looked
-// up and turned into an object URL; anything else (a remote http(s) URL
-// from an unfurled link, or a legacy inline data: URI from before this
-// store existed) is already usable as-is.
+// up and turned into an object URL; a prefix registered via
+// registerRemoteResolver is handed off to its resolver; anything else (a
+// remote http(s) URL from an unfurled link, or a legacy inline data: URI
+// from before this store existed) is already usable as-is.
 export async function resolveImageSrc(ref) {
   if (!ref) return "";
   if (ref instanceof Blob) return URL.createObjectURL(ref);
   if (typeof ref === "string" && ref.startsWith(IDB_PREFIX)) {
     const blob = await getImage(ref.slice(IDB_PREFIX.length));
     return blob ? URL.createObjectURL(blob) : "";
+  }
+  if (typeof ref === "string") {
+    for (const [prefix, resolve] of remoteResolvers) {
+      if (ref.startsWith(prefix)) return (await resolve(ref)) || "";
+    }
   }
   return ref;
 }

@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.08.05";
+export const APP_VERSION = "2026.08.05.2";
 
 export const CHANGELOG = [
+  {
+    version: "2026.08.05.2",
+    date: "August 5, 2026",
+    changes: [
+      "Cloud Backup now uploads photos to your own connected Supabase project's storage instead of embedding them directly in each synced record -- a second device only downloads a photo once it's actually scrolled into view, instead of every photo downloading up front on every sync. Existing installs pick this up next time Cloud Backup reinstalls itself (Settings → Cloud sync → Manage connection → Install, safe to run again).",
+    ],
+  },
   {
     version: "2026.08.05",
     date: "August 5, 2026",

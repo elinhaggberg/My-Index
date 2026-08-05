@@ -53,7 +53,12 @@ export const RSS_SYNC_STEPS = [
   "Scheduling hourly feed checks",
 ];
 
-export const BACKUP_STEPS = ["Setting up backup tables", "Creating a backup passphrase", "Deploying the backup function"];
+export const BACKUP_STEPS = [
+  "Setting up backup tables",
+  "Creating a backup passphrase",
+  "Deploying the backup function",
+  "Deploying the image sync function",
+];
 
 const CONNECT_STEP = "Connecting the app to your project";
 
@@ -168,11 +173,15 @@ function rssSyncSteps(token, ref) {
 }
 
 function backupSteps(token, ref) {
-  const [dbLabel, passphraseLabel, fnLabel] = BACKUP_STEPS;
+  const [dbLabel, passphraseLabel, fnLabel, imageFnLabel] = BACKUP_STEPS;
   return [
     {
       label: dbLabel,
       run: async () => {
+        // Also creates the private "backup-images" Storage bucket that
+        // image sync uploads into (see js/cloudImageSync.js) -- one more
+        // statement in the same SQL file, not a separate step, since it's
+        // just as much "setting up backup tables" as backup_records itself.
         const sql = await loadTemplate("/supabase/backup_schema.sql");
         await runSql(token, ref, sql);
       },
@@ -199,6 +208,13 @@ function backupSteps(token, ref) {
         // Same verify_jwt reasoning as sync-index -- the passphrase header
         // check inside the function is the real access control here.
         await deployFunction(token, ref, { slug: "backup-sync", verifyJwt: false, source });
+      },
+    },
+    {
+      label: imageFnLabel,
+      run: async () => {
+        const source = await loadTemplate("/supabase/functions/backup-image/index.ts");
+        await deployFunction(token, ref, { slug: "backup-image", verifyJwt: false, source });
       },
     },
   ];

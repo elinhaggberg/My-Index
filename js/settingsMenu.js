@@ -12,7 +12,6 @@ import {
   getTombstones,
   clearTombstones,
   applyRemoteDeletion,
-  inlineRecordImage,
   getShowProfileRow,
   setShowProfileRow,
 } from "./storage.js";
@@ -42,7 +41,6 @@ const STORAGE_FNS = {
   getTombstones,
   clearTombstones,
   applyRemoteDeletion,
-  inlineRecordImage,
 };
 
 export function openSettingsMenu(nav, refresh) {
@@ -379,8 +377,12 @@ export function openCloudSyncSheet(oauthResult) {
       installed = getInstalledFeatures(selected.ref);
       rssCheckbox.checked = installed.rssSync;
       rssCheckbox.disabled = installed.rssSync;
+      // Left enabled (unlike rssCheckbox above) even once installed --
+      // re-running install is idempotent (every step is an upsert, see
+      // cloudSyncInstall.js), and it's the only way an existing install
+      // picks up new backup steps added later, like the image-sync
+      // function backup-image (see js/cloudImageSync.js).
       backupCheckbox.checked = installed.backup;
-      backupCheckbox.disabled = installed.backup;
       renderSteps(new Map(getInstallSteps(selectedFeatures()).map((label) => [label, "done"])));
     }
     resyncSectionEl.classList.toggle("hidden", !installed.rssSync);

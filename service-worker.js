@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v8";
+const CACHE_NAME = "my-index-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "./js/supabaseOAuth.js",
   "./js/cloudSyncInstall.js",
   "./js/cloudBackup.js",
+  "./js/cloudImageSync.js",
   "./js/discoverFeed.js",
   "./js/imageBlob.js",
   "./js/imageStore.js",

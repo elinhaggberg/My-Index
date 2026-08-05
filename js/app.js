@@ -16,8 +16,10 @@ import {
   getTombstones,
   clearTombstones,
   applyRemoteDeletion,
-  inlineRecordImage,
 } from "./storage.js";
+import { getOne, putOne } from "./db.js";
+import { registerRemoteResolver } from "./imageStore.js";
+import { createStorageResolver, STORAGE_PREFIX } from "./cloudImageSync.js";
 import { openSnippetEditor } from "./snippetEditor.js";
 import { checkWhatsNew } from "./whatsNew.js";
 import { checkOnboarding } from "./onboarding.js";
@@ -27,6 +29,22 @@ import { openCloudSyncSheet } from "./settingsMenu.js";
 import { startAutoSync } from "./cloudBackup.js";
 
 applyTheme();
+
+// Wires Cloud Backup's Storage-based image sync (js/cloudImageSync.js) into
+// every existing resolveImageSrc call site, with no call-site changes --
+// see imageStore.js's registerRemoteResolver. patchRecordImage is the one
+// piece cloudImageSync.js can't know generically: where this app's own
+// records actually live (IndexedDB via js/db.js here; a differently-shaped
+// local store in the sibling apps).
+registerRemoteResolver(
+  STORAGE_PREFIX,
+  createStorageResolver({
+    patchRecordImage: async (store, recordId, idbRef) => {
+      const record = await getOne(store, recordId);
+      if (record) await putOne(store, { ...record, image: idbRef });
+    },
+  })
+);
 
 const root = document.getElementById("app");
 
@@ -150,7 +168,7 @@ checkWhatsNew();
 // background pull doesn't re-render whatever view happens to be open
 // right now, so anything it brings in shows up on the next navigation or
 // reload rather than instantly -- a known limitation, not a bug.
-startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion, inlineRecordImage });
+startAutoSync({ getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion });
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

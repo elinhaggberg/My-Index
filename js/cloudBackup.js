@@ -10,6 +10,7 @@
 // records, pullChanges applies an incoming one as a real local delete
 // instead of silently ignoring it.
 import { getApiConfig, setApiConfig } from "./supabaseOAuth.js";
+import { syncRecordImageForPush, deleteRecordImage } from "./cloudImageSync.js";
 
 const PASSPHRASE_KEY = "mi_backup_passphrase_v1";
 const LAST_SYNCED_KEY = "mi_backup_last_synced_v1";
@@ -95,18 +96,18 @@ async function callBackupApi(action, body) {
   }
 }
 
-// inlineRecordImage turns a device-local idb: image reference into a
-// portable data: URI (or leaves a remote URL/no-image record untouched) --
-// see storage.js's own comment on it. Without this, a synced record's image
-// would just be a meaningless local IndexedDB key on whatever device pulls
-// it.
-async function toRecord(store, record, inlineRecordImage) {
-  const inlined = await inlineRecordImage(record);
+// syncRecordImageForPush uploads a device-local idb: image to Storage and
+// swaps in a portable storage: reference (or leaves a remote URL/no-image
+// record untouched) -- see cloudImageSync.js's own comment on it. Without
+// this, a synced record's image would just be a meaningless local
+// IndexedDB key on whatever device pulls it.
+async function toRecord(store, record) {
+  const synced = await syncRecordImageForPush(store, record);
   return {
     store,
-    recordId: inlined.id,
-    data: inlined,
-    updatedAt: new Date(inlined.updatedAt || inlined.createdAt || Date.now()).toISOString(),
+    recordId: synced.id,
+    data: synced,
+    updatedAt: new Date(synced.updatedAt || synced.createdAt || Date.now()).toISOString(),
   };
 }
 
@@ -122,13 +123,13 @@ function toTombstoneRecord(t) {
 // the server makes resending everything safe, just a bit more bandwidth
 // than strictly necessary -- an acceptable trade at personal-register
 // scale (dozens to low hundreds of records).
-export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones, inlineRecordImage }) {
+export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones }) {
   if (!isBackupConfigured()) return { applied: 0 };
   const [profiles, tags, snippets, tombstones] = await Promise.all([getProfiles(), getTags(), getSnippets(), getTombstones()]);
   const records = [
-    ...(await Promise.all(profiles.map((p) => toRecord("profiles", p, inlineRecordImage)))),
-    ...(await Promise.all(tags.filter((t) => !t.isSystem).map((t) => toRecord("tags", t, inlineRecordImage)))),
-    ...(await Promise.all(snippets.map((s) => toRecord("snippets", s, inlineRecordImage)))),
+    ...(await Promise.all(profiles.map((p) => toRecord("profiles", p)))),
+    ...(await Promise.all(tags.filter((t) => !t.isSystem).map((t) => toRecord("tags", t)))),
+    ...(await Promise.all(snippets.map((s) => toRecord("snippets", s)))),
     ...tombstones.map(toTombstoneRecord),
   ];
   if (records.length === 0) return { applied: 0 };
@@ -139,8 +140,12 @@ export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones
   // deletion. Clears all of them regardless of each one's own applied/skipped
   // outcome (see backup-sync's last-write-wins check): a tombstone that lost
   // to a newer edit elsewhere doesn't need to be retried, that's the correct
-  // outcome, not a failure.
-  if (result && tombstones.length) await clearTombstones(tombstones.map((t) => t.id));
+  // outcome, not a failure. Each tombstone's uploaded image (if it had one)
+  // is cleaned up the same way, best-effort (see deleteRecordImage).
+  if (result && tombstones.length) {
+    await Promise.all(tombstones.map((t) => deleteRecordImage(t.store, t.recordId)));
+    await clearTombstones(tombstones.map((t) => t.id));
+  }
   return { applied: result?.applied ?? 0 };
 }
 
