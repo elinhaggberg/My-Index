@@ -98,6 +98,7 @@ export async function renderHome(root, nav) {
     }
 
     if (snippets.length === 0) {
+      resetLazyGrid();
       const empty = document.createElement("p");
       empty.className = "empty-state";
       empty.textContent = active ? "Nothing matches this filter." : "Nothing saved yet. Tap + to save your first link, quote, or note.";

@@ -73,6 +73,7 @@ export async function renderTag(root, nav, id) {
     const grid = document.getElementById("tag-snippets-grid");
     const snippets = await getSnippetsForTag(id);
     if (snippets.length === 0) {
+      resetLazyGrid();
       const empty = document.createElement("p");
       empty.className = "empty-state";
       empty.textContent = "Nothing here yet.";
