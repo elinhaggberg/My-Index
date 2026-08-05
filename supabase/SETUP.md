@@ -136,6 +136,21 @@ Your device id is generated the first time the app opens and stored in
 `localStorage` as `mi_device_id_v1` — there's no UI surfacing it yet, so
 read it from the browser's dev tools once to paste into the Shortcut.
 
+## Troubleshooting: a specific feed isn't updating
+
+`check-feeds` (dashboard → Edge Functions → check-feeds → "Invoke") returns a
+`results` array, one entry per tracked feed, each either `{ newCount }` on
+success or `{ error }` when a feed didn't produce anything — check this (or
+the function's Logs tab, which logs the same failures) before assuming
+something's broken app-side.
+
+Some publishers (Substack in particular, via Cloudflare) return a non-200 or
+a blank challenge page to requests that don't look like a browser or a known
+feed reader. `check-feeds` sends a browser-shaped User-Agent and an XML
+`Accept` header for exactly this reason — if you're running an older deploy
+predating this, redeploy the function (step 3 above, or Settings → Cloud
+sync → re-run Install if you're on the automated path) to pick up the fix.
+
 ## Done
 
 Everything above is additive and reversible — disable the cron job
