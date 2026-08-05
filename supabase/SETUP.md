@@ -1,5 +1,9 @@
 # Optional add-on: new-content badges + Shortcut capture
 
+(Looking for Cloud Backup instead — full profile/tag/snippet sync to your
+own Supabase project? That's a separate, independent add-on documented in
+`supabase/CLOUD_BACKUP_SETUP.md`.)
+
 **As of the Cloud Sync feature in Settings, you shouldn't need any of this
 manual walkthrough anymore** — connecting your own Supabase project there
 (Settings → Cloud sync → Connect Supabase → pick a project → Install RSS

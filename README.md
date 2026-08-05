@@ -23,16 +23,20 @@ A Tag's page is auto-generated: its pinned note at the top, followed by every Pr
 - **Profile & Tag pages**: full detail views, cross-referenced by shared tags.
 - **Backup & sharing**: export a single profile, a single snippet, or a full backup as a JSON file; import always merges, never replaces.
 - **New-content badges** *(optional add-on)*: a lightweight backend can poll each Channel's RSS feed on a schedule and show a "new items" count on its Profile, cleared on visit — see `supabase/SETUP.md`. The app works fully without it.
+- **Cloud Backup** *(optional add-on)*: connect your own free Supabase project (via OAuth, no manual setup) for a full, passphrase-protected cloud backup and sync of every Profile/Tag/Snippet, photos included — see `supabase/CLOUD_BACKUP_SETUP.md`. Off by default; the app works fully without it, and multiple Make It Local apps can share one Supabase project instead of needing one each.
 
 ## Architecture
 
 No build step — plain HTML/CSS/JS modules, same approach as the other Make It Local apps. Profiles, Tags, and Snippets live in **IndexedDB** (this register is meant to keep growing, unlike a fixed-size collection, so it skips past `localStorage`'s ~5MB cap from the start); small preferences (theme, home title, onboarding state) stay in `localStorage`.
 
-The only server-side piece is `api/unfurl.js`, a stateless Vercel serverless function that fetches a pasted URL server-side (the browser can't read cross-origin HTML itself) and extracts Open Graph metadata to build the snippet. It stores nothing — no database, no accounts.
+Two kinds of server-side pieces, both stateless and both optional except the first:
+
+- `api/unfurl.js` — always active, a stateless Vercel serverless function that fetches a pasted URL server-side (the browser can't read cross-origin HTML itself) and extracts Open Graph metadata to build the snippet. Stores nothing — no database, no accounts.
+- `api/oauth-*.js` and `api/cloud-sync-*.js` — inert unless Cloud Backup or RSS sync is turned on; thin proxies to Supabase's OAuth and Management API so the browser never needs Supabase's own API credentials directly. See `supabase/CLOUD_BACKUP_SETUP.md` if you're forking this repo and want Cloud Backup working on your own deployment — it needs a one-time OAuth application registration that can't be automated.
 
 ## Deploying
 
-Deploy straight from this repo on [Vercel](https://vercel.com) — no configuration needed. It auto-detects the static site plus the `api/` serverless function.
+Deploy straight from this repo on [Vercel](https://vercel.com) — no configuration needed. It auto-detects the static site plus the `api/` serverless functions.
 
 ## License
 
