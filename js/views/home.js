@@ -11,10 +11,13 @@ import {
   markBackedUp,
   dismissBackupBanner,
   shouldShowBackupBanner,
+  shouldShowStorageWarning,
+  dismissStorageWarningBanner,
   getShowProfileRow,
 } from "../storage.js";
 import { renderTabbar } from "../tabbar.js";
 import { renderMasonry } from "../masonry.js";
+import { resetLazyGrid } from "../lazyImage.js";
 import { createSnippetNode } from "../snippetCard.js";
 import { createProfileTileNode } from "../profileTile.js";
 import { openSnippetDetail } from "../snippetDetail.js";
@@ -101,6 +104,7 @@ export async function renderHome(root, nav) {
       grid.replaceChildren(empty);
       return;
     }
+    resetLazyGrid();
     renderMasonry(grid, snippets, (snippet) => createSnippetNode(snippet, (s) => openSnippetDetail(nav, s, renderAll)));
   }
 
@@ -126,6 +130,15 @@ export async function renderHome(root, nav) {
     banner.querySelector("#backup-dismiss-btn").addEventListener("click", () => {
       dismissBackupBanner();
       banner.classList.add("hidden");
+    });
+  }
+
+  const storageBanner = document.getElementById("storage-warning-banner");
+  if (await shouldShowStorageWarning()) {
+    storageBanner.classList.remove("hidden");
+    storageBanner.querySelector("#storage-warning-dismiss-btn").addEventListener("click", () => {
+      dismissStorageWarningBanner();
+      storageBanner.classList.add("hidden");
     });
   }
 }

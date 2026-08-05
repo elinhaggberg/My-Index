@@ -3,9 +3,17 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.08.03";
+export const APP_VERSION = "2026.08.05";
 
 export const CHANGELOG = [
+  {
+    version: "2026.08.05",
+    date: "August 5, 2026",
+    changes: [
+      "Snippet grids (Home, a Tag's page, a Profile's page, and Search) now load images as you scroll to them instead of all at once -- keeps things smooth once you've saved a lot of photos, since nothing behind the fold does an IndexedDB lookup until you actually scroll near it.",
+      "Home now warns once local storage gets close to full, instead of the first sign of trouble being a failed save.",
+    ],
+  },
   {
     version: "2026.08.03",
     date: "August 3, 2026",

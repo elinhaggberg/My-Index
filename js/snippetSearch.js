@@ -1,6 +1,7 @@
 import { getSnippets } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { renderMasonry } from "./masonry.js";
+import { resetLazyGrid } from "./lazyImage.js";
 import { createSnippetNode } from "./snippetCard.js";
 import { openSnippetDetail } from "./snippetDetail.js";
 
@@ -41,6 +42,7 @@ export function openSnippetSearch(nav, refresh) {
       return;
     }
     emptyEl.classList.add("hidden");
+    resetLazyGrid();
     renderMasonry(resultsEl, matches, (snippet) =>
       createSnippetNode(snippet, (s) =>
         openSnippetDetail(nav, s, () => {

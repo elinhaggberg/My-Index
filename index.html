@@ -33,6 +33,12 @@
       <button class="icon-btn filter-btn" id="filter-btn" aria-label="Filter"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M7 12h10M10 19h4"/></svg></button>
       <button class="icon-btn settings-btn" id="settings-btn" aria-label="Menu"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/></svg></button>
     </header>
+    <div id="storage-warning-banner" class="banner hidden">
+      <p>Local storage is almost full — consider removing older snippets or images to free up space.</p>
+      <div class="banner-actions">
+        <button type="button" class="text-btn" id="storage-warning-dismiss-btn">Got it</button>
+      </div>
+    </div>
     <div id="backup-banner" class="banner hidden">
       <p>You haven't backed up in a while — export takes a second.</p>
       <div class="banner-actions">

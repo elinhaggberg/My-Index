@@ -8,6 +8,7 @@ import {
   UNCATEGORIZED_TAG_ID,
 } from "../storage.js";
 import { renderMasonry } from "../masonry.js";
+import { resetLazyGrid } from "../lazyImage.js";
 import { createSnippetNode } from "../snippetCard.js";
 import { createProfileTileNode } from "../profileTile.js";
 import { openSnippetDetail } from "../snippetDetail.js";
@@ -77,6 +78,7 @@ export async function renderTag(root, nav, id) {
       empty.textContent = "Nothing here yet.";
       grid.replaceChildren(empty);
     } else {
+      resetLazyGrid();
       renderMasonry(grid, snippets, (snippet) => createSnippetNode(snippet, (s) => openSnippetDetail(nav, s, load)));
     }
 

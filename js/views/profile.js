@@ -5,6 +5,7 @@ import {
   exportProfileData,
 } from "../storage.js";
 import { renderMasonry } from "../masonry.js";
+import { resetLazyGrid } from "../lazyImage.js";
 import { createSnippetNode } from "../snippetCard.js";
 import { openSnippetDetail } from "../snippetDetail.js";
 import { openSnippetEditor } from "../snippetEditor.js";
@@ -122,6 +123,7 @@ export async function renderProfile(root, nav, id) {
       empty.textContent = "No snippets linked to this profile yet.";
       snippetsGrid.replaceChildren(empty);
     } else {
+      resetLazyGrid();
       renderMasonry(snippetsGrid, snippets, (snippet) => createSnippetNode(snippet, (s) => openSnippetDetail(nav, s, load)));
     }
 

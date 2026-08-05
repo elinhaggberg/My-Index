@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v7";
+const CACHE_NAME = "my-index-v8";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,7 @@ const APP_SHELL = [
   "./js/discoverFeed.js",
   "./js/imageBlob.js",
   "./js/imageStore.js",
+  "./js/lazyImage.js",
   "./js/theme.js",
   "./js/util.js",
   "./js/sheet.js",
