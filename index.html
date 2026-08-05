@@ -593,24 +593,25 @@
         <h2>Cloud sync</h2>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
-      <p class="cloud-sync-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges and/or a full cloud backup, without giving up the local-first design.</p>
+      <p class="cloud-sync-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges and/or a full cloud backup, without giving up the local-first design. Already syncing another Make It Local app? You can connect this one to that same project instead of starting from scratch — no new account or project needed.</p>
       <p class="import-message hidden" id="cloud-sync-message"></p>
       <div class="hidden" id="cloud-sync-disconnected">
         <div id="cloud-wizard-step-1">
           <p class="card-detail-section-label">Step 1 of 3</p>
           <h3>Create a free Supabase account</h3>
-          <p class="cloud-sync-intro">Supabase hosts your own private database — free, no credit card needed. My Index never sees or stores this data itself; it only ever talks to the one project you create and connect below.</p>
+          <p class="cloud-sync-intro">Supabase hosts your own private database — free, no credit card needed. My Index never sees or stores this data itself; it only ever talks to the one project you create and connect below. Already have an account from another Make It Local app? It's the same account — no need to make another.</p>
           <div class="form-actions">
             <a class="text-btn secondary" href="https://supabase.com/dashboard/sign-up" target="_blank" rel="noopener">Open supabase.com</a>
           </div>
           <div class="form-actions">
             <button type="button" class="text-btn primary" id="cloud-wizard-step1-continue-btn">Continue</button>
           </div>
+          <p class="cloud-sync-intro"><button type="button" class="text-btn-inline" id="cloud-wizard-skip-to-connect-btn">Already have a Supabase account and project? Skip to Connect</button></p>
         </div>
         <div class="hidden" id="cloud-wizard-step-2">
           <p class="card-detail-section-label">Step 2 of 3</p>
           <h3>Create a new project</h3>
-          <p class="cloud-sync-intro">In your Supabase dashboard, click <strong>New project</strong>. Name it anything (e.g. "my-index"), pick any region, and set a database password — the free tier is more than enough for this.</p>
+          <p class="cloud-sync-intro">In your Supabase dashboard, click <strong>New project</strong>. Name it anything (e.g. "my-index"), pick any region, and set a database password — the free tier is more than enough for this. Already have a project set up for another Make It Local app? Reuse that one instead — just connect below and pick it.</p>
           <div class="form-actions">
             <button type="button" class="text-btn primary" id="cloud-wizard-step2-continue-btn">Continue</button>
           </div>
@@ -619,7 +620,7 @@
         <div class="hidden" id="cloud-wizard-step-3">
           <p class="card-detail-section-label">Step 3 of 3</p>
           <h3>Connect your project</h3>
-          <p class="cloud-sync-intro">Supabase will ask you to approve access, then you'll pick which specific project is My Index's on the next screen — the approval covers your whole account, not just one project.</p>
+          <p class="cloud-sync-intro">Supabase will ask you to approve access, then you'll pick which specific project is My Index's on the next screen — the approval covers your whole account, not just one project. Picking a project that already has Cloud Backup from another Make It Local app? You'll be asked for its passphrase next, instead of setting anything up from scratch.</p>
           <div class="form-actions">
             <button type="button" class="text-btn primary" id="cloud-sync-connect-btn">Connect Supabase</button>
           </div>
@@ -627,7 +628,7 @@
         </div>
         <div class="cloud-sync-restore-section">
           <p class="card-detail-section-label">Already set up elsewhere?</p>
-          <p class="cloud-sync-intro">If another device already has Cloud Backup running, you can pull your data down here instead — no Supabase login needed on this device.</p>
+          <p class="cloud-sync-intro">Don't want to (or can't) sign in to Supabase on this device at all? Paste a pairing code from a device that's already syncing instead — this skips the Supabase login entirely. If you do have Supabase access on this device, Connect above instead — it'll offer to add this app straight to your existing project.</p>
           <div class="form-actions">
             <button type="button" class="text-btn secondary" id="cloud-sync-restore-btn">Restore from Cloud</button>
           </div>

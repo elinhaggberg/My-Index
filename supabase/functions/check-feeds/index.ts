@@ -19,6 +19,17 @@ const CRON_SECRET = Deno.env.get("CRON_SECRET");
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_FEEDS_PER_RUN = 200;
+// Matches api/discover-feed.js's User-Agent (proven to get through
+// Substack's Cloudflare bot protection when a channel's feed is first
+// discovered) plus an Accept header identifying this as a feed reader --
+// the plain "MyIndexApp/1.0 (RSS check)" UA this used before had no
+// "Mozilla" token and no Accept header, which is exactly the fingerprint
+// Cloudflare's bot-fight mode targets, so a Substack feed's periodic check
+// could silently come back blocked (a non-200, or a 200 challenge page
+// with no <item>/<entry> tags) while the same URL fetched fine at
+// discovery time through discover-feed.js's more browser-like request.
+const USER_AGENT = "Mozilla/5.0 (compatible; MyIndexApp/1.0; +https://vercel.com)";
+const ACCEPT_HEADER = "application/rss+xml, application/atom+xml, application/xml, text/xml, */*";
 
 function extractItemIds(xml: string): string[] {
   // Minimal, dependency-free RSS 2.0 (<item><guid>/<link>) and Atom
@@ -35,16 +46,26 @@ function extractItemIds(xml: string): string[] {
   return ids;
 }
 
-async function fetchFeedItemIds(url: string): Promise<string[]> {
+async function fetchFeedItemIds(url: string): Promise<{ ids: string[]; error?: string }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "MyIndexApp/1.0 (RSS check)" } });
-    if (!res.ok) return [];
+    const res = await fetch(url, { signal: controller.signal, headers: { "User-Agent": USER_AGENT, Accept: ACCEPT_HEADER } });
+    if (!res.ok) {
+      // Logged (not just swallowed) so a blocked/rejected feed shows up in
+      // the function's Logs tab instead of just silently never updating --
+      // this was previously indistinguishable from "feed has no new items."
+      console.error(`check-feeds: ${url} responded ${res.status}`);
+      return { ids: [], error: `HTTP ${res.status}` };
+    }
     const xml = await res.text();
-    return extractItemIds(xml);
-  } catch {
-    return [];
+    const ids = extractItemIds(xml);
+    if (ids.length === 0) console.error(`check-feeds: ${url} returned 200 but no <item>/<entry> tags were found`);
+    return { ids };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`check-feeds: ${url} fetch failed: ${message}`);
+    return { ids: [], error: message };
   } finally {
     clearTimeout(timeout);
   }
@@ -65,12 +86,17 @@ Deno.serve(async (req) => {
 
   let checked = 0;
   let updated = 0;
+  // Per-feed outcome, returned in the response -- lets a manual invocation
+  // (curl/dashboard "Invoke") show exactly which feeds failed and why,
+  // rather than needing to cross-reference the Logs tab separately.
+  const results: Array<{ channel_id: string; rss_url: string; error?: string; newCount?: number }> = [];
 
   for (const feed of feeds ?? []) {
     checked++;
-    const ids = await fetchFeedItemIds(feed.rss_url);
+    const { ids, error: fetchError } = await fetchFeedItemIds(feed.rss_url);
     if (ids.length === 0) {
       await supabase.from("channel_feeds").update({ last_checked_at: new Date().toISOString() }).eq("channel_id", feed.channel_id);
+      results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, error: fetchError || "no items found in feed" });
       continue;
     }
 
@@ -83,6 +109,7 @@ Deno.serve(async (req) => {
         .from("channel_feeds")
         .update({ last_seen_guid: newestId, last_checked_at: new Date().toISOString() })
         .eq("channel_id", feed.channel_id);
+      results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, error: "first check, baseline recorded" });
       continue;
     }
 
@@ -94,11 +121,17 @@ Deno.serve(async (req) => {
         p_amount: newCount,
         p_last_seen_guid: newestId,
       });
-      if (!rpcError) updated++;
+      if (!rpcError) {
+        updated++;
+        results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, newCount });
+      } else {
+        results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, error: rpcError.message });
+      }
     } else {
       await supabase.from("channel_feeds").update({ last_checked_at: new Date().toISOString() }).eq("channel_id", feed.channel_id);
+      results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, newCount: 0 });
     }
   }
 
-  return new Response(JSON.stringify({ checked, updated }), { headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ checked, updated, results }), { headers: { "Content-Type": "application/json" } });
 });

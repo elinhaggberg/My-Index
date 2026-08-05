@@ -136,6 +136,15 @@ export function openCloudSyncSheet(oauthResult) {
     setWizardStep(1);
     renderWizard();
   });
+  // For someone who already has Cloud Backup running on another Make It
+  // Local app -- they already have a Supabase account and project, so
+  // steps 1-2 (create account, create project) don't apply to them at
+  // all. Jumps straight to step 3, where connecting will offer to add this
+  // app to their existing project instead of setting one up from scratch.
+  el.querySelector("#cloud-wizard-skip-to-connect-btn").addEventListener("click", () => {
+    setWizardStep(2);
+    renderWizard();
+  });
   el.querySelector("#cloud-wizard-step2-continue-btn").addEventListener("click", () => {
     setWizardStep(2);
     renderWizard();
