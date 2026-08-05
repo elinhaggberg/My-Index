@@ -12,13 +12,25 @@
 -- offline for a while can still learn something was removed elsewhere
 -- instead of just never hearing about it.
 create table if not exists backup_records (
-  store text not null check (store in ('profiles', 'tags', 'snippets')),
+  store text not null,
   record_id text not null,
   data jsonb not null,
   updated_at timestamptz not null default now(),
   deleted boolean not null default false,
   primary key (store, record_id)
 );
+-- store used to be constrained to just this app's own record types
+-- (profiles/tags/snippets) -- that broke any other Make It Local app
+-- trying to share this same project, since its own store name (e.g.
+-- "books" or "cards") would get rejected by this table alone. Each app
+-- already filters incoming records to its own known stores client-side
+-- (see cloudBackup.js's SYNCABLE_STORES), so this constraint was never
+-- doing anything a client-side check wasn't already doing -- dropped here
+-- (idempotent -- a no-op on a project that never had it) so any app can
+-- join a shared project without a schema conflict. See
+-- js/cloudSyncInstall.js's checkExistingBackupSetup/joinExistingBackup for
+-- how a second app connects to a project another app already set up.
+alter table backup_records drop constraint if exists backup_records_store_check;
 create index if not exists backup_records_updated_at_idx on backup_records (updated_at);
 
 alter table backup_records enable row level security;

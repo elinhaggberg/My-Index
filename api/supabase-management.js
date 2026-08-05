@@ -14,6 +14,13 @@ const ALLOWED_GET_PATHS = [
   // matches the "secret" (service role) key entry in the response, only
   // read here, never written.
   /^\/v1\/projects\/[a-z]+\/api-keys(\?.*)?$/,
+  // Used by checkExistingBackupSetup (see js/cloudSyncInstall.js) to detect
+  // whether a project already has Cloud Backup's Edge Function deployed --
+  // by this same app on another device, or a different Make It Local app
+  // sharing the project -- so the UI can offer to join it with its
+  // existing passphrase instead of generating a new one and silently
+  // overwriting theirs. Read-only, no secrets in the response.
+  /^\/v1\/projects\/[a-z]+\/functions$/,
 ];
 
 module.exports = async (req, res) => {

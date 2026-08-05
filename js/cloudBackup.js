@@ -79,6 +79,32 @@ export function applyPairingCode(code) {
   return true;
 }
 
+// Confirms a passphrase actually authenticates against a project's already-
+// deployed backup-sync function, before committing to it locally -- used
+// when joining a project another app (or another device running this same
+// app) already set up (see js/cloudSyncInstall.js's joinExistingBackup), so
+// a typo surfaces immediately as "that's not right" instead of silently
+// breaking sync later. Reuses the existing "pull" action with a since far
+// in the future so the response stays tiny regardless of how much is
+// already backed up -- works against any previously-deployed backup-sync,
+// even one from before this verification path existed, since the
+// passphrase check happens before the action switch either way. Returns
+// true (valid), false (wrong passphrase), or null (couldn't reach it at
+// all -- a different failure than "wrong," worth telling apart in the UI).
+export async function verifyPassphrase(passphrase, config) {
+  try {
+    const res = await fetch(`${config.url}/functions/v1/backup-sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: config.anonKey, "x-backup-passphrase": passphrase },
+      body: JSON.stringify({ action: "pull", since: "9999-12-31T00:00:00.000Z" }),
+    });
+    if (res.status === 401) return false;
+    return res.ok;
+  } catch {
+    return null;
+  }
+}
+
 async function callBackupApi(action, body) {
   const config = getApiConfig();
   const passphrase = getBackupPassphrase();
