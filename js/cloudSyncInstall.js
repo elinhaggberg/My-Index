@@ -114,7 +114,7 @@ async function fetchPublishableKey(token, ref) {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((data && data.error) || "Couldn't read the project's API keys.");
+  if (!res.ok) throw new Error((data && data.error) || `Couldn't read the project's API keys (status ${res.status}).`);
   const publishable = Array.isArray(data) ? data.find((k) => k.type === "publishable") : null;
   if (!publishable?.api_key) throw new Error("Couldn't find a publishable API key on this project.");
   return publishable.api_key;

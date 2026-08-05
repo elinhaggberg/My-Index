@@ -50,9 +50,23 @@ module.exports = async (req, res) => {
 
   try {
     const upstream = await fetch(`https://api.supabase.com${path}`, { headers: { Authorization: auth } });
-    const data = await upstream.json();
+    // Read as text first, not upstream.json() directly -- a non-2xx
+    // response isn't guaranteed to be JSON (an HTML error page, a plain
+    // string, an empty body), and a parse failure there used to fall
+    // through to the generic catch below, hiding whatever Supabase
+    // actually said behind "Network error while reaching Supabase" even
+    // though the request reached them just fine. Surfacing the real
+    // status/body here is what actually lets a failure like "insufficient
+    // scope" or "not found" be told apart from a real network problem.
+    const text = await upstream.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { error: `Supabase returned status ${upstream.status}: ${text.slice(0, 500) || "(empty body)"}` };
+    }
     res.status(upstream.status).json(data);
-  } catch {
-    res.status(502).json({ error: "Network error while reaching Supabase." });
+  } catch (err) {
+    res.status(502).json({ error: `Network error while reaching Supabase (${err.message || "unknown"}).` });
   }
 };
