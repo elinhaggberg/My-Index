@@ -378,9 +378,20 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
    sentence or two. A much taller cap still keeps pathologically long ones
    bounded rather than letting a single card run the length of the page,
    landing it in the same rough ballpark as a tall image card instead of
-   looking stunted next to one. */
+   looking stunted next to one. Regular weight (not the bold every other
+   card's title uses) reads as quoted/written content rather than a
+   headline. */
 .pin-title-long {
   -webkit-line-clamp: 40;
+  font-weight: 400;
+}
+/* Long-enough content also drops a size, so a full paragraph reads as
+   dense body text instead of oversized display type -- added in
+   snippetCard.js once the content passes a length threshold, short
+   quotes/notes are unaffected. */
+.pin-title-compact {
+  font-size: 0.85rem;
+  line-height: 1.55;
 }
 .pin-comment {
   font-size: 0.85rem;

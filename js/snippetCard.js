@@ -13,6 +13,11 @@ import { lazyLoadImage } from "./lazyImage.js";
 // notes, not a photo library), so there's no fixed-size placeholder box
 // standing in for one -- the type icon sits inline next to the title
 // instead, sized like a small badge rather than an empty photo.
+// Past this length a quote/note reads better as smaller, denser body text
+// than at the same size as a short one -- see the .pin-title-compact rule
+// in css/style.css.
+const COMPACT_CONTENT_THRESHOLD = 240;
+
 export function createSnippetNode(snippet, onOpen) {
   const tpl = document.getElementById("tpl-pin-card");
   const node = tpl.content.cloneNode(true);
@@ -29,7 +34,10 @@ export function createSnippetNode(snippet, onOpen) {
 
   const title = node.querySelector(".pin-title");
   title.textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
-  if (type.long) title.classList.add("pin-title-long");
+  if (type.long) {
+    title.classList.add("pin-title-long");
+    if ((snippet.content || "").length > COMPACT_CONTENT_THRESHOLD) title.classList.add("pin-title-compact");
+  }
 
   const sourceEl = node.querySelector(".pin-source");
   const source = snippet.siteName || hostnameFor(snippet.url);
