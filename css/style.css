@@ -1042,6 +1042,15 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 }
 .sheet-header h2 { flex: 1; font-size: 1.15rem; }
 
+/* A short quote/note (or a link with no comment) leaves this sheet just a
+   header and a line or two of text -- a min-height, not just more bottom
+   padding, so the content still sits naturally near the top instead of
+   centering in a tall empty box, but the sheet itself can never end so
+   abruptly that the text reads as flush against the bottom edge. */
+.card-detail-sheet {
+  min-height: 260px;
+}
+
 /* Delete confirmation */
 .confirm-sheet { gap: 4px; padding-top: 20px; }
 .confirm-title { font-size: 1.15rem; margin-bottom: 4px; }
