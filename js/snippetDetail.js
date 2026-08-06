@@ -3,6 +3,7 @@ import { openSheet } from "./sheet.js";
 import { shareOrDownload, filenameFor } from "./share.js";
 import { hostnameFor } from "./util.js";
 import { typeFor } from "./snippetTypes.js";
+import { COMPACT_CONTENT_THRESHOLD } from "./snippetCard.js";
 import { openSnippetEditor } from "./snippetEditor.js";
 import { renderTagRefChips, renderProfileRefChips } from "./refChips.js";
 import { resolveImageSrc } from "./imageStore.js";
@@ -27,7 +28,12 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
     }
   }
 
-  el.querySelector("#detail-title").textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
+  const titleEl = el.querySelector("#detail-title");
+  titleEl.textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
+  if (type.long) {
+    titleEl.classList.add("card-detail-title-long");
+    if ((snippet.content || "").length > COMPACT_CONTENT_THRESHOLD) titleEl.classList.add("card-detail-title-compact");
+  }
 
   const linkEl = el.querySelector("#detail-link");
   if (snippet.url) {

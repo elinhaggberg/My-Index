@@ -895,6 +895,19 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   font-weight: 700;
   margin: 0 0 10px;
 }
+/* Quote/Note detail view: same reasoning as .pin-title-long/-compact on
+   the grid card -- regular weight reads as quoted/written content rather
+   than a headline, and a long one drops a size for readability as dense
+   body text instead of oversized display type. This page already shows
+   the full text unclamped (that's the point of a detail view), so unlike
+   the grid card there's no line-clamp to add here. */
+.card-detail-title-long {
+  font-weight: 400;
+}
+.card-detail-title-compact {
+  font-size: 1rem;
+  line-height: 1.5;
+}
 .card-detail-note { color: var(--text-dim); font-size: 0.92rem; line-height: 1.5; margin: 0 0 14px; white-space: pre-wrap; }
 .card-detail-link {
   display: flex;
