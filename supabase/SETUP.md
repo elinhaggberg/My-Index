@@ -180,6 +180,36 @@ feed reader. `check-feeds` sends a browser-shaped User-Agent and an XML
 predating this, redeploy the function (step 3 above, or Settings → Cloud
 sync → re-run Install if you're on the automated path) to pick up the fix.
 
+A Substack account that's never set up an actual publication (only ever
+posted from its `substack.com/@handle` profile page) has no separate site
+and genuinely has no RSS feed to find — the app explains this specific case
+when adding the channel rather than just silently falling back to a blank
+manual field.
+
+## Troubleshooting: a feed is fetching fine but never shows new posts
+
+Check the row directly:
+
+```sql
+select rss_url, new_count, last_seen_guid, last_checked_at
+from channel_feeds
+where rss_url = '<the feed url>';
+```
+
+A recent `last_checked_at` with `new_count` stuck at `0` despite known new
+posts points at feed ordering: `check-feeds` used to assume every feed lists
+items newest-first (true for the overwhelming majority), and used that
+position to detect "new." A feed that lists oldest-first breaks that
+silently — the tracked guid is stuck on the *oldest* item, whose position
+never changes as real posts get appended at the end, so nothing ever looks
+new. `check-feeds` now re-sorts by each item's own `<pubDate>`/`<published>`
+date whenever every item in the feed has a parseable one, which is a real
+signal independent of document order — only falling back to trusting
+document order when dates are missing. If you were tracking a
+mis-ordered feed before this fix, expect its next check to badge the whole
+backlog of previously-missed posts at once (correct — that backlog was
+always there, just never counted).
+
 ## Done
 
 Everything above is additive and reversible — disable the cron job
