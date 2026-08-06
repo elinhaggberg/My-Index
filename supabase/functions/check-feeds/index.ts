@@ -60,7 +60,18 @@ async function fetchFeedItemIds(url: string): Promise<{ ids: string[]; error?: s
     }
     const xml = await res.text();
     const ids = extractItemIds(xml);
-    if (ids.length === 0) console.error(`check-feeds: ${url} returned 200 but no <item>/<entry> tags were found`);
+    if (ids.length === 0) {
+      // Include where the request actually ended up (a silent redirect --
+      // e.g. to an HTML page instead of the feed, as happened with a
+      // Substack account that no longer serves one at its old URL -- would
+      // otherwise look identical to a feed that's just empty) and a
+      // truncated snippet of what came back, since there's no other way to
+      // see the real response body without direct network access to the
+      // target site.
+      console.error(
+        `check-feeds: ${url} returned 200 (final URL: ${res.url}) but no <item>/<entry> tags were found. Body starts: ${xml.slice(0, 300).replace(/\s+/g, " ")}`
+      );
+    }
     return { ids };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

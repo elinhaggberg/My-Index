@@ -59,6 +59,25 @@ function isYouTubeHost(hostname) {
   return host === "youtube.com" || host === "youtu.be" || host === "youtube-nocookie.com";
 }
 
+// Substack has two different ways someone can end up with a profile there:
+// a proper publication (its own name.substack.com site, which is what step 1
+// above already handles via that site's own autodiscovery tag) vs. an
+// account that's only ever posted from substack.com/@handle without setting
+// one up -- which has no separate site and so nothing to autodiscover a feed
+// from. Recognizing this shape (either given directly, or landed on after
+// following a publication URL that Substack itself now redirects there,
+// which happens for some accounts) lets the client explain *why* nothing was
+// found instead of just silently falling back to manual entry.
+function isSubstackAppProfile(urlString) {
+  try {
+    const u = new URL(urlString);
+    const host = u.hostname.replace(/^www\./, "");
+    return host === "substack.com" && /^\/@/.test(u.pathname);
+  } catch {
+    return false;
+  }
+}
+
 async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -118,7 +137,8 @@ module.exports = async (req, res) => {
     // needs anyway.
     const initial = await fetchWithTimeout(target, { headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml,application/rss+xml,application/atom+xml,application/xml" } });
     if (!initial.ok) {
-      res.status(200).json({ ok: false });
+      const reason = isSubstackAppProfile(initial.url || target) ? "substack-app-only" : undefined;
+      res.status(200).json({ ok: false, reason });
       return;
     }
     const finalUrl = initial.url || target;
@@ -169,7 +189,8 @@ module.exports = async (req, res) => {
       }
     }
 
-    res.status(200).json({ ok: false });
+    const reason = isSubstackAppProfile(finalUrl) ? "substack-app-only" : undefined;
+    res.status(200).json({ ok: false, reason });
   } catch (err) {
     const message = err && err.name === "AbortError" ? "Timed out." : "Couldn't fetch that page.";
     res.status(200).json({ ok: false, error: message });
