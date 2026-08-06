@@ -182,12 +182,30 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
           foundEl.classList.remove("hidden");
           manualBlock.classList.add("hidden");
         }
-        function showManual(value) {
+        function showManual(value, hint) {
           checkingEl.classList.add("hidden");
           foundEl.classList.add("hidden");
           manualBlock.classList.remove("hidden");
           rssInput.value = value ?? channel.rssUrl ?? "";
-          manualMsgEl.classList.add("hidden");
+          if (hint) {
+            manualMsgEl.textContent = hint;
+            manualMsgEl.classList.remove("hidden", "error");
+          } else {
+            manualMsgEl.classList.add("hidden");
+          }
+        }
+        // Substack accounts that only ever post from their substack.com/@handle
+        // page, without setting up an actual publication, have no separate
+        // site and so no RSS feed to find -- worth explaining, since
+        // otherwise this looks identical to "couldn't find one" for any
+        // other reason and just as confusing as hitting it in the first
+        // place (see js/discoverFeed.js's api/discover-feed.js, which is
+        // what detects this shape and reports it back as `reason`).
+        function hintFor(result) {
+          if (result.reason === "substack-app-only") {
+            return "This looks like a Substack account without its own publication (just posts made from the profile page) — those don't have an RSS feed. If they do have a separate publication, try that page's own address instead.";
+          }
+          return "";
         }
         // Neither found nor showing the manual field yet -- nothing's been
         // checked (a brand-new empty channel), so there's nothing to render
@@ -207,7 +225,7 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
           const result = await discoverFeed(url);
           channel.rssUrl = result.ok ? result.feedUrl : "";
           if (result.ok) showFound();
-          else showManual("");
+          else showManual("", hintFor(result));
         });
 
         foundChangeBtn.addEventListener("click", () => showManual(channel.rssUrl));
@@ -229,7 +247,7 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
             manualMsgEl.textContent = "✓ Working RSS feed.";
             manualMsgEl.classList.remove("error");
           } else {
-            manualMsgEl.textContent = "Couldn't verify this as an RSS feed — saved as entered anyway.";
+            manualMsgEl.textContent = hintFor(result) || "Couldn't verify this as an RSS feed — saved as entered anyway.";
             manualMsgEl.classList.add("error");
           }
         });
