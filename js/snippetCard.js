@@ -29,6 +29,7 @@ export function createSnippetNode(snippet, onOpen) {
 
   const title = node.querySelector(".pin-title");
   title.textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
+  if (type.long) title.classList.add("pin-title-long");
 
   const sourceEl = node.querySelector(".pin-source");
   const source = snippet.siteName || hostnameFor(snippet.url);

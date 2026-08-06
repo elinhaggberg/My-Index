@@ -372,6 +372,16 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* Quote/Note snippets: their whole point is the text itself (see
+   snippetTypes.js's `long` flag, already used to give them a bigger
+   textarea in the editor) -- 5 lines was cutting most quotes off after a
+   sentence or two. A much taller cap still keeps pathologically long ones
+   bounded rather than letting a single card run the length of the page,
+   landing it in the same rough ballpark as a tall image card instead of
+   looking stunted next to one. */
+.pin-title-long {
+  -webkit-line-clamp: 40;
+}
 .pin-comment {
   font-size: 0.85rem;
   color: var(--text-dim);
