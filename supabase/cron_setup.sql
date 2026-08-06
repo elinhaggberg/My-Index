@@ -56,7 +56,15 @@ select cron.schedule(
       'Content-Type', 'application/json',
       'X-Cron-Secret', (select decrypted_secret from vault.decrypted_secrets where name = 'my_index_cron_shared_secret')
     ),
-    body := '{}'::jsonb
+    body := '{}'::jsonb,
+    -- pg_net's default is 5000ms, which check-feeds can easily exceed once
+    -- there's more than a couple of tracked feeds (each fetched with up to
+    -- an 8s timeout of its own) -- with the default, net._http_response
+    -- shows every single hourly run as a client-side timeout, forever,
+    -- regardless of whether check-feeds itself ever finishes. This is only
+    -- how long pg_net waits to *hear back*; check-feeds keeps running
+    -- either way, so raising it just lets the caller actually see the result.
+    timeout_milliseconds := 60000
   );
   $$
 );

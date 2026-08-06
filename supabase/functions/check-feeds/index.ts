@@ -71,6 +71,51 @@ async function fetchFeedItemIds(url: string): Promise<{ ids: string[]; error?: s
   }
 }
 
+type FeedResult = { channel_id: string; rss_url: string; error?: string; newCount?: number };
+
+// One feed's whole fetch-compare-update cycle, run concurrently across every
+// tracked feed (see Promise.all below) rather than one at a time -- with up
+// to FETCH_TIMEOUT_MS per feed, a sequential loop over even a handful of
+// feeds could take well past a caller's patience (pg_cron's net.http_post
+// gives up after its own timeout_milliseconds, see cron_setup.sql) even
+// though this function was still working fine, just slowly. Running them in
+// parallel keeps total wall time close to a single feed's worst case
+// regardless of how many are tracked.
+async function processFeed(feed: { channel_id: string; rss_url: string; last_seen_guid: string | null }): Promise<FeedResult> {
+  const { ids, error: fetchError } = await fetchFeedItemIds(feed.rss_url);
+  if (ids.length === 0) {
+    await supabase.from("channel_feeds").update({ last_checked_at: new Date().toISOString() }).eq("channel_id", feed.channel_id);
+    return { channel_id: feed.channel_id, rss_url: feed.rss_url, error: fetchError || "no items found in feed" };
+  }
+
+  const newestId = ids[0];
+  if (!feed.last_seen_guid) {
+    // First check for this feed: nothing to compare against yet, so just
+    // record where we are now rather than counting the whole backlog as
+    // "new" (which would badge every profile the moment it's first added).
+    await supabase
+      .from("channel_feeds")
+      .update({ last_seen_guid: newestId, last_checked_at: new Date().toISOString() })
+      .eq("channel_id", feed.channel_id);
+    return { channel_id: feed.channel_id, rss_url: feed.rss_url, error: "first check, baseline recorded" };
+  }
+
+  const knownIndex = ids.indexOf(feed.last_seen_guid);
+  const newCount = knownIndex === -1 ? 1 : knownIndex; // unknown feed shape/rewritten guids: assume at least 1 rather than the whole list
+  if (newCount > 0) {
+    const { error: rpcError } = await supabase.rpc("increment_channel_new_count", {
+      p_channel_id: feed.channel_id,
+      p_amount: newCount,
+      p_last_seen_guid: newestId,
+    });
+    if (!rpcError) return { channel_id: feed.channel_id, rss_url: feed.rss_url, newCount };
+    return { channel_id: feed.channel_id, rss_url: feed.rss_url, error: rpcError.message };
+  }
+
+  await supabase.from("channel_feeds").update({ last_checked_at: new Date().toISOString() }).eq("channel_id", feed.channel_id);
+  return { channel_id: feed.channel_id, rss_url: feed.rss_url, newCount: 0 };
+}
+
 Deno.serve(async (req) => {
   if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
@@ -84,54 +129,12 @@ Deno.serve(async (req) => {
 
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
 
-  let checked = 0;
-  let updated = 0;
   // Per-feed outcome, returned in the response -- lets a manual invocation
   // (curl/dashboard "Invoke") show exactly which feeds failed and why,
   // rather than needing to cross-reference the Logs tab separately.
-  const results: Array<{ channel_id: string; rss_url: string; error?: string; newCount?: number }> = [];
-
-  for (const feed of feeds ?? []) {
-    checked++;
-    const { ids, error: fetchError } = await fetchFeedItemIds(feed.rss_url);
-    if (ids.length === 0) {
-      await supabase.from("channel_feeds").update({ last_checked_at: new Date().toISOString() }).eq("channel_id", feed.channel_id);
-      results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, error: fetchError || "no items found in feed" });
-      continue;
-    }
-
-    const newestId = ids[0];
-    if (!feed.last_seen_guid) {
-      // First check for this feed: nothing to compare against yet, so just
-      // record where we are now rather than counting the whole backlog as
-      // "new" (which would badge every profile the moment it's first added).
-      await supabase
-        .from("channel_feeds")
-        .update({ last_seen_guid: newestId, last_checked_at: new Date().toISOString() })
-        .eq("channel_id", feed.channel_id);
-      results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, error: "first check, baseline recorded" });
-      continue;
-    }
-
-    const knownIndex = ids.indexOf(feed.last_seen_guid);
-    const newCount = knownIndex === -1 ? 1 : knownIndex; // unknown feed shape/rewritten guids: assume at least 1 rather than the whole list
-    if (newCount > 0) {
-      const { error: rpcError } = await supabase.rpc("increment_channel_new_count", {
-        p_channel_id: feed.channel_id,
-        p_amount: newCount,
-        p_last_seen_guid: newestId,
-      });
-      if (!rpcError) {
-        updated++;
-        results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, newCount });
-      } else {
-        results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, error: rpcError.message });
-      }
-    } else {
-      await supabase.from("channel_feeds").update({ last_checked_at: new Date().toISOString() }).eq("channel_id", feed.channel_id);
-      results.push({ channel_id: feed.channel_id, rss_url: feed.rss_url, newCount: 0 });
-    }
-  }
+  const results = await Promise.all((feeds ?? []).map(processFeed));
+  const checked = results.length;
+  const updated = results.filter((r) => (r.newCount ?? 0) > 0).length;
 
   return new Response(JSON.stringify({ checked, updated, results }), { headers: { "Content-Type": "application/json" } });
 });

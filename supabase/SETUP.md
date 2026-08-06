@@ -136,7 +136,36 @@ Your device id is generated the first time the app opens and stored in
 `localStorage` as `mi_device_id_v1` — there's no UI surfacing it yet, so
 read it from the browser's dev tools once to paste into the Shortcut.
 
-## Troubleshooting: a specific feed isn't updating
+## Troubleshooting: no feeds are updating at all
+
+Check `net._http_response` in the SQL editor:
+
+```sql
+select id, status_code, content, timed_out, error_msg, created
+from net._http_response
+order by created desc
+limit 5;
+```
+
+If every row shows `timed_out: true`, pg_cron's `net.http_post` call is
+giving up before `check-feeds` finishes responding — its default wait is
+only 5 seconds, and `check-feeds` fetches every tracked feed (with up to an
+8-second timeout each), so it's easy to exceed that once you have more than
+one or two feeds. Two things fix this together: `cron_setup.sql`'s
+`net.http_post` call now passes `timeout_milliseconds := 60000`, and
+`check-feeds` now checks all feeds concurrently instead of one at a time, so
+total runtime stays close to a single feed's worst case regardless of how
+many are tracked. If you're on an older deploy predating this, re-run
+`cron_setup.sql` in the SQL editor (with your real secret/ref substituted in,
+same as originally) and redeploy `check-feeds` (step 3 above, or Settings →
+Cloud sync → re-run Install).
+
+`cron.job_run_details` only tells you pg_cron successfully *queued* the
+request — it says nothing about whether `check-feeds` itself succeeded, so
+check `net._http_response` (above), not just `job_run_details`, when
+diagnosing this.
+
+## Troubleshooting: one specific feed isn't updating
 
 `check-feeds` (dashboard → Edge Functions → check-feeds → "Invoke") returns a
 `results` array, one entry per tracked feed, each either `{ newCount }` on
