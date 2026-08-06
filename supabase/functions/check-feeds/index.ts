@@ -31,22 +31,45 @@ const MAX_FEEDS_PER_RUN = 200;
 const USER_AGENT = "Mozilla/5.0 (compatible; MyIndexApp/1.0; +https://vercel.com)";
 const ACCEPT_HEADER = "application/rss+xml, application/atom+xml, application/xml, text/xml, */*";
 
-function extractItemIds(xml: string): string[] {
+type FeedItem = { id: string; date: Date | null };
+
+function extractItems(xml: string): FeedItem[] {
   // Minimal, dependency-free RSS 2.0 (<item><guid>/<link>) and Atom
   // (<entry><id>) parsing via regex -- good enough to detect "something
   // new arrived," not meant to be a full feed reader.
-  const ids: string[] = [];
+  const items: FeedItem[] = [];
   const itemBlocks = xml.match(/<item\b[\s\S]*?<\/item>/gi) || xml.match(/<entry\b[\s\S]*?<\/entry>/gi) || [];
   for (const block of itemBlocks) {
     const guid = block.match(/<guid[^>]*>([\s\S]*?)<\/guid>/i) || block.match(/<id[^>]*>([\s\S]*?)<\/id>/i);
     const link = block.match(/<link[^>]*>([\s\S]*?)<\/link>/i) || block.match(/<link[^>]+href=["']([^"']*)["']/i);
     const id = (guid ? guid[1] : link ? link[1] : "").trim();
-    if (id) ids.push(id);
+    if (!id) continue;
+    const dateMatch =
+      block.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i) ||
+      block.match(/<published[^>]*>([\s\S]*?)<\/published>/i) ||
+      block.match(/<updated[^>]*>([\s\S]*?)<\/updated>/i) ||
+      block.match(/<dc:date[^>]*>([\s\S]*?)<\/dc:date>/i);
+    const parsed = dateMatch ? new Date(dateMatch[1].trim()) : null;
+    items.push({ id, date: parsed && !Number.isNaN(parsed.getTime()) ? parsed : null });
   }
-  return ids;
+  return items;
 }
 
-async function fetchFeedItemIds(url: string): Promise<{ ids: string[]; error?: string }> {
+// Almost every feed lists newest-first, and this used to just trust that --
+// but a feed that doesn't (found via a channel that had known new posts and
+// still never badged: its guid never changed because "newest" was actually
+// the *oldest* item, whose position never moves as new ones get appended at
+// the end) makes that assumption silently wrong. Re-sort by each item's own
+// published/updated date when every item in the feed has a parseable one --
+// that's a real signal independent of document order. If any item is
+// missing a date, there's no reliable way to compare, so fall back to
+// trusting document order, same as before.
+function orderNewestFirst(items: FeedItem[]): FeedItem[] {
+  if (items.length === 0 || items.some((item) => !item.date)) return items;
+  return [...items].sort((a, b) => b.date!.getTime() - a.date!.getTime());
+}
+
+async function fetchFeedItems(url: string): Promise<{ items: FeedItem[]; error?: string }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -56,11 +79,11 @@ async function fetchFeedItemIds(url: string): Promise<{ ids: string[]; error?: s
       // the function's Logs tab instead of just silently never updating --
       // this was previously indistinguishable from "feed has no new items."
       console.error(`check-feeds: ${url} responded ${res.status}`);
-      return { ids: [], error: `HTTP ${res.status}` };
+      return { items: [], error: `HTTP ${res.status}` };
     }
     const xml = await res.text();
-    const ids = extractItemIds(xml);
-    if (ids.length === 0) {
+    const items = extractItems(xml);
+    if (items.length === 0) {
       // Include where the request actually ended up (a silent redirect --
       // e.g. to an HTML page instead of the feed, as happened with a
       // Substack account that no longer serves one at its old URL -- would
@@ -72,11 +95,11 @@ async function fetchFeedItemIds(url: string): Promise<{ ids: string[]; error?: s
         `check-feeds: ${url} returned 200 (final URL: ${res.url}) but no <item>/<entry> tags were found. Body starts: ${xml.slice(0, 300).replace(/\s+/g, " ")}`
       );
     }
-    return { ids };
+    return { items };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`check-feeds: ${url} fetch failed: ${message}`);
-    return { ids: [], error: message };
+    return { items: [], error: message };
   } finally {
     clearTimeout(timeout);
   }
@@ -93,7 +116,8 @@ type FeedResult = { channel_id: string; rss_url: string; error?: string; newCoun
 // parallel keeps total wall time close to a single feed's worst case
 // regardless of how many are tracked.
 async function processFeed(feed: { channel_id: string; rss_url: string; last_seen_guid: string | null }): Promise<FeedResult> {
-  const { ids, error: fetchError } = await fetchFeedItemIds(feed.rss_url);
+  const { items: rawItems, error: fetchError } = await fetchFeedItems(feed.rss_url);
+  const ids = orderNewestFirst(rawItems).map((item) => item.id);
   if (ids.length === 0) {
     await supabase.from("channel_feeds").update({ last_checked_at: new Date().toISOString() }).eq("channel_id", feed.channel_id);
     return { channel_id: feed.channel_id, rss_url: feed.rss_url, error: fetchError || "no items found in feed" };
