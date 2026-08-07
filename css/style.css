@@ -336,6 +336,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 }
 .pin-media {
   width: 100%;
+  /* Reserved immediately, before the actual image has loaded (it resolves
+     async via lazyImage.js) -- without this, the masonry column-balancing
+     pass in masonry.js measures every card's height before any image has
+     rendered, so it can badly misjudge which column is actually shortest
+     and dump most cards into one column. Only affects cards that end up
+     with a real image (lazyLoadImage removes .hidden) -- text-only cards
+     never show this box at all, see the comment above .pin-icon-strip. */
+  aspect-ratio: 16 / 9;
   display: block;
   background: var(--surface-2);
   object-fit: cover;
