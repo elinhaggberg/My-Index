@@ -1,6 +1,7 @@
 import {
   getProfile,
   clearProfileNewCount,
+  clearChannelNewCount,
   getSnippetsForProfile,
   exportProfileData,
 } from "../storage.js";
@@ -14,44 +15,29 @@ import { openProfileEditor } from "../profileEditor.js";
 import { renderTagRefChips } from "../refChips.js";
 import { hostnameFor } from "../util.js";
 import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH } from "../icons.js";
-import { clearServerCounts } from "../feedSync.js";
+import { clearServerCounts, clearChannelServerCount } from "../feedSync.js";
 import { resolveImageSrc } from "../imageStore.js";
 import { shareOrDownload, filenameFor } from "../share.js";
 import { CHANNEL_TYPE_LABELS } from "../channelTypes.js";
 
-export async function renderProfile(root, nav, id, { skipClearOnLoad = false } = {}) {
+export async function renderProfile(root, nav, id) {
   const tpl = document.getElementById("tpl-profile");
   root.replaceChildren(tpl.content.cloneNode(true));
 
   root.querySelector(".back-btn").addEventListener("click", () => nav.toHome());
 
-  // skipClearOnLoad is only ever true for the very first load() call, when
-  // app.js's route() ran automatically on script startup rather than from a
-  // real navigation -- e.g. reopening a browser tab that was last left on
-  // this exact profile. Without this, every such reopen silently cleared
-  // its badge (both locally and server-side) before you ever consciously
-  // "visited" it, which made new-item counts on any profile you tend to
-  // leave open look like they were never arriving at all. Every load()
-  // after the first (edits, adding a snippet -- see the refresh: load
-  // callbacks below) is a genuine in-session visit, so it always clears.
-  let firstLoad = true;
-
   async function load() {
-    const skipClear = firstLoad && skipClearOnLoad;
-    firstLoad = false;
-
-    // Visiting the profile's page is what clears its badge, mirroring
-    // "unread" mail behavior. The stored state is cleared immediately, but
-    // clearProfileNewCount hands back the pre-clear per-channel counts for
-    // this one render, so you can actually see which channel had something
-    // new before the badge disappears on the next visit.
-    const profile = skipClear ? await getProfile(id) : await clearProfileNewCount(id);
+    // Just opening the profile page no longer clears anything on its own --
+    // that used to silently discard a badge before it was ever consciously
+    // seen (e.g. a browser tab resuming on a profile it had been left open
+    // on). A badge now only clears one of two ways: tapping through to a
+    // channel's actual feed link (see the row click handler below), or the
+    // manual "Mark as read" button for the whole profile at once.
+    const profile = await getProfile(id);
     if (!profile) {
       nav.toHome();
       return;
     }
-    // Best-effort and inert unless the optional backend is configured.
-    if (!skipClear) clearServerCounts(id);
 
     document.getElementById("profile-title").textContent = profile.name || "Untitled";
 
@@ -87,6 +73,9 @@ export async function renderProfile(root, nav, id, { skipClearOnLoad = false } =
 
     const channelsEl = document.getElementById("profile-channels");
     const channels = profile.channels || [];
+    const markReadBtn = document.getElementById("profile-mark-read-btn");
+    markReadBtn.classList.toggle("hidden", !profile.newCount);
+
     if (channels.length === 0) {
       channelsEl.replaceChildren();
     } else {
@@ -122,10 +111,38 @@ export async function renderProfile(root, nav, id, { skipClearOnLoad = false } =
           right.innerHTML += ICON_EXTERNAL;
 
           row.append(meta, right);
+
+          // Tapping through to the channel's actual feed is what marks it
+          // read -- doesn't block the normal navigation (still opens in a
+          // new tab), just also clears this one channel's badge, locally
+          // and server-side, and drops it from view right away rather than
+          // waiting for the next full reload. Re-queries the badge instead
+          // of closing over the node created above -- the innerHTML += just
+          // above re-serializes and re-parses right's whole contents,
+          // silently detaching that reference from what's actually on
+          // screen.
+          if (channel.newCount) {
+            row.addEventListener("click", () => {
+              row.querySelector(".channel-new-badge")?.remove();
+              channel.newCount = 0;
+              clearChannelNewCount(id, channel.id);
+              clearChannelServerCount(channel.id);
+              if (!channels.some((c) => c.newCount)) markReadBtn.classList.add("hidden");
+            });
+          }
+
           return row;
         })
       );
     }
+
+    markReadBtn.onclick = () => {
+      channelsEl.querySelectorAll(".channel-new-badge").forEach((el) => el.remove());
+      channels.forEach((c) => (c.newCount = 0));
+      markReadBtn.classList.add("hidden");
+      clearProfileNewCount(id);
+      clearServerCounts(id);
+    };
 
     await renderTagRefChips(document.getElementById("profile-tag-chips"), profile.tagIds, nav);
 
