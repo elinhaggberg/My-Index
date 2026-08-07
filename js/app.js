@@ -66,6 +66,19 @@ const nav = {
   },
 };
 
+// Stays true through app startup -- the first synchronous route() call
+// below, plus any incidental re-renders that happen before a real user
+// action (e.g. importQueuedCaptures() re-routing after pulling in a
+// Shortcut capture) -- and only flips to false inside the hashchange
+// listener, i.e. the first time the hash actually changes because of a
+// real navigation. Threaded into renderProfile as skipClearOnLoad: without
+// it, reopening a browser tab that happened to be left on a profile page
+// (very easy to do without noticing -- the hash persists across
+// backgrounding) silently cleared that profile's new-item badge before it
+// was ever consciously seen, since route() re-runs on every script load
+// using whatever the current hash is.
+let isInitialRoute = true;
+
 function route() {
   const hash = location.hash || "#/home";
   const match = hash.match(/^#\/([a-z]+)(?:\/(.+))?$/);
@@ -91,7 +104,7 @@ function route() {
         nav.toHome();
         return;
       }
-      renderProfile(root, nav, param);
+      renderProfile(root, nav, param, { skipClearOnLoad: isInitialRoute });
       break;
     default:
       renderHome(root, nav);
@@ -135,7 +148,10 @@ async function importQueuedCaptures() {
   route();
 }
 
-window.addEventListener("hashchange", route);
+window.addEventListener("hashchange", () => {
+  isInitialRoute = false;
+  route();
+});
 
 // Picks up the redirect back from Supabase's consent screen (see
 // supabaseOAuth.js / api/oauth-callback.js) before anything else touches

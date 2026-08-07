@@ -19,25 +19,39 @@ import { resolveImageSrc } from "../imageStore.js";
 import { shareOrDownload, filenameFor } from "../share.js";
 import { CHANNEL_TYPE_LABELS } from "../channelTypes.js";
 
-export async function renderProfile(root, nav, id) {
+export async function renderProfile(root, nav, id, { skipClearOnLoad = false } = {}) {
   const tpl = document.getElementById("tpl-profile");
   root.replaceChildren(tpl.content.cloneNode(true));
 
   root.querySelector(".back-btn").addEventListener("click", () => nav.toHome());
 
+  // skipClearOnLoad is only ever true for the very first load() call, when
+  // app.js's route() ran automatically on script startup rather than from a
+  // real navigation -- e.g. reopening a browser tab that was last left on
+  // this exact profile. Without this, every such reopen silently cleared
+  // its badge (both locally and server-side) before you ever consciously
+  // "visited" it, which made new-item counts on any profile you tend to
+  // leave open look like they were never arriving at all. Every load()
+  // after the first (edits, adding a snippet -- see the refresh: load
+  // callbacks below) is a genuine in-session visit, so it always clears.
+  let firstLoad = true;
+
   async function load() {
+    const skipClear = firstLoad && skipClearOnLoad;
+    firstLoad = false;
+
     // Visiting the profile's page is what clears its badge, mirroring
     // "unread" mail behavior. The stored state is cleared immediately, but
     // clearProfileNewCount hands back the pre-clear per-channel counts for
     // this one render, so you can actually see which channel had something
     // new before the badge disappears on the next visit.
-    const profile = await clearProfileNewCount(id);
+    const profile = skipClear ? await getProfile(id) : await clearProfileNewCount(id);
     if (!profile) {
       nav.toHome();
       return;
     }
     // Best-effort and inert unless the optional backend is configured.
-    clearServerCounts(id);
+    if (!skipClear) clearServerCounts(id);
 
     document.getElementById("profile-title").textContent = profile.name || "Untitled";
 
