@@ -211,12 +211,13 @@ export async function deleteProfile(id, { tombstone = true } = {}) {
 }
 
 // Clears the profile's own badge and every one of its channels' badges at
-// once -- mirrors "unread mail" behavior: opening the profile page is what
-// clears it, not any per-channel action. What's persisted is fully zeroed
-// (so the badge is gone by the next visit), but the returned object keeps
-// the pre-clear per-channel counts -- like an email staying visibly "was
-// unread" for the one screen where you actually open it, rather than
-// disappearing before you ever see which channel it came from.
+// once -- the manual "Mark as read" action on the profile page, for
+// clearing everything in one tap rather than each channel individually
+// (see clearChannelNewCount below, which is what a single channel tap
+// does). Just opening the profile page no longer clears anything on its
+// own -- that used to silently discard a badge before it was ever
+// consciously seen, e.g. when a browser tab resumed on a profile it had
+// been left open on.
 export async function clearProfileNewCount(id) {
   const profile = await getOne("profiles", id);
   if (!profile || !profile.newCount) return profile;
@@ -226,7 +227,23 @@ export async function clearProfileNewCount(id) {
     channels: (profile.channels || []).map((c) => ({ ...c, newCount: 0 })),
   };
   await putOne("profiles", cleared);
-  return { ...cleared, channels: profile.channels || [] };
+  return cleared;
+}
+
+// Clears just one channel's badge -- tapping through to a channel (opening
+// its actual RSS feed link) is what marks it read, mirroring the same
+// "opened it, so it's read" logic email uses per-message rather than
+// per-inbox. Recomputes the profile's own total from what's left, same
+// invariant fetchAndMergeCounts (see js/feedSync.js) maintains.
+export async function clearChannelNewCount(profileId, channelId) {
+  const profile = await getOne("profiles", profileId);
+  if (!profile) return profile;
+  const channel = (profile.channels || []).find((c) => c.id === channelId);
+  if (!channel || !channel.newCount) return profile;
+  const channels = profile.channels.map((c) => (c.id === channelId ? { ...c, newCount: 0 } : c));
+  const cleared = { ...profile, channels, newCount: channels.reduce((sum, c) => sum + (c.newCount || 0), 0) };
+  await putOne("profiles", cleared);
+  return cleared;
 }
 
 export async function getProfilesForTag(tagId) {

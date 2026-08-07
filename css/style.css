@@ -943,6 +943,27 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 }
 .sheet .card-detail-section-label { padding: 0; }
 
+/* Wraps the Channels label on the profile page with its "Mark all as
+   read" action -- only that one section label needs a right-hand
+   button, so this is layered on top rather than changing
+   .card-detail-section-label's own layout everywhere else it's used. */
+.section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  margin: 0 0 8px;
+}
+.section-label-row .card-detail-section-label { padding: 0; margin: 0; }
+.mark-read-btn {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.mark-read-btn:active { opacity: 0.7; }
+
 #cloud-sync-disconnected h3 { font-size: 1.05rem; margin: 0 0 8px; }
 .cloud-sync-restore-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
 

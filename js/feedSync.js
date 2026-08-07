@@ -125,8 +125,16 @@ export async function resyncAllChannels(getProfiles) {
   return count;
 }
 
+// "Mark as read" for a whole profile at once.
 export async function clearServerCounts(profileId) {
   await callSync("clear-counts", { profileId });
+}
+
+// Tapping through to one channel's actual feed link is what clears just
+// that channel's badge -- see clearChannelNewCount in storage.js for the
+// local-side counterpart.
+export async function clearChannelServerCount(channelId) {
+  await callSync("clear-channel-count", { channelId });
 }
 
 // Pulls in anything shared via the iOS Shortcut capture flow since this

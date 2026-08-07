@@ -86,8 +86,8 @@ Deno.serve(async (req) => {
         return json({ counts: data ?? [] });
       }
 
-      // Visiting a Profile's page clears its badge -- zero every channel
-      // this device tracks for that profile.
+      // The profile page's manual "Mark as read" button -- zero every
+      // channel this device tracks for that profile at once.
       case "clear-counts": {
         const { profileId } = body as { profileId: string };
         if (!profileId) return json({ error: "Missing profileId" }, 400);
@@ -96,6 +96,20 @@ Deno.serve(async (req) => {
           .update({ new_count: 0 })
           .eq("device_id", deviceId)
           .eq("profile_id", profileId);
+        if (error) throw error;
+        return json({ ok: true });
+      }
+
+      // Tapping through to one channel's actual feed link is what clears
+      // just that channel's badge, rather than the whole profile's.
+      case "clear-channel-count": {
+        const { channelId } = body as { channelId: string };
+        if (!channelId) return json({ error: "Missing channelId" }, 400);
+        const { error } = await supabase
+          .from("channel_feeds")
+          .update({ new_count: 0 })
+          .eq("device_id", deviceId)
+          .eq("channel_id", channelId);
         if (error) throw error;
         return json({ ok: true });
       }
