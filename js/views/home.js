@@ -48,22 +48,26 @@ export async function renderHome(root, nav) {
 
   async function renderProfileRow() {
     const row = document.getElementById("profile-row");
+
+    // Best-effort and inert unless the optional backend is configured (see
+    // supabase/SETUP.md) -- merges any server-tracked badge counts into
+    // local storage. Always runs regardless of the row's own display
+    // preference below -- this used to be gated behind it, which meant
+    // turning the row off silently stopped counts from ever being fetched
+    // anywhere in the app (Profiles tab included), not just hidden from
+    // this one row.
+    await fetchAndMergeCounts(getProfiles, saveProfile);
+
     // Opt-out in Settings -> Customize, on by default -- purely a display
-    // preference, so this is the only thing that changes; the Profiles tab
-    // (where the actual data lives) is unaffected either way.
+    // preference for this one row; the Profiles tab (where the actual data
+    // lives) is unaffected either way.
     if (!getShowProfileRow()) {
       row.classList.add("hidden");
       return;
     }
 
-    // Best-effort and inert unless the optional backend is configured (see
-    // supabase/SETUP.md) -- merges any server-tracked badge counts in first.
-    await fetchAndMergeCounts(getProfiles, saveProfile);
-
-    // Home's row only -- profiles with unread RSS content float to the
-    // front (most new items first), so this is the one place "what's
-    // worth checking on" is visible at a glance. The Profiles tab keeps
-    // its own separate, explicit sort (alphabetical/recent) untouched.
+    // Profiles with unread RSS content float to the front (most new items
+    // first), so this is a glanceable "what's worth checking on."
     const profiles = (await getProfiles()).sort(
       (a, b) => (b.newCount || 0) - (a.newCount || 0) || (b.createdAt || 0) - (a.createdAt || 0)
     );
