@@ -14,8 +14,15 @@ export function applyProfileFilter(profiles, pref) {
     list = list.filter((p) => pref.tagIds.some((id) => (p.tagIds || []).includes(id)));
   }
   list = [...list];
-  if (pref.sort === "alpha") list.sort((a, b) => a.name.localeCompare(b.name));
-  else list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  // Unread RSS content floats to the top regardless of sort mode, same as
+  // Home's profile row -- the chosen sort (alphabetical/recent) only
+  // breaks ties among profiles with the same amount of unread content
+  // (almost always "none," for most profiles).
+  list.sort((a, b) => {
+    const unreadDiff = (b.newCount || 0) - (a.newCount || 0);
+    if (unreadDiff !== 0) return unreadDiff;
+    return pref.sort === "alpha" ? a.name.localeCompare(b.name) : (b.createdAt || 0) - (a.createdAt || 0);
+  });
   return list;
 }
 
