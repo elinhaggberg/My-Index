@@ -16,6 +16,12 @@ const PASSPHRASE_KEY = "mi_backup_passphrase_v1";
 const LAST_SYNCED_KEY = "mi_backup_last_synced_v1";
 const PERIODIC_INTERVAL_MS = 15 * 60 * 1000;
 const SYNCABLE_STORES = ["profiles", "tags", "snippets"];
+// A single non-content record (theme/homeTitle/showProfileRow, see
+// storage.js's getPrefsSnapshot) travels through the same push/pull API as
+// everything else, under its own reserved store name and a fixed record id
+// since there's only ever one "current prefs" per account.
+const PREFS_STORE = "prefs";
+const PREFS_RECORD_ID = "prefs";
 
 export function getBackupPassphrase() {
   return localStorage.getItem(PASSPHRASE_KEY) || "";
@@ -149,7 +155,7 @@ function toTombstoneRecord(t) {
 // the server makes resending everything safe, just a bit more bandwidth
 // than strictly necessary -- an acceptable trade at personal-register
 // scale (dozens to low hundreds of records).
-export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones }) {
+export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones, getPrefsSnapshot, getPrefsUpdatedAt }) {
   if (!isBackupConfigured()) return { applied: 0 };
   const [profiles, tags, snippets, tombstones] = await Promise.all([getProfiles(), getTags(), getSnippets(), getTombstones()]);
   const records = [
@@ -158,6 +164,14 @@ export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones
     ...(await Promise.all(snippets.map((s) => toRecord("snippets", s)))),
     ...tombstones.map(toTombstoneRecord),
   ];
+  // Only pushed once prefs have actually been touched locally (getPrefsUpdatedAt
+  // is null on a fresh install that never changed anything) -- otherwise a
+  // brand-new device's untouched defaults could race a real customization
+  // already sitting in the cloud from another device.
+  const prefsUpdatedAt = getPrefsUpdatedAt?.();
+  if (prefsUpdatedAt) {
+    records.push({ store: PREFS_STORE, recordId: PREFS_RECORD_ID, data: getPrefsSnapshot(), updatedAt: prefsUpdatedAt });
+  }
   if (records.length === 0) return { applied: 0 };
   const result = await callBackupApi("push", { records });
   // Only clears once the request actually went through -- a failed/dropped
@@ -182,7 +196,7 @@ export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones
 // deleted row is applied as a real local delete (applyRemoteDeletion, not
 // upsertRecords) so it actually disappears here too, instead of the old
 // behavior of silently dropping it.
-export async function pullChanges({ upsertRecords, applyRemoteDeletion }) {
+export async function pullChanges({ upsertRecords, applyRemoteDeletion, applyPrefsSnapshot }) {
   if (!isBackupConfigured()) return { pulled: 0 };
   const since = getLastSyncedAt();
   const result = await callBackupApi("pull", since ? { since } : {});
@@ -191,6 +205,10 @@ export async function pullChanges({ upsertRecords, applyRemoteDeletion }) {
   const byStore = { profiles: [], tags: [], snippets: [] };
   const deletions = [];
   for (const r of result.records) {
+    if (r.store === PREFS_STORE) {
+      if (r.data) applyPrefsSnapshot?.(r.data, r.updated_at);
+      continue;
+    }
     if (!SYNCABLE_STORES.includes(r.store)) continue;
     if (r.deleted) deletions.push(r);
     else if (r.data) byStore[r.store].push(r.data);
@@ -223,15 +241,21 @@ let periodicTimer = null;
 // making changes and is stepping away") or foregrounded again. There's no
 // true OS-level background sync for a browser tab, so "periodic" here
 // only ever means "while the app is actually open."
-export function startAutoSync(storageFns) {
+// onSynced (optional) fires after every push+pull round, including the
+// silent periodic/visibility ones below -- lets app.js re-apply the theme
+// and refresh the on-screen title immediately if this round pulled a prefs
+// change from another device, instead of it sitting unapplied until the
+// next full reload.
+export function startAutoSync(storageFns, onSynced) {
   if (!isBackupConfigured()) return;
 
-  syncNow(storageFns);
+  const run = () => syncNow(storageFns).then(() => onSynced?.());
+  run();
   if (periodicTimer) clearInterval(periodicTimer);
-  periodicTimer = setInterval(() => syncNow(storageFns), PERIODIC_INTERVAL_MS);
+  periodicTimer = setInterval(run, PERIODIC_INTERVAL_MS);
 
   document.addEventListener("visibilitychange", () => {
     if (!isBackupConfigured()) return;
-    syncNow(storageFns);
+    run();
   });
 }
