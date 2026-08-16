@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v10";
+const CACHE_NAME = "my-index-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -49,9 +49,7 @@ const APP_SHELL = [
   "./js/views/tag.js",
   "./js/views/profile.js",
   "./icons/icon-192.png",
-  "./icons/icon-192-dark.png",
   "./icons/icon-512.png",
-  "./icons/icon-512-dark.png",
   "./icons/icon-maskable-512.png",
   "./icons/apple-touch-icon.png",
 ];
