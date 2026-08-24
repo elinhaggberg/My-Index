@@ -35,10 +35,26 @@ export function createSnippetNode(snippet, onOpen) {
   node.querySelector(".pin-type-icon").innerHTML = type.icon;
 
   const title = node.querySelector(".pin-title");
-  title.textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
-  if (type.long) {
-    title.classList.add("pin-title-long");
-    if ((snippet.content || "").length > COMPACT_CONTENT_THRESHOLD) title.classList.add("pin-title-compact");
+  if (type.hasTitle) {
+    title.textContent = snippet.title || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
+    if (snippet.content) {
+      const textEl = node.querySelector(".pin-text");
+      textEl.textContent = snippet.content;
+      if (snippet.content.length > COMPACT_CONTENT_THRESHOLD) textEl.classList.add("pin-title-compact");
+      textEl.classList.remove("hidden");
+    }
+  } else {
+    title.textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
+    if (type.long) {
+      title.classList.add("pin-title-long");
+      if ((snippet.content || "").length > COMPACT_CONTENT_THRESHOLD) title.classList.add("pin-title-compact");
+    }
+  }
+
+  if (type.hasAuthor && snippet.author) {
+    const authorEl = node.querySelector(".pin-author");
+    authorEl.textContent = `— ${snippet.author}`;
+    authorEl.classList.remove("hidden");
   }
 
   const sourceEl = node.querySelector(".pin-source");

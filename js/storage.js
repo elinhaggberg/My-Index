@@ -265,7 +265,9 @@ export function createEmptySnippet() {
   return {
     id: uid(),
     type: "link",
+    title: "",
     content: "",
+    author: "",
     url: "",
     comment: "",
     image: "",
