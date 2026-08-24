@@ -31,6 +31,8 @@ export function openSnippetSearch(nav, refresh) {
     const matches = snippets.filter((s) => {
       return (
         (s.content || "").toLowerCase().includes(q) ||
+        (s.title || "").toLowerCase().includes(q) ||
+        (s.author || "").toLowerCase().includes(q) ||
         (s.comment || "").toLowerCase().includes(q) ||
         (s.siteName || "").toLowerCase().includes(q) ||
         (s.url || "").toLowerCase().includes(q)

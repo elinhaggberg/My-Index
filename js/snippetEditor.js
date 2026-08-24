@@ -22,6 +22,8 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     const finalSnippet = {
       ...draft,
       content: draft.content?.trim() || "",
+      title: draft.title?.trim() || "",
+      author: draft.author?.trim() || "",
     };
     try {
       await saveSnippet(finalSnippet);
@@ -37,11 +39,15 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   // ---- Type ----
   const typeRow = el.querySelector("#editor-type-segmented");
   const contentInput = el.querySelector("#editor-content");
+  const titleField = el.querySelector("#editor-title-field");
+  const authorField = el.querySelector("#editor-author-field");
   const imageUploadActions = el.querySelector("#editor-image-upload-actions");
   function renderContentField() {
     const type = typeFor(draft.type);
     contentInput.placeholder = type.contentPlaceholder;
     contentInput.rows = type.long ? 5 : 2;
+    titleField.classList.toggle("hidden", !type.hasTitle);
+    authorField.classList.toggle("hidden", !type.hasAuthor);
     imageUploadActions.classList.toggle("hidden", draft.type !== "image");
   }
   typeRow.replaceChildren(
@@ -64,6 +70,18 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   contentInput.value = draft.content || "";
   contentInput.addEventListener("input", () => {
     draft.content = contentInput.value;
+  });
+
+  const titleInput = el.querySelector("#editor-title-input");
+  titleInput.value = draft.title || "";
+  titleInput.addEventListener("input", () => {
+    draft.title = titleInput.value;
+  });
+
+  const authorInput = el.querySelector("#editor-author-input");
+  authorInput.value = draft.author || "";
+  authorInput.addEventListener("input", () => {
+    draft.author = authorInput.value;
   });
 
   // ---- Link + fetch ----

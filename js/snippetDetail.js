@@ -29,10 +29,26 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
   }
 
   const titleEl = el.querySelector("#detail-title");
-  titleEl.textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
-  if (type.long) {
-    titleEl.classList.add("card-detail-title-long");
-    if ((snippet.content || "").length > COMPACT_CONTENT_THRESHOLD) titleEl.classList.add("card-detail-title-compact");
+  if (type.hasTitle) {
+    titleEl.textContent = snippet.title || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
+    if (snippet.content) {
+      const bodyEl = el.querySelector("#detail-body");
+      bodyEl.textContent = snippet.content;
+      if (snippet.content.length > COMPACT_CONTENT_THRESHOLD) bodyEl.classList.add("card-detail-title-compact");
+      bodyEl.classList.remove("hidden");
+    }
+  } else {
+    titleEl.textContent = snippet.content || (snippet.url ? hostnameFor(snippet.url) : "Untitled");
+    if (type.long) {
+      titleEl.classList.add("card-detail-title-long");
+      if ((snippet.content || "").length > COMPACT_CONTENT_THRESHOLD) titleEl.classList.add("card-detail-title-compact");
+    }
+  }
+
+  if (type.hasAuthor && snippet.author) {
+    const authorEl = el.querySelector("#detail-author");
+    authorEl.textContent = `— ${snippet.author}`;
+    authorEl.classList.remove("hidden");
   }
 
   const linkEl = el.querySelector("#detail-link");

@@ -379,9 +379,17 @@
         <button type="button" class="photo-preview-clear" id="editor-image-clear-btn" aria-label="Remove image"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </div>
 
+      <label class="field hidden" id="editor-title-field">
+        <span>Title</span>
+        <input type="text" id="editor-title-input" maxlength="200" placeholder="Poem title" autocomplete="off" />
+      </label>
       <label class="field">
         <span>Content</span>
         <textarea id="editor-content" maxlength="2000" rows="2"></textarea>
+      </label>
+      <label class="field hidden" id="editor-author-field">
+        <span>Author</span>
+        <input type="text" id="editor-author-input" maxlength="120" placeholder="Who wrote this?" autocomplete="off" />
       </label>
       <label class="field">
         <span>Your notes</span>
@@ -408,6 +416,8 @@
       <img class="pin-media hidden" loading="lazy" />
       <div class="pin-body">
         <h3 class="pin-title"></h3>
+        <p class="pin-text hidden"></p>
+        <p class="pin-author hidden"></p>
         <span class="pin-source hidden"></span>
       </div>
     </article>
@@ -425,6 +435,8 @@
       </header>
       <img class="card-detail-media hidden" id="detail-image" alt="" />
       <h2 class="card-detail-title" id="detail-title"></h2>
+      <p class="card-detail-body hidden" id="detail-body"></p>
+      <p class="card-detail-author hidden" id="detail-author"></p>
       <a class="card-detail-link hidden" id="detail-link" target="_blank" rel="noopener noreferrer">
         <svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.2" stroke-linecap="round"><rect x="1.8" y="9" width="10" height="6" rx="3" transform="rotate(-45 6.8 12)"/><rect x="12.2" y="9" width="10" height="6" rx="3" transform="rotate(-45 17.2 12)"/></svg>
         <span id="detail-link-text"></span>
