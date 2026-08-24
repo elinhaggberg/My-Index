@@ -23,6 +23,9 @@ export const ICON_NOTE =
 export const ICON_BOOK =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M4 4.5C4 4 4.5 3.5 6 3.5c2.5 0 5 1 6 2 1-1 3.5-2 6-2 1.5 0 2 .5 2 1v14.5c0 .5-.5 1-2 1-2.5 0-5 1-6 2-1-1-3.5-2-6-2-1.5 0-2-.5-2-1V4.5z"/><path d="M12 5.5v14.5"/></svg>';
 
+export const ICON_POEM =
+  '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8L2 22"/><path d="M17.5 15H9"/></svg>';
+
 export const ICON_PODCAST =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3.2"/><path d="M9.5 16.5c-2.6 0-4.7 2.1-4.7 4.5M14.5 16.5c2.6 0 4.7 2.1 4.7 4.5"/><path d="M12 13.2V21"/></svg>';
 
