@@ -22,7 +22,7 @@ export async function renderTag(root, nav, id) {
   const tpl = document.getElementById("tpl-tag");
   root.replaceChildren(tpl.content.cloneNode(true));
 
-  root.querySelector(".back-btn").addEventListener("click", () => nav.toTags());
+  root.querySelector(".back-btn").addEventListener("click", () => nav.back("#/tags"));
 
   async function load() {
     const tag = await getTag(id);

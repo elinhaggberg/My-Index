@@ -52,6 +52,20 @@ registerRemoteResolver(
 
 const root = document.getElementById("app");
 
+// A back arrow (Tag/Profile detail) should return wherever the user actually
+// came from -- a Tag reached from a Profile's tag chips, a Profile reached
+// from a Tag's profile row, Home, etc. -- not a single hardcoded destination.
+// This is a small in-app "where was I" stack, separate from the browser's
+// own history: every nav.toX() push records the hash being left, and
+// nav.back() pops the most recent one instead of pushing (skipPush), so
+// back/forward chains through any number of Tag<->Profile hops unwind
+// correctly. Capped since a long session that only ever navigates forward
+// would otherwise grow it unbounded.
+const navStack = [];
+const NAV_STACK_LIMIT = 50;
+let currentHash = null;
+let skipPush = false;
+
 const nav = {
   toHome: () => {
     location.hash = "#/home";
@@ -68,10 +82,26 @@ const nav = {
   toProfile: (id) => {
     location.hash = `#/profile/${encodeURIComponent(id)}`;
   },
+  // fallbackHash is used when there's nowhere in-app to go back to -- e.g. a
+  // Profile/Tag opened directly from a fresh load or a shared link.
+  back: (fallbackHash) => {
+    const prev = navStack.pop();
+    skipPush = true;
+    location.hash = prev || fallbackHash;
+  },
 };
 
 function route() {
   const hash = location.hash || "#/home";
+  if (hash !== currentHash) {
+    if (currentHash !== null && !skipPush) {
+      navStack.push(currentHash);
+      if (navStack.length > NAV_STACK_LIMIT) navStack.shift();
+    }
+    skipPush = false;
+    currentHash = hash;
+  }
+
   const match = hash.match(/^#\/([a-z]+)(?:\/(.+))?$/);
   const view = match ? match[1] : "home";
   const param = match && match[2] ? decodeURIComponent(match[2]) : null;
