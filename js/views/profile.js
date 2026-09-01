@@ -24,7 +24,7 @@ export async function renderProfile(root, nav, id) {
   const tpl = document.getElementById("tpl-profile");
   root.replaceChildren(tpl.content.cloneNode(true));
 
-  root.querySelector(".back-btn").addEventListener("click", () => nav.toHome());
+  root.querySelector(".back-btn").addEventListener("click", () => nav.back("#/home"));
 
   async function load() {
     // Just opening the profile page no longer clears anything on its own --
