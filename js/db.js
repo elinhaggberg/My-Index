@@ -6,13 +6,17 @@
 // is meant to grow, not get pruned — so the collections themselves live here
 // from the start rather than bumping into localStorage's ~5MB cap later.
 const DB_NAME = "my-index-db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 // "tombstones" holds one row per locally-deleted profile/tag/snippet
 // (id: "<store>:<recordId>") just long enough to tell Cloud Backup about
 // the deletion -- see js/cloudBackup.js and js/storage.js's
 // recordTombstone. Irrelevant to anyone not using Cloud Backup; a no-op
 // store that just quietly holds a few small rows otherwise.
-const STORES = ["profiles", "tags", "snippets", "tombstones"];
+// "feedState" holds the RSS reader's per-channel read state (which posts
+// have been seen -- see js/feedState.js). Purely local to this device: it
+// isn't part of a backup file or Cloud Backup, since it's about what this
+// device has shown you, not part of the register itself.
+const STORES = ["profiles", "tags", "snippets", "tombstones", "feedState"];
 
 let dbPromise = null;
 function openDB() {

@@ -5,6 +5,7 @@ import { getStorageUsage } from "./lazyImage.js";
 const THEME_KEY = "mi_theme_v1";
 const HOME_TITLE_KEY = "mi_home_title_v1";
 const SHOW_PROFILE_ROW_KEY = "mi_show_profile_row_v1";
+const FEED_IMAGES_KEY = "mi_feed_images_v1";
 const LAST_SEEN_VERSION_KEY = "mi_last_seen_version_v1";
 const LAST_BACKUP_KEY = "mi_last_backup_at_v1";
 const BACKUP_BANNER_DISMISSED_KEY = "mi_backup_banner_dismissed_at_v1";
@@ -648,6 +649,18 @@ export function getShowProfileRow() {
 export function setShowProfileRow(value) {
   localStorage.setItem(SHOW_PROFILE_ROW_KEY, value ? "1" : "0");
   bumpPrefsUpdatedAt();
+}
+
+// Off by default, the opposite of the profile row above -- an image in a
+// feed post loads from someone else's server the moment it's shown, so the
+// reader asks first (tap-to-show) unless this has been explicitly turned
+// on. A per-device choice, deliberately not part of the synced prefs.
+export function getLoadFeedImages() {
+  return localStorage.getItem(FEED_IMAGES_KEY) === "1";
+}
+
+export function setLoadFeedImages(value) {
+  localStorage.setItem(FEED_IMAGES_KEY, value ? "1" : "0");
 }
 
 // ---- Cloud Backup prefs sync ----

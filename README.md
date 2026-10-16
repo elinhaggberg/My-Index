@@ -22,6 +22,7 @@ A Tag's page is auto-generated: its pinned note at the top, followed by every Pr
 - **Capture flow**: paste a link (fetches title/image automatically) or just write a quote/note, tag it, and optionally link it to one or more Profiles — no in-app browser, no required tagging at save time.
 - **Profile & Tag pages**: full detail views, cross-referenced by shared tags.
 - **Backup & sharing**: export a single profile, a single snippet, or a full backup as a JSON file; import always merges, never replaces.
+- **Feed reader**: a blog, newsletter, or website channel with an RSS/Atom feed opens in a built-in reader: the latest posts with an unread dot for anything new since your last visit (kept locally), each post's text cleaned up and shown in-app, and "Save quote" / "Save as snippet" straight from a post. Images load only when you tap them (or automatically, if you turn that on in Customize), embeds become plain links, and tracking pixels are dropped. Works without any optional add-on, through the stateless `api/read-feed.js`.
 - **New-content badges** *(optional add-on)*: a lightweight backend can poll each Channel's RSS feed on a schedule and show a "new items" count on its Profile, cleared on visit — see `supabase/SETUP.md`. The app works fully without it.
 - **Cloud Backup** *(optional add-on)*: connect your own free Supabase project (via OAuth, no manual setup) for a full, passphrase-protected cloud backup and sync of every Profile/Tag/Snippet, photos included — see `supabase/CLOUD_BACKUP_SETUP.md`. Off by default; the app works fully without it, and multiple Make It Local apps can share one Supabase project instead of needing one each.
 
@@ -32,6 +33,7 @@ No build step — plain HTML/CSS/JS modules, same approach as the other Make It 
 Two kinds of server-side pieces, both stateless and both optional except the first:
 
 - `api/unfurl.js` — always active, a stateless Vercel serverless function that fetches a pasted URL server-side (the browser can't read cross-origin HTML itself) and extracts Open Graph metadata to build the snippet. Stores nothing — no database, no accounts.
+- `api/read-feed.js` — always active, the same kind of stateless function for the feed reader: fetches a channel's feed and passes the XML back for the browser to parse. Only ever returns something that is actually a feed.
 - `api/oauth-*.js` and `api/cloud-sync-*.js` — inert unless Cloud Backup or RSS sync is turned on; thin proxies to Supabase's OAuth and Management API so the browser never needs Supabase's own API credentials directly. See `supabase/CLOUD_BACKUP_SETUP.md` if you're forking this repo and want Cloud Backup working on your own deployment — it needs a one-time OAuth application registration that can't be automated.
 
 ## Deploying

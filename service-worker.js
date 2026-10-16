@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v11";
+const CACHE_NAME = "my-index-v12";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,6 +13,9 @@ const APP_SHELL = [
   "./js/cloudBackup.js",
   "./js/cloudImageSync.js",
   "./js/discoverFeed.js",
+  "./js/feedParse.js",
+  "./js/feedSanitize.js",
+  "./js/feedState.js",
   "./js/imageBlob.js",
   "./js/imageStore.js",
   "./js/lazyImage.js",
@@ -48,6 +51,7 @@ const APP_SHELL = [
   "./js/views/tags.js",
   "./js/views/tag.js",
   "./js/views/profile.js",
+  "./js/views/feed.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",

@@ -3,6 +3,7 @@ import { renderProfiles } from "./views/profiles.js";
 import { renderTags } from "./views/tags.js";
 import { renderTag } from "./views/tag.js";
 import { renderProfile } from "./views/profile.js";
+import { renderFeed } from "./views/feed.js";
 import { applyTheme } from "./theme.js";
 import {
   createEmptySnippet,
@@ -82,6 +83,9 @@ const nav = {
   toProfile: (id) => {
     location.hash = `#/profile/${encodeURIComponent(id)}`;
   },
+  toFeed: (profileId, channelId) => {
+    location.hash = `#/feed/${encodeURIComponent(profileId)}/${encodeURIComponent(channelId)}`;
+  },
   // fallbackHash is used when there's nowhere in-app to go back to -- e.g. a
   // Profile/Tag opened directly from a fresh load or a shared link.
   back: (fallbackHash) => {
@@ -126,6 +130,13 @@ function route() {
         return;
       }
       renderProfile(root, nav, param);
+      break;
+    case "feed":
+      if (!param) {
+        nav.toHome();
+        return;
+      }
+      renderFeed(root, nav, param);
       break;
     default:
       renderHome(root, nav);

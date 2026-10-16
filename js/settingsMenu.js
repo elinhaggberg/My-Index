@@ -14,6 +14,8 @@ import {
   applyRemoteDeletion,
   getShowProfileRow,
   setShowProfileRow,
+  getLoadFeedImages,
+  setLoadFeedImages,
   getPrefsSnapshot,
   getPrefsUpdatedAt,
   applyPrefsSnapshot,
@@ -648,6 +650,10 @@ function openCustomize(refresh) {
     setShowProfileRow(showProfileRowToggle.checked);
     if (refresh) refresh();
   });
+
+  const feedImagesToggle = el.querySelector("#customize-feed-images");
+  feedImagesToggle.checked = getLoadFeedImages();
+  feedImagesToggle.addEventListener("change", () => setLoadFeedImages(feedImagesToggle.checked));
 
   const accentPicker = el.querySelector("#playful-accent-picker");
   const themeButtons = el.querySelectorAll(".theme-option");

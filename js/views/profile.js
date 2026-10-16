@@ -14,11 +14,11 @@ import { createEmptySnippet } from "../storage.js";
 import { openProfileEditor } from "../profileEditor.js";
 import { renderTagRefChips } from "../refChips.js";
 import { hostnameFor } from "../util.js";
-import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH } from "../icons.js";
+import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH, ICON_CHEVRON_RIGHT } from "../icons.js";
 import { clearServerCounts, clearChannelServerCount } from "../feedSync.js";
 import { resolveImageSrc } from "../imageStore.js";
 import { shareOrDownload, filenameFor } from "../share.js";
-import { CHANNEL_TYPE_LABELS } from "../channelTypes.js";
+import { CHANNEL_TYPE_LABELS, opensInReader } from "../channelTypes.js";
 
 export async function renderProfile(root, nav, id) {
   const tpl = document.getElementById("tpl-profile");
@@ -81,11 +81,19 @@ export async function renderProfile(root, nav, id) {
     } else {
       channelsEl.replaceChildren(
         ...channels.map((channel) => {
+          // A text channel with a feed opens the in-app reader
+          // (js/views/feed.js) instead of the site -- the reader has its
+          // own "Open in browser" for anyone who'd rather go there.
+          const inReader = opensInReader(channel);
           const row = document.createElement("a");
           row.className = "channel-view-row";
-          row.href = channel.url;
-          row.target = "_blank";
-          row.rel = "noopener noreferrer";
+          if (inReader) {
+            row.href = `#/feed/${encodeURIComponent(id)}/${encodeURIComponent(channel.id)}`;
+          } else {
+            row.href = channel.url;
+            row.target = "_blank";
+            row.rel = "noopener noreferrer";
+          }
 
           const typeEl = document.createElement("span");
           typeEl.className = "channel-view-type";
@@ -108,7 +116,7 @@ export async function renderProfile(root, nav, id) {
             badge.textContent = String(channel.newCount);
             right.appendChild(badge);
           }
-          right.innerHTML += ICON_EXTERNAL;
+          right.innerHTML += inReader ? ICON_CHEVRON_RIGHT : ICON_EXTERNAL;
 
           row.append(meta, right);
 
@@ -120,8 +128,9 @@ export async function renderProfile(root, nav, id) {
           // of closing over the node created above -- the innerHTML += just
           // above re-serializes and re-parses right's whole contents,
           // silently detaching that reference from what's actually on
-          // screen.
-          if (channel.newCount) {
+          // screen. A reader channel clears its badge from the reader
+          // itself instead, once the feed has actually loaded.
+          if (channel.newCount && !inReader) {
             row.addEventListener("click", () => {
               row.querySelector(".channel-new-badge")?.remove();
               channel.newCount = 0;

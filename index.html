@@ -300,6 +300,19 @@
     <button class="fab" id="profile-add-snippet-btn" aria-label="Save something new"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"/></svg></button>
   </template>
 
+  <!-- ===== Feed reader (js/views/feed.js) ===== -->
+  <template id="tpl-feed">
+    <header class="topbar">
+      <button class="icon-btn back-btn" aria-label="Back"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 105.4-105.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></button>
+      <h1 id="feed-title" class="feed-title"></h1>
+      <a class="icon-btn hidden" id="feed-open-btn" target="_blank" rel="noopener noreferrer" aria-label="Open in browser" title="Open in browser"><svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h12v12"/><path d="M21 3L10 14"/><path d="M17 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6"/></svg></a>
+    </header>
+    <div class="page-body" id="feed-body"></div>
+    <div class="reader-actions hidden" id="reader-actions">
+      <button type="button" class="text-btn primary reader-save-btn" id="reader-save-btn">Save as snippet</button>
+    </div>
+  </template>
+
   <!-- ===== Profile editor ===== -->
   <template id="tpl-profile-editor">
     <div class="sheet">
@@ -564,6 +577,11 @@
         <input type="checkbox" id="customize-show-profile-row" />
         <span>Show the profile row on Home</span>
       </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="customize-feed-images" />
+        <span>Load images in feeds automatically</span>
+      </label>
+      <p class="toggle-row-hint">Images in a feed load from the author's own server, which can see that you read them. When this is off, the reader shows a placeholder you can tap instead.</p>
     </div>
   </template>
 

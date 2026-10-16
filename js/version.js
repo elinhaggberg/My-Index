@@ -3,9 +3,18 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.08.05.3";
+export const APP_VERSION = "2026.10.16";
 
 export const CHANGELOG = [
+  {
+    version: "2026.10.16",
+    date: "October 16, 2026",
+    changes: [
+      "Blogs, newsletters and websites with an RSS feed now open in a built-in reader when you tap the channel on a Profile: a list of the latest posts with a short excerpt, and a dot on anything new since you last looked. Tap a post to read it in the app, or use the button in the top right corner to open it in your browser instead.",
+      "Select text in a post and tap \"Save quote\" to save it as a Quote snippet, already linked to the post and the Profile. With nothing selected, the same button saves the post as a Link snippet.",
+      "Images in feed posts don't load until you tap them, since they come from the author's own server, which can see when you read them. Embedded videos and other players appear as links, and tracking pixels are removed. Turn on \"Load images in feeds automatically\" in Customize if you'd rather see images straight away.",
+    ],
+  },
   {
     version: "2026.08.05.3",
     date: "August 5, 2026",
