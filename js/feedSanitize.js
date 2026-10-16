@@ -241,3 +241,37 @@ export function sanitizeFeedHtml(html, { base, loadImages }) {
   sanitizeChildren(doc.body, frag, { base, loadImages });
   return frag;
 }
+
+// A teaser post (feedParse.js's isExcerpt) usually ends with the
+// platform's own "Read more" button -- Substack's, WordPress's "Continue
+// reading" -- which only repeats the reader's own preview note and
+// full-post link right below it. Removes that one closing link line, and
+// only when it's nothing but a link: a sentence in the author's own words
+// ("…subscribe to read the rest") is part of the text and stays.
+const READ_MORE_LINE = /^(read more|continue reading|keep reading|läs mer|läs hela|läs vidare)\b(?:[^.!?]|\.(?=\S)){0,60}$/i;
+
+function lastElement(node) {
+  for (let child = node.lastChild; child; child = child.previousSibling) {
+    if (child.nodeType === Node.ELEMENT_NODE) return child;
+    if (child.nodeType === Node.TEXT_NODE && child.textContent.trim()) return null;
+  }
+  return null;
+}
+
+export function stripTrailingReadMore(container) {
+  let node = container;
+  // Descends through wrapper elements (a post's content is often one big
+  // <div>) to the last block actually on screen.
+  for (let depth = 0; depth < 6; depth++) {
+    const last = lastElement(node);
+    if (!last) return;
+    const isLinkLine = (last.localName === "a" || last.querySelector("a")) && READ_MORE_LINE.test(last.textContent.trim());
+    if (isLinkLine) {
+      const parent = last.parentNode;
+      last.remove();
+      if (parent !== container && !parent.textContent.trim() && !parent.querySelector("img, .reader-img-placeholder")) parent.remove();
+      return;
+    }
+    node = last;
+  }
+}

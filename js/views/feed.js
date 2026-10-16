@@ -13,7 +13,7 @@ import { getProfile, clearChannelNewCount, createEmptySnippet, getLoadFeedImages
 import { clearChannelServerCount } from "../feedSync.js";
 import { opensInReader } from "../channelTypes.js";
 import { parseFeed } from "../feedParse.js";
-import { sanitizeFeedHtml } from "../feedSanitize.js";
+import { sanitizeFeedHtml, stripTrailingReadMore } from "../feedSanitize.js";
 import { getUnreadIds, markSeen } from "../feedState.js";
 import { openSnippetEditor } from "../snippetEditor.js";
 import { formatDate, hostnameFor } from "../util.js";
@@ -249,6 +249,7 @@ function renderItem(root, nav, { profile, channel, feed, item, siteUrl }) {
   const content = document.createElement("div");
   content.className = "reader-body";
   content.appendChild(sanitizeFeedHtml(item.html, { base: item.link || siteUrl, loadImages: getLoadFeedImages() }));
+  if (item.isExcerpt) stripTrailingReadMore(content);
   article.appendChild(content);
 
   if (item.isExcerpt) {
