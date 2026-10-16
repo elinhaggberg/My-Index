@@ -21,11 +21,11 @@ import { resolveImageSrc } from "../imageStore.js";
 import { clearChannelServerCount } from "../feedSync.js";
 import { opensInReader } from "../channelTypes.js";
 import { parseFeed } from "../feedParse.js";
-import { sanitizeFeedHtml, stripTrailingReadMore } from "../feedSanitize.js";
-import { getUnreadIds, markSeen } from "../feedState.js";
+import { sanitizeFeedHtml, stripTrailingReadMore, revealImages } from "../feedSanitize.js";
+import { getUnreadIds, markSeen, getAlwaysImages, setAlwaysImages } from "../feedState.js";
 import { openSnippetEditor } from "../snippetEditor.js";
 import { formatDate, hostnameFor } from "../util.js";
-import { ICON_EXTERNAL } from "../icons.js";
+import { ICON_EXTERNAL, ICON_IMAGE } from "../icons.js";
 
 const FRESH_MS = 10 * 60 * 1000;
 // channelId -> { feed, fetchedAt, listScrollY }
@@ -367,6 +367,89 @@ function wireScrollChrome(root, article, title) {
   update();
 }
 
+function describeHosts(hosts) {
+  if (hosts.length === 0) return "";
+  if (hosts.length === 1) return ` from ${hosts[0]}`;
+  if (hosts.length === 2) return ` from ${hosts[0]} and ${hosts[1]}`;
+  return ` from ${hosts[0]} and ${hosts.length - 1} other sites`;
+}
+
+// Images are decided once per feed, at the moment it matters, rather than
+// one tap per image or a single switch for everything: the first post
+// with images asks, naming the site that would actually see the request
+// (usually the platform's image server, not the writer), and "Always for
+// <feed>" settles it for that feed from then on. Customize lists those
+// feeds so the choice can be taken back.
+function createImagePrompt(content, channel, feed, siteUrl) {
+  const placeholders = [...content.querySelectorAll(".reader-img-placeholder")];
+  if (placeholders.length === 0) return null;
+  const hosts = [...new Set(placeholders.map((p) => p.dataset.host).filter(Boolean))];
+  const count = placeholders.length;
+  const feedName = feed.title || hostnameFor(siteUrl) || "this feed";
+
+  const prompt = document.createElement("div");
+  prompt.className = "reader-image-prompt";
+  prompt.setAttribute("role", "note");
+  prompt.insertAdjacentHTML("afterbegin", ICON_IMAGE);
+
+  const text = document.createElement("div");
+  text.className = "reader-image-prompt-text";
+  const line = document.createElement("p");
+  line.className = "reader-image-prompt-line";
+  line.textContent = `This post has ${count === 1 ? "an image" : `${count} images`}${describeHosts(hosts)}.`;
+  const why = document.createElement("p");
+  why.className = "reader-image-prompt-why";
+  why.textContent = `Showing ${count === 1 ? "it" : "them"} lets ${hosts.length > 1 ? "those sites" : "that site"} see that this device opened the post.`;
+
+  const actions = document.createElement("div");
+  actions.className = "reader-image-prompt-actions";
+  const showBtn = document.createElement("button");
+  showBtn.type = "button";
+  showBtn.className = "text-btn secondary";
+  showBtn.textContent = count === 1 ? "Show image" : "Show images";
+  const alwaysBtn = document.createElement("button");
+  alwaysBtn.type = "button";
+  alwaysBtn.className = "text-btn primary reader-image-prompt-always";
+  alwaysBtn.textContent = `Always for ${feedName}`;
+  actions.append(showBtn, alwaysBtn);
+
+  text.append(line, why, actions);
+  prompt.append(text);
+
+  // Set before revealing, so the reveal's own clicks on each placeholder
+  // don't trip the "every image tapped in by hand" check below.
+  let answered = false;
+  showBtn.addEventListener("click", () => {
+    answered = true;
+    revealImages(content);
+    prompt.remove();
+  });
+  alwaysBtn.addEventListener("click", async () => {
+    answered = true;
+    revealImages(content);
+    await setAlwaysImages(channel.id, true);
+    text.replaceChildren();
+    const done = document.createElement("p");
+    done.className = "reader-image-prompt-line";
+    done.textContent = `Images will show automatically for ${feedName}. You can change this in Customize.`;
+    text.append(done);
+    prompt.classList.add("done");
+    setTimeout(() => prompt.remove(), 4500);
+  });
+  // Tapping every image in one at a time also answers the question. Capture
+  // phase, since a placeholder stops its own click from bubbling, and a
+  // tick later, once that click has swapped the image in.
+  content.addEventListener(
+    "click",
+    () =>
+      setTimeout(() => {
+        if (!answered && !content.querySelector(".reader-img-placeholder")) prompt.remove();
+      }),
+    true
+  );
+  return prompt;
+}
+
 async function renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash }) {
   const body = root.querySelector("#feed-body");
   const link = item.link || siteUrl;
@@ -397,8 +480,13 @@ async function renderItem(root, nav, { profile, channel, feed, item, siteUrl, li
 
   const content = document.createElement("div");
   content.className = "reader-body";
-  content.appendChild(sanitizeFeedHtml(item.html, { base: item.link || siteUrl, loadImages: getLoadFeedImages() }));
+  const loadImages = getLoadFeedImages() || (await getAlwaysImages(channel.id));
+  content.appendChild(sanitizeFeedHtml(item.html, { base: item.link || siteUrl, loadImages }));
   if (item.isExcerpt) stripTrailingReadMore(content);
+  if (!loadImages) {
+    const prompt = createImagePrompt(content, channel, feed, siteUrl);
+    if (prompt) article.appendChild(prompt);
+  }
   article.appendChild(content);
 
   const minutes = readingMinutes(content.textContent);

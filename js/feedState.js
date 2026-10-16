@@ -9,20 +9,39 @@
 // you with thirty dots that mean nothing. From then on, anything new shows
 // up unread until that post itself is opened.
 
-import { getOne, putOne } from "./db.js";
+import { getAll, getOne, putOne, deleteOne } from "./db.js";
 
 // Feeds only ever show their latest few dozen posts, so remembering far
 // more ids than that just grows the row forever for nothing.
 const MAX_SEEN_IDS = 1000;
 
+// One row per channel holds both its read state and its image choice, so
+// every write merges into whatever's already there rather than replacing
+// the row -- marking a post read mustn't forget "always show images".
+async function readRow(channelId) {
+  return getOne("feedState", channelId).catch(() => null);
+}
+
+async function updateRow(channelId, changes) {
+  const row = (await readRow(channelId)) || { id: channelId };
+  const next = { ...row, ...changes, id: channelId, updatedAt: Date.now() };
+  // A row with nothing left in it (images turned back off, never visited)
+  // is just removed, instead of lingering as an empty record.
+  if (!next.seenIds && !next.alwaysImages) {
+    await deleteOne("feedState", channelId).catch(() => {});
+    return;
+  }
+  await putOne("feedState", next).catch(() => {});
+}
+
 async function readSeen(channelId) {
-  const row = await getOne("feedState", channelId).catch(() => null);
-  return row ? row.seenIds : null;
+  const row = await readRow(channelId);
+  return row?.seenIds || null;
 }
 
 async function writeSeen(channelId, seenIds) {
   const trimmed = seenIds.length > MAX_SEEN_IDS ? seenIds.slice(seenIds.length - MAX_SEEN_IDS) : seenIds;
-  await putOne("feedState", { id: channelId, seenIds: trimmed, updatedAt: Date.now() }).catch(() => {});
+  await updateRow(channelId, { seenIds: trimmed });
 }
 
 // Returns the set of item ids currently unread, establishing the baseline
@@ -42,4 +61,23 @@ export async function markSeen(channelId, itemIds) {
   const seenSet = new Set(seen);
   const added = itemIds.filter((id) => !seenSet.has(id));
   if (added.length) await writeSeen(channelId, [...seen, ...added]);
+}
+
+// ---- Images, decided once per feed ----
+// The reader asks the first time a feed's post has images (see
+// js/views/feed.js) instead of making every image a separate tap; "Always
+// for this feed" is remembered here, and listed in Customize so it can be
+// taken back.
+
+export async function getAlwaysImages(channelId) {
+  return !!(await readRow(channelId))?.alwaysImages;
+}
+
+export async function setAlwaysImages(channelId, value) {
+  await updateRow(channelId, { alwaysImages: value ? true : undefined });
+}
+
+export async function getAlwaysImagesChannelIds() {
+  const rows = await getAll("feedState").catch(() => []);
+  return rows.filter((row) => row.alwaysImages).map((row) => row.id);
 }

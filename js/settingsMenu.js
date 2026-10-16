@@ -50,6 +50,8 @@ import {
   applyPairingCode,
 } from "./cloudBackup.js";
 import { ICON_CHECK } from "./icons.js";
+import { hostnameFor } from "./util.js";
+import { getAlwaysImagesChannelIds, setAlwaysImages } from "./feedState.js";
 
 const STORAGE_FNS = {
   getProfiles,
@@ -653,7 +655,47 @@ function openCustomize(refresh) {
 
   const feedImagesToggle = el.querySelector("#customize-feed-images");
   feedImagesToggle.checked = getLoadFeedImages();
-  feedImagesToggle.addEventListener("change", () => setLoadFeedImages(feedImagesToggle.checked));
+  feedImagesToggle.addEventListener("change", () => {
+    setLoadFeedImages(feedImagesToggle.checked);
+    renderFeedImageList();
+  });
+
+  // Feeds where "Always for <feed>" was chosen in the reader, so that
+  // choice can be seen and taken back. Hidden while the everywhere switch
+  // above is on, since it overrides them all anyway.
+  const feedImageList = el.querySelector("#customize-feed-image-list");
+  const feedImageRows = el.querySelector("#customize-feed-image-rows");
+  async function renderFeedImageList() {
+    const ids = new Set(await getAlwaysImagesChannelIds());
+    const profiles = await getProfiles();
+    const entries = [];
+    for (const profile of profiles) {
+      for (const channel of profile.channels || []) {
+        if (ids.has(channel.id)) entries.push({ profile, channel });
+      }
+    }
+    feedImageList.classList.toggle("hidden", entries.length === 0 || feedImagesToggle.checked);
+    feedImageRows.replaceChildren(
+      ...entries.map(({ profile, channel }) => {
+        const row = document.createElement("div");
+        row.className = "customize-feed-image-row";
+        const name = document.createElement("span");
+        name.className = "customize-feed-image-name";
+        name.textContent = `${profile.name || "Untitled"} · ${hostnameFor(channel.url) || channel.url}`;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "text-btn-inline";
+        remove.textContent = "Ask again";
+        remove.addEventListener("click", async () => {
+          await setAlwaysImages(channel.id, false);
+          renderFeedImageList();
+        });
+        row.append(name, remove);
+        return row;
+      })
+    );
+  }
+  renderFeedImageList();
 
   const accentPicker = el.querySelector("#playful-accent-picker");
   const themeButtons = el.querySelectorAll(".theme-option");

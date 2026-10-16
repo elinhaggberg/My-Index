@@ -11,9 +11,10 @@
 // party loads without being asked for:
 //   - iframes/embeds/video/audio become a plain link card, never loaded
 //   - tracking pixels (tiny or known-tracker images) are dropped outright
-//   - every other image is a tap-to-show placeholder, unless the "Load
-//     images in feeds automatically" preference is on -- and when one does
-//     load, it's with no referrer, so the site can't see where it was read
+//   - every other image is a placeholder until images are allowed -- for
+//     that one post, for the whole feed, or everywhere (see js/views/
+//     feed.js) -- and when one does load, it's with no referrer, so the
+//     site can't see where it was read
 
 import { ICON_IMAGE, ICON_EXTERNAL } from "./icons.js";
 import { hostnameFor } from "./util.js";
@@ -119,6 +120,9 @@ function createImagePlaceholder(src, alt, size) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "reader-img-placeholder";
+  // Read by the reader's "this post has N images from …" prompt, which
+  // names the site that would actually see the request.
+  btn.dataset.host = hostnameFor(src) || "";
   // Holds the image's real proportions, so tapping it in doesn't shove the
   // text below around -- capped, so a very tall image doesn't leave a huge
   // empty box in the middle of the post.
@@ -139,6 +143,12 @@ function createImagePlaceholder(src, alt, size) {
     btn.replaceWith(createImage(src, alt, size));
   });
   return btn;
+}
+
+// Swaps every remaining placeholder in a post for its real image at once
+// -- what the reader's "Show images" does.
+export function revealImages(container) {
+  container.querySelectorAll(".reader-img-placeholder").forEach((btn) => btn.click());
 }
 
 // YouTube's /embed/ URLs open as a bare player outside an iframe -- the

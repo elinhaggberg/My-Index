@@ -3,9 +3,17 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.10.16.2";
+export const APP_VERSION = "2026.10.16.3";
 
 export const CHANGELOG = [
+  {
+    version: "2026.10.16.3",
+    date: "October 16, 2026",
+    changes: [
+      "Images in the feed reader are now decided once per feed instead of one tap at a time. The first post with images tells you how many there are and which site they come from (usually the newsletter platform rather than the writer), with \"Show images\" for that post or \"Always for\" that feed. Tracking pixels are still always removed.",
+      "Customize lists the feeds where images always show, with \"Ask again\" to take that back, and has a single switch to show images in every feed.",
+    ],
+  },
   {
     version: "2026.10.16.2",
     date: "October 16, 2026",

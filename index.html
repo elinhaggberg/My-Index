@@ -584,11 +584,16 @@
         <input type="checkbox" id="customize-show-profile-row" />
         <span>Show the profile row on Home</span>
       </label>
-      <label class="toggle-row">
+      <p class="customize-section-label">Images in feeds</p>
+      <label class="toggle-row customize-feed-images-row">
         <input type="checkbox" id="customize-feed-images" />
-        <span>Load images in feeds automatically</span>
+        <span>Always show images in every feed</span>
       </label>
-      <p class="toggle-row-hint">Images in a feed load from the author's own server, which can see that you read them. When this is off, the reader shows a placeholder you can tap instead.</p>
+      <p class="toggle-row-hint">Images load from the site that hosts them, usually the newsletter platform rather than the writer, which can then see that this device opened the post. Tracking pixels are always removed. When this is off, the reader asks once per feed.</p>
+      <div class="customize-feed-image-list hidden" id="customize-feed-image-list">
+        <p class="toggle-row-hint">Showing images for:</p>
+        <div id="customize-feed-image-rows"></div>
+      </div>
     </div>
   </template>
 
