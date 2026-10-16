@@ -102,14 +102,23 @@ function atomLink(el, base) {
 
 // A feed that only carries a teaser (most Substacks, many news sites)
 // should say so, rather than ending abruptly as if that were the whole
-// post. Only judged when the item has no dedicated full-content field --
-// a short body in content:encoded / <content> is just a short post. Length
-// alone isn't a signal: plenty of feeds (Simon Willison's among them) put
-// the whole post in <summary>, and many posts are genuinely short, so only
-// a trailing ellipsis / "read more" marks a teaser.
-function looksLikeExcerpt(html) {
+// post. Length alone isn't a signal: plenty of feeds (Simon Willison's
+// among them) put the whole post in <summary>, and many posts are
+// genuinely short. Two things are:
+//   - a closing "Read more" / "Continue reading" line, which usually
+//     trails off into an arrow or the site's name ("Read more →",
+//     "Continue reading on example.com") -- a teaser wherever it sits,
+//     even inside content:encoded, where WordPress puts its "Continue
+//     reading" cut
+//   - a trailing ellipsis, but only when there's no dedicated full-content
+//     field, since a real post can end on one too
+const READ_MORE_TAIL =
+  /(read more|read the rest|read the full|continue reading|keep reading|full (?:post|article|story)|läs mer|läs hela|läs vidare)(?:[^.!?]|\.(?=\S)){0,60}[.!?]?\s*$/i;
+const ELLIPSIS_TAIL = /(\.\.\.|…|\[…\]|\[\.\.\.\])\s*\]?\s*$/;
+
+function looksLikeExcerpt(html, hasFullField) {
   const plain = plainText(html);
-  return /(\.\.\.|…|\[…\]|\[\.\.\.\]|read more|continue reading|keep reading)\s*\]?\s*$/i.test(plain);
+  return READ_MORE_TAIL.test(plain) || (!hasFullField && ELLIPSIS_TAIL.test(plain));
 }
 
 function excerptFrom(html, length = 220) {
@@ -133,7 +142,7 @@ function parseAtom(root, feedUrl) {
       date: parseDate(text(child(entry, "published", "updated"))),
       author,
       html,
-      isExcerpt: !content && looksLikeExcerpt(html),
+      isExcerpt: looksLikeExcerpt(html, !!content),
     };
   });
   return { title: plainText(text(child(root, "title"))), siteUrl, items };
@@ -159,7 +168,7 @@ function parseRss(root, feedUrl) {
       date: parseDate(text(child(item, "pubDate", "dc:date"))),
       author: plainText(text(child(item, "dc:creator", "author"))),
       html,
-      isExcerpt: !full && looksLikeExcerpt(html),
+      isExcerpt: looksLikeExcerpt(html, !!full),
     };
   });
   return { title: plainText(text(child(channel, "title"))), siteUrl, items };
