@@ -9,7 +9,15 @@
 // the list and a post doesn't re-download it each time. Nothing about
 // what's been read leaves the device (js/feedState.js).
 
-import { getProfile, clearChannelNewCount, createEmptySnippet, getLoadFeedImages } from "../storage.js";
+import {
+  getProfile,
+  clearChannelNewCount,
+  createEmptySnippet,
+  getLoadFeedImages,
+  getReaderTextSize,
+  setReaderTextSize,
+} from "../storage.js";
+import { resolveImageSrc } from "../imageStore.js";
 import { clearChannelServerCount } from "../feedSync.js";
 import { opensInReader } from "../channelTypes.js";
 import { parseFeed } from "../feedParse.js";
@@ -133,7 +141,7 @@ export async function renderFeed(root, nav, param) {
       showMessage(body, "This post is no longer in the feed.", siteUrl);
       return;
     }
-    renderItem(root, nav, { profile, channel, feed, item, siteUrl });
+    await renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash });
   } else {
     await renderList(root, nav, { profile, channel, feed, siteUrl, listHash });
   }
@@ -223,34 +231,184 @@ async function renderList(root, nav, { profile, channel, feed, siteUrl, listHash
   if (entry?.listScrollY) window.scrollTo(0, entry.listScrollY);
 }
 
-function renderItem(root, nav, { profile, channel, feed, item, siteUrl }) {
+// Average adult silent reading speed is ~230-260 words a minute; the lower
+// end, since a post read on a phone is rarely skimmed at full speed.
+const WORDS_PER_MINUTE = 230;
+
+function readingMinutes(text) {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
+}
+
+async function createByline(profile, item) {
+  const byline = document.createElement("div");
+  byline.className = "reader-byline";
+
+  // The Profile's own photo from My Index, rather than the platform's --
+  // it's already stored on the device, so it costs no outside request, and
+  // it ties the post back to the person you chose to follow.
+  const avatar = document.createElement("span");
+  avatar.className = "reader-avatar";
+  const src = profile.image ? await resolveImageSrc(profile.image).catch(() => "") : "";
+  if (src) {
+    avatar.style.backgroundImage = `url("${src}")`;
+    avatar.classList.add("has-image");
+  } else {
+    avatar.textContent = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
+  }
+
+  const text = document.createElement("span");
+  text.className = "reader-byline-text";
+  const name = document.createElement("span");
+  name.className = "reader-byline-name";
+  name.textContent = item.author || profile.name || "";
+  const meta = document.createElement("span");
+  meta.className = "reader-byline-meta";
+  meta.dataset.date = item.date ? formatDate(item.date) : "";
+  text.append(name, meta);
+
+  byline.append(avatar, text);
+  return { byline, meta };
+}
+
+function createNextCard(nav, next, listHash) {
+  const card = document.createElement("a");
+  card.className = "reader-next";
+  card.href = `${listHash}/${encodeURIComponent(next.id)}`;
+  card.addEventListener("click", (e) => {
+    e.preventDefault();
+    nav.replace(card.getAttribute("href"));
+  });
+  const label = document.createElement("span");
+  label.className = "reader-next-label";
+  label.textContent = "Next post";
+  const title = document.createElement("span");
+  title.className = "reader-next-title";
+  title.textContent = next.title;
+  card.append(label, title);
+  if (next.excerpt && next.excerpt !== next.title) {
+    const excerpt = document.createElement("span");
+    excerpt.className = "reader-next-excerpt";
+    excerpt.textContent = next.excerpt;
+    card.append(excerpt);
+  }
+  if (next.date) {
+    const date = document.createElement("span");
+    date.className = "reader-next-meta";
+    date.textContent = formatDate(next.date);
+    card.append(date);
+  }
+  return card;
+}
+
+// Text size ("Aa"): three steps, applied as a CSS custom property on the
+// article so every size in the post scales together.
+function wireTextSize(root, article) {
+  const btn = root.querySelector("#reader-size-btn");
+  const panel = root.querySelector("#reader-size-panel");
+  btn.classList.remove("hidden");
+  function apply(size) {
+    article.dataset.textSize = size;
+    panel.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.size === size));
+  }
+  apply(getReaderTextSize());
+  function setOpen(open) {
+    panel.classList.toggle("hidden", !open);
+    btn.classList.toggle("active", open);
+    btn.setAttribute("aria-expanded", String(open));
+  }
+  btn.addEventListener("click", () => setOpen(panel.classList.contains("hidden")));
+  panel.querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => {
+      setReaderTextSize(b.dataset.size);
+      apply(b.dataset.size);
+    })
+  );
+  // Closes on any tap outside it, the way a popover should.
+  function onDocClick(e) {
+    if (!document.body.contains(panel)) {
+      document.removeEventListener("click", onDocClick, true);
+      return;
+    }
+    if (!panel.contains(e.target) && !btn.contains(e.target)) setOpen(false);
+  }
+  document.addEventListener("click", onDocClick, true);
+}
+
+// The thin progress line under the top bar, and the post's title fading
+// into the bar once the big title has scrolled out of view.
+function wireScrollChrome(root, article, title) {
+  const topbar = root.querySelector("#feed-topbar");
+  const progress = root.querySelector("#reader-progress");
+  const bar = root.querySelector("#reader-progress-bar");
+  progress.classList.remove("hidden");
+
+  let frame = 0;
+  function update() {
+    frame = 0;
+    if (!document.body.contains(article)) {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      return;
+    }
+    const rect = article.getBoundingClientRect();
+    const scrollable = rect.height - window.innerHeight + topbar.offsetHeight;
+    const ratio = scrollable > 0 ? Math.min(1, Math.max(0, -rect.top / scrollable)) : 1;
+    bar.style.transform = `scaleX(${ratio})`;
+    const titleBottom = title.getBoundingClientRect().bottom;
+    topbar.classList.toggle("show-post-title", titleBottom < topbar.getBoundingClientRect().bottom);
+    topbar.classList.toggle("scrolled", window.scrollY > 4);
+  }
+  function onScroll() {
+    if (!frame) frame = requestAnimationFrame(update);
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  update();
+}
+
+async function renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash }) {
   const body = root.querySelector("#feed-body");
   const link = item.link || siteUrl;
   setOpenInBrowser(root, link);
   markSeen(channel.id, [item.id]);
   window.scrollTo(0, 0);
+  root.querySelector("#feed-title-post").textContent = item.title;
 
   const article = document.createElement("article");
   article.className = "reader-article";
+  if (feed.lang) article.lang = feed.lang;
 
+  const header = document.createElement("header");
+  header.className = "reader-header";
+  if (feed.title) {
+    const kicker = document.createElement("p");
+    kicker.className = "reader-kicker";
+    kicker.textContent = feed.title;
+    header.appendChild(kicker);
+  }
   const title = document.createElement("h2");
   title.className = "reader-title";
   title.textContent = item.title;
-  article.appendChild(title);
-
-  const metaText = itemMeta(item);
-  if (metaText) {
-    const meta = document.createElement("p");
-    meta.className = "reader-meta";
-    meta.textContent = metaText;
-    article.appendChild(meta);
-  }
+  header.appendChild(title);
+  const { byline, meta } = await createByline(profile, item);
+  header.appendChild(byline);
+  article.appendChild(header);
 
   const content = document.createElement("div");
   content.className = "reader-body";
   content.appendChild(sanitizeFeedHtml(item.html, { base: item.link || siteUrl, loadImages: getLoadFeedImages() }));
   if (item.isExcerpt) stripTrailingReadMore(content);
   article.appendChild(content);
+
+  const minutes = readingMinutes(content.textContent);
+  meta.textContent = [meta.dataset.date, item.isExcerpt ? "" : `${minutes} min read`].filter(Boolean).join(" · ");
+
+  const end = document.createElement("p");
+  end.className = "reader-end";
+  end.setAttribute("aria-hidden", "true");
+  end.textContent = "· · ·";
+  article.appendChild(end);
 
   if (item.isExcerpt) {
     const note = document.createElement("p");
@@ -272,7 +430,15 @@ function renderItem(root, nav, { profile, channel, feed, item, siteUrl }) {
     article.appendChild(out);
   }
 
+  // Feeds list newest first, so "next" reads on into the next-older post
+  // -- the way you'd read on through a back catalogue.
+  const index = feed.items.indexOf(item);
+  const next = feed.items[index + 1];
+  if (next) article.appendChild(createNextCard(nav, next, listHash));
+
   body.replaceChildren(article);
+  wireTextSize(root, article);
+  wireScrollChrome(root, article, title);
   wireSaveButton(root, nav, { profile, feed, item, content, siteUrl });
 }
 

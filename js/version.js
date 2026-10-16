@@ -3,9 +3,19 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.10.16";
+export const APP_VERSION = "2026.10.16.2";
 
 export const CHANGELOG = [
+  {
+    version: "2026.10.16.2",
+    date: "October 16, 2026",
+    changes: [
+      "The feed reader is now set like a book: a serif typeface in every theme, a comfortable line length, and hyphenation that follows the feed's own language.",
+      "Each post opens with the newsletter's name, a large title, and a byline with the Profile's photo from My Index, the date and an estimated reading time. Quotes are set in italics, the way Quote snippets are, and image captions are centred under the image.",
+      "Tap \"Aa\" in the top bar to pick a text size (small, medium or large). A thin line under the top bar shows how far through the post you are, and the post's title moves into the top bar once you scroll past it.",
+      "A post now ends with a small · · · ornament and a card for the next post in the feed, so you can keep reading without going back to the list. The back arrow still takes you to the list.",
+    ],
+  },
   {
     version: "2026.10.16",
     date: "October 16, 2026",

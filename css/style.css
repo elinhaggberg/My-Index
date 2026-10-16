@@ -1326,16 +1326,91 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .toggle-row-hint { margin: 6px 0 0; font-size: 0.8rem; line-height: 1.45; color: var(--text-dim); }
 
 /* ===== Feed reader (js/views/feed.js) ===== */
-.feed-title { font-size: 1.15rem; }
+/* A reading room rather than a piece of app UI, so it's set in a serif in
+   every theme (not just Playful): New York on Apple devices via ui-serif,
+   then Charter / Iowan Old Style, both drawn for long-form screen reading.
+   Sizes follow common long-form practice -- ~19px body, 1.65 leading,
+   a measure capped near 65-70 characters. */
+:root { --font-reader: ui-serif, Charter, "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif; }
+
+.feed-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+  /* Paints the status-bar strip above the bar too, so text scrolling up
+     under it in a home-screen install doesn't show through there. */
+  box-shadow: 0 calc(-1 * env(safe-area-inset-top)) 0 0 var(--bg);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+.feed-topbar.scrolled { border-bottom-color: var(--border); }
+.feed-title { position: relative; font-size: 1.1rem; font-family: var(--font-reader); }
+.feed-title-site, .feed-title-post {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.feed-title-post {
+  position: absolute;
+  inset: 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+}
+.show-post-title .feed-title-site { opacity: 0; transform: translateY(-6px); }
+.show-post-title .feed-title-post { opacity: 1; transform: none; }
+
+.reader-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; overflow: hidden; }
+.reader-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.08s linear;
+}
+
+.reader-size-btn { font-family: var(--font-reader); font-size: 1.05rem; font-weight: 600; }
+.reader-size-panel {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 64px);
+  right: max(12px, calc((100vw - 560px) / 2 + 12px));
+  z-index: 6;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+  animation: sheet-up 0.15s ease-out;
+}
+.reader-size-panel button {
+  width: 48px;
+  height: 44px;
+  border-radius: 10px;
+  font-family: var(--font-reader);
+  color: var(--text-dim);
+}
+.reader-size-panel button[data-size="small"] { font-size: 0.9rem; }
+.reader-size-panel button[data-size="medium"] { font-size: 1.15rem; }
+.reader-size-panel button[data-size="large"] { font-size: 1.45rem; }
+.reader-size-panel button.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
 .feed-message-link { display: inline-block; margin-top: 14px; text-decoration: none; }
 .feed-list-header { margin-top: 4px; }
 .feed-list { padding: 0 16px 16px; display: flex; flex-direction: column; }
 .feed-item-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   width: 100%;
-  padding: 14px 2px;
+  padding: 16px 2px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   color: var(--text);
@@ -1343,10 +1418,11 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 .feed-item-row:last-child { border-bottom: none; }
 .feed-item-row:active { opacity: 0.7; }
 .feed-item-title {
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-family: var(--font-reader);
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
 }
 .feed-item-row:not(.unread) .feed-item-title { font-weight: 500; }
 .feed-unread-dot {
@@ -1360,8 +1436,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 }
 .feed-item-meta { font-size: 0.78rem; color: var(--text-dim); }
 .feed-item-excerpt {
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-family: var(--font-reader);
+  font-size: 0.95rem;
+  line-height: 1.5;
   color: var(--text-dim);
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -1369,14 +1446,53 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   overflow: hidden;
 }
 
-.reader-article { padding: 4px 18px 24px; }
-.reader-title {
-  font-family: var(--font-heading);
-  font-size: 1.55rem;
-  line-height: 1.25;
-  margin: 0 0 8px;
+/* ---- A post ---- */
+.reader-article {
+  --reader-size: 1.18rem;
+  max-width: 38em;
+  margin: 0 auto;
+  padding: 10px 22px 28px;
 }
-.reader-meta { margin: 0 0 18px; font-size: 0.82rem; color: var(--text-dim); }
+.reader-article[data-text-size="small"] { --reader-size: 1.04rem; }
+.reader-article[data-text-size="large"] { --reader-size: 1.36rem; }
+
+.reader-header { padding-bottom: 20px; margin-bottom: 26px; border-bottom: 1px solid var(--border); }
+.reader-kicker {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.reader-title {
+  margin: 0 0 18px;
+  font-family: var(--font-reader);
+  font-size: calc(var(--reader-size) * 1.72);
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+.reader-byline { display: flex; align-items: center; gap: 12px; }
+.reader-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent) center / cover no-repeat;
+  color: var(--accent-text);
+  font-family: var(--font-reader);
+  font-weight: 700;
+}
+.reader-avatar.has-image { background-color: var(--surface-2); }
+.reader-byline-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.reader-byline-name { font-size: 0.9rem; font-weight: 600; }
+.reader-byline-meta { font-size: 0.8rem; color: var(--text-dim); }
+
 /* The whole app opts out of text selection (it's an app, not a page) --
    a post is the one place selecting is the point, for "Save quote". */
 .reader-body,
@@ -1386,88 +1502,173 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   user-select: text;
   -webkit-touch-callout: default;
 }
+.reader-article ::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+
 .reader-body {
-  font-size: 1.02rem;
+  font-family: var(--font-reader);
+  font-size: var(--reader-size);
   line-height: 1.65;
   overflow-wrap: break-word;
+  text-wrap: pretty;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  hanging-punctuation: first;
+  font-variant-numeric: oldstyle-nums proportional-nums;
 }
-.reader-body p, .reader-body ul, .reader-body ol, .reader-body pre, .reader-body figure, .reader-body blockquote, .reader-body dl { margin: 0 0 1em; }
-.reader-body h3, .reader-body h4, .reader-body h5, .reader-body h6 { font-family: var(--font-heading); margin: 1.4em 0 0.5em; line-height: 1.3; }
-.reader-body h3 { font-size: 1.2rem; }
-.reader-body h4 { font-size: 1.05rem; }
-.reader-body h5, .reader-body h6 { font-size: 0.95rem; }
-.reader-body ul, .reader-body ol { padding-left: 1.4em; }
-.reader-body li { margin-bottom: 0.3em; }
-.reader-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.reader-body > :first-child { margin-top: 0; }
+.reader-body p, .reader-body ul, .reader-body ol, .reader-body pre, .reader-body dl, .reader-body .reader-table-wrap { margin: 0 0 1.15em; }
+.reader-body h3, .reader-body h4, .reader-body h5, .reader-body h6 {
+  font-family: var(--font-reader);
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1.8em 0 0.55em;
+  text-wrap: balance;
+  -webkit-hyphens: manual;
+  hyphens: manual;
+}
+.reader-body h3 { font-size: 1.3em; }
+.reader-body h4 { font-size: 1.12em; }
+.reader-body h5, .reader-body h6 { font-size: 1em; }
+.reader-body ul, .reader-body ol { padding-left: 1.3em; }
+.reader-body li { margin-bottom: 0.4em; padding-left: 0.15em; }
+.reader-body li::marker { color: var(--accent); }
+.reader-body a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+}
+/* Same voice as a Quote snippet's detail view: the serif, set in italic,
+   hung off an accent rule. */
 .reader-body blockquote {
-  margin-left: 0;
-  padding: 2px 0 2px 14px;
-  border-left: 3px solid color-mix(in srgb, var(--accent) 55%, var(--border));
-  color: var(--text-dim);
+  margin: 1.5em 0;
+  padding: 0.1em 0 0.1em 1.05em;
+  border-left: 3px solid var(--accent);
+  font-style: italic;
+  font-size: 1.06em;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--text) 86%, var(--bg));
 }
+.reader-body blockquote > :last-child { margin-bottom: 0; }
 .reader-body code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.86em;
-  padding: 1px 5px;
+  font-size: 0.8em;
+  padding: 0.1em 0.35em;
   border-radius: 5px;
   background: var(--surface-2);
+  font-variant-numeric: normal;
 }
 .reader-body pre {
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
   background: var(--surface-2);
   overflow-x: auto;
-  line-height: 1.45;
+  line-height: 1.5;
+  -webkit-hyphens: none;
+  hyphens: none;
 }
-.reader-body pre code { padding: 0; background: none; font-size: 0.82rem; }
-.reader-body hr { border: none; border-top: 1px solid var(--border); margin: 1.6em 0; }
-.reader-body figcaption { font-size: 0.82rem; color: var(--text-dim); margin-top: 6px; }
-.reader-body .reader-table-wrap { overflow-x: auto; margin: 0 0 1em; }
-.reader-body table { border-collapse: collapse; font-size: 0.88rem; }
+.reader-body pre code { padding: 0; background: none; font-size: 0.74em; }
+.reader-body hr { border: none; border-top: 1px solid var(--border); width: 30%; margin: 2.2em auto; }
+.reader-body figure { margin: 1.7em 0; }
+.reader-body figcaption {
+  margin-top: 0.6em;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+  text-align: center;
+}
+.reader-body .reader-table-wrap { overflow-x: auto; }
+.reader-body table { border-collapse: collapse; font-family: var(--font-body); font-size: 0.85rem; }
 .reader-body th, .reader-body td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
 .reader-img {
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 0 0 1em;
-  border-radius: 10px;
+  margin: 1.5em auto;
+  border-radius: 12px;
 }
+figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
 .reader-img-placeholder {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   width: 100%;
-  margin: 0 0 1em;
-  padding: 12px 14px;
+  min-height: 112px;
+  margin: 1.5em 0;
+  padding: 14px 18px;
   border-radius: 12px;
-  border: 1px dashed var(--border);
+  border: 1px dashed color-mix(in srgb, var(--text-dim) 40%, var(--border));
   background: var(--surface-2);
   color: var(--text-dim);
-  text-align: left;
-  font-size: 0.88rem;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  line-height: 1.4;
 }
-.reader-img-placeholder .icon { width: 1.2rem; height: 1.2rem; margin-bottom: 2px; }
-.reader-img-placeholder-label { color: var(--text); overflow-wrap: anywhere; }
-.reader-img-placeholder-hint { font-size: 0.76rem; }
+.reader-img-placeholder .icon { width: 1.4rem; height: 1.4rem; margin-bottom: 2px; }
+.reader-img-placeholder-label { color: var(--text); overflow-wrap: anywhere; max-width: 32em; }
+.reader-img-placeholder-hint { font-size: 0.75rem; }
 .reader-embed-card {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 1em;
-  padding: 12px 14px;
+  margin: 1.5em 0;
+  padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text) !important;
   text-decoration: none !important;
+  font-family: var(--font-body);
   font-size: 0.88rem;
+  line-height: 1.4;
 }
 .reader-embed-card span { flex: 1; }
 .reader-embed-card .icon { color: var(--text-dim); flex-shrink: 0; }
 .reader-embed-card-empty { color: var(--text-dim) !important; }
-.reader-excerpt-note { margin: 4px 0 14px; font-size: 0.85rem; font-style: italic; color: var(--text-dim); }
-.reader-out-link { margin-top: 18px; text-decoration: none; }
+
+.reader-end {
+  margin: 2.2em 0 1.6em;
+  text-align: center;
+  font-family: var(--font-reader);
+  font-size: 1.2rem;
+  letter-spacing: 0.35em;
+  color: var(--text-dim);
+}
+.reader-excerpt-note { margin: 0 0 14px; font-size: 0.85rem; font-style: italic; color: var(--text-dim); text-align: center; }
+.reader-out-link { text-decoration: none; }
+
+.reader-next {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 26px;
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+:root[data-theme="playful"] .reader-next { background: var(--card-tint); }
+.reader-next:active { opacity: 0.75; }
+.reader-next-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent); }
+.reader-next-title { font-family: var(--font-reader); font-size: 1.15rem; font-weight: 700; line-height: 1.3; text-wrap: balance; }
+.reader-next-excerpt {
+  font-family: var(--font-reader);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.reader-next-meta { font-size: 0.76rem; color: var(--text-dim); }
 
 .reader-actions {
   position: fixed;
@@ -1486,4 +1687,8 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
   border-radius: 999px;
   font-size: 0.95rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-title-site, .feed-title-post, .reader-progress span { transition: none; }
 }

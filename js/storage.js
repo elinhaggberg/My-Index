@@ -6,6 +6,7 @@ const THEME_KEY = "mi_theme_v1";
 const HOME_TITLE_KEY = "mi_home_title_v1";
 const SHOW_PROFILE_ROW_KEY = "mi_show_profile_row_v1";
 const FEED_IMAGES_KEY = "mi_feed_images_v1";
+const READER_TEXT_SIZE_KEY = "mi_reader_text_size_v1";
 const LAST_SEEN_VERSION_KEY = "mi_last_seen_version_v1";
 const LAST_BACKUP_KEY = "mi_last_backup_at_v1";
 const BACKUP_BANNER_DISMISSED_KEY = "mi_backup_banner_dismissed_at_v1";
@@ -661,6 +662,20 @@ export function getLoadFeedImages() {
 
 export function setLoadFeedImages(value) {
   localStorage.setItem(FEED_IMAGES_KEY, value ? "1" : "0");
+}
+
+// The feed reader's text size (its "Aa" control): "small", "medium" or
+// "large". Per device, like the images toggle above -- the right size
+// depends on the screen it's read on.
+export const READER_TEXT_SIZES = ["small", "medium", "large"];
+
+export function getReaderTextSize() {
+  const value = localStorage.getItem(READER_TEXT_SIZE_KEY);
+  return READER_TEXT_SIZES.includes(value) ? value : "medium";
+}
+
+export function setReaderTextSize(value) {
+  if (READER_TEXT_SIZES.includes(value)) localStorage.setItem(READER_TEXT_SIZE_KEY, value);
 }
 
 // ---- Cloud Backup prefs sync ----

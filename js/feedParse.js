@@ -145,7 +145,7 @@ function parseAtom(root, feedUrl) {
       isExcerpt: looksLikeExcerpt(html, !!content),
     };
   });
-  return { title: plainText(text(child(root, "title"))), siteUrl, items };
+  return { title: plainText(text(child(root, "title"))), siteUrl, items, lang: root.getAttribute("xml:lang") || "" };
 }
 
 // RSS 2.0 and RSS 1.0 (RDF) differ mostly in where <item> lives -- inside
@@ -171,7 +171,7 @@ function parseRss(root, feedUrl) {
       isExcerpt: looksLikeExcerpt(html, !!full),
     };
   });
-  return { title: plainText(text(child(channel, "title"))), siteUrl, items };
+  return { title: plainText(text(child(channel, "title"))), siteUrl, items, lang: text(child(channel, "language", "dc:language")) };
 }
 
 // Returns null if the document can't be read as a feed at all.
@@ -190,6 +190,11 @@ export function parseFeed(xml, feedUrl) {
   // feed lists newest-first.
   let items = feed.items.filter((item) => item.id);
   if (items.length && items.every((item) => item.date)) items = [...items].sort((a, b) => b.date - a.date);
+
+  // The feed's language (Atom xml:lang, RSS <language>) lets the reader
+  // hyphenate with the right dictionary -- Swedish and English break words
+  // very differently. Only kept if it actually looks like a language tag.
+  feed.lang = /^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(feed.lang || "") ? feed.lang : "";
 
   feed.items = items
     .slice(0, MAX_ITEMS)

@@ -86,6 +86,13 @@ const nav = {
   toFeed: (profileId, channelId) => {
     location.hash = `#/feed/${encodeURIComponent(profileId)}/${encodeURIComponent(channelId)}`;
   },
+  // Moves sideways rather than deeper -- e.g. the reader's "Next post" --
+  // so the back arrow still returns to where you came from (the post
+  // list), not to every post read along the way.
+  replace: (hash) => {
+    skipPush = true;
+    location.replace(hash);
+  },
   // fallbackHash is used when there's nowhere in-app to go back to -- e.g. a
   // Profile/Tag opened directly from a fresh load or a shared link.
   back: (fallbackHash) => {

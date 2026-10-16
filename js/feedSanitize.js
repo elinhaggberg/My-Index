@@ -92,8 +92,20 @@ function imageSrc(img, base) {
   return /^https?:/i.test(url) ? url : "";
 }
 
-function createImage(src, alt) {
+// The image's own width/height, when the feed gives them, so the page can
+// reserve the right space before it loads instead of jumping when it does.
+function intrinsicSize(img) {
+  const w = Number(img.getAttribute("width"));
+  const h = Number(img.getAttribute("height"));
+  return w > 0 && h > 0 ? { w, h } : null;
+}
+
+function createImage(src, alt, size) {
   const img = document.createElement("img");
+  if (size) {
+    img.width = size.w;
+    img.height = size.h;
+  }
   img.className = "reader-img";
   img.referrerPolicy = "no-referrer";
   img.loading = "lazy";
@@ -103,10 +115,14 @@ function createImage(src, alt) {
   return img;
 }
 
-function createImagePlaceholder(src, alt) {
+function createImagePlaceholder(src, alt, size) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "reader-img-placeholder";
+  // Holds the image's real proportions, so tapping it in doesn't shove the
+  // text below around -- capped, so a very tall image doesn't leave a huge
+  // empty box in the middle of the post.
+  if (size) btn.style.aspectRatio = `${size.w} / ${Math.min(size.h, size.w * 1.4)}`;
   btn.innerHTML = ICON_IMAGE;
   const label = document.createElement("span");
   label.className = "reader-img-placeholder-label";
@@ -120,7 +136,7 @@ function createImagePlaceholder(src, alt) {
     // meant to reveal it.
     e.preventDefault();
     e.stopPropagation();
-    btn.replaceWith(createImage(src, alt));
+    btn.replaceWith(createImage(src, alt, size));
   });
   return btn;
 }
@@ -182,7 +198,8 @@ function sanitizeElement(el, ctx) {
     const src = imageSrc(el, ctx.base);
     if (!src || isTrackingPixel(el, src)) return null;
     const alt = (el.getAttribute("alt") || el.getAttribute("title") || "").trim();
-    return ctx.loadImages ? createImage(src, alt) : createImagePlaceholder(src, alt);
+    const size = intrinsicSize(el);
+    return ctx.loadImages ? createImage(src, alt, size) : createImagePlaceholder(src, alt, size);
   }
 
   if (!KEEP.has(tag)) {
