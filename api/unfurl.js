@@ -5,6 +5,8 @@
 // by design, so adding it doesn't compromise the "no data collection"
 // premise of the app.
 
+const { safeFetch, BlockedAddressError } = require("./_lib/safeFetch.js");
+
 const TIMEOUT_MS = 8000;
 const MAX_HTML_LENGTH = 700000;
 
@@ -88,9 +90,9 @@ function isYouTubeHost(parsed) {
   return host === "youtube.com" || host === "youtu.be" || host === "youtube-nocookie.com";
 }
 
-async function fetchYouTubeOEmbed(parsed, signal) {
+async function fetchYouTubeOEmbed(parsed) {
   const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(parsed.toString())}&format=json`;
-  const response = await fetch(oembedUrl, { signal });
+  const response = await safeFetch(oembedUrl, { timeoutMs: TIMEOUT_MS });
   if (!response.ok) return null;
   const data = await response.json();
   return {
@@ -128,12 +130,9 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
   try {
     if (isYouTubeHost(parsed)) {
-      const result = await fetchYouTubeOEmbed(parsed, controller.signal);
+      const result = await fetchYouTubeOEmbed(parsed);
       if (result) {
         res.status(200).json(result);
         return;
@@ -149,9 +148,11 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const response = await fetch(parsed.toString(), {
-      signal: controller.signal,
-      redirect: "follow",
+    // safeFetch refuses private/internal addresses, on the first request
+    // and on every redirect -- see api/_lib/safeFetch.js.
+    const response = await safeFetch(parsed.toString(), {
+      timeoutMs: TIMEOUT_MS,
+      maxBytes: MAX_HTML_LENGTH,
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; MyIndexApp/1.0; +https://vercel.com)",
         Accept: "text/html,application/xhtml+xml",
@@ -193,9 +194,12 @@ module.exports = async (req, res) => {
     }
     res.status(200).json(result);
   } catch (err) {
-    const message = err && err.name === "AbortError" ? "Timed out fetching that page." : "Couldn't fetch that link.";
+    const message =
+      err instanceof BlockedAddressError
+        ? "That address isn't reachable from here."
+        : err && err.name === "AbortError"
+          ? "Timed out fetching that page."
+          : "Couldn't fetch that link.";
     res.status(200).json({ error: message, title: "", image: "", description: "", siteName: parsed.hostname, sourceUrl: parsed.toString() });
-  } finally {
-    clearTimeout(timeout);
   }
 };

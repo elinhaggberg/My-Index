@@ -10,6 +10,8 @@
 // Same statelessness/no-data-collection premise as unfurl.js — this is a
 // read-only proxy, nothing here is stored or logged.
 
+const { safeFetch, BlockedAddressError } = require("./_lib/safeFetch.js");
+
 const TIMEOUT_MS = 8000;
 const MAX_BODY_LENGTH = 700000;
 const CANDIDATE_PATHS = ["/feed", "/feed.xml", "/rss", "/rss.xml", "/atom.xml", "/index.xml"];
@@ -78,14 +80,13 @@ function isSubstackAppProfile(urlString) {
   }
 }
 
+// Every fetch here -- the given URL, its declared feed link, and the
+// guessed candidate paths -- goes through safeFetch, which refuses
+// private/internal addresses on the first request and on every redirect
+// (see api/_lib/safeFetch.js). A page's autodiscovery link is supplied by
+// that page, so it needs the same check as the URL the user gave.
 async function fetchWithTimeout(url, options = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal, redirect: "follow" });
-  } finally {
-    clearTimeout(timeout);
-  }
+  return safeFetch(url, { headers: options.headers, timeoutMs: TIMEOUT_MS, maxBytes: MAX_BODY_LENGTH });
 }
 
 // Fetches a candidate feed URL and confirms it actually parses as RSS/Atom
@@ -192,7 +193,8 @@ module.exports = async (req, res) => {
     const reason = isSubstackAppProfile(finalUrl) ? "substack-app-only" : undefined;
     res.status(200).json({ ok: false, reason });
   } catch (err) {
-    const message = err && err.name === "AbortError" ? "Timed out." : "Couldn't fetch that page.";
+    const message =
+      err instanceof BlockedAddressError ? "That address isn't reachable from here." : err && err.name === "AbortError" ? "Timed out." : "Couldn't fetch that page.";
     res.status(200).json({ ok: false, error: message });
   }
 };

@@ -34,6 +34,7 @@ Two kinds of server-side pieces, both stateless and both optional except the fir
 
 - `api/unfurl.js` — always active, a stateless Vercel serverless function that fetches a pasted URL server-side (the browser can't read cross-origin HTML itself) and extracts Open Graph metadata to build the snippet. Stores nothing — no database, no accounts.
 - `api/read-feed.js` — always active, the same kind of stateless function for the feed reader: fetches a channel's feed and passes the XML back for the browser to parse. Only ever returns something that is actually a feed.
+- `api/_lib/safeFetch.js` — not an endpoint: the shared fetch used by the three functions above whenever they fetch a URL someone supplied. It refuses private, internal and cloud-metadata addresses (checked after DNS resolution, at connection time, and again on every redirect), non-web protocols and ports, and caps time and size.
 - `api/oauth-*.js` and `api/cloud-sync-*.js` — inert unless Cloud Backup or RSS sync is turned on; thin proxies to Supabase's OAuth and Management API so the browser never needs Supabase's own API credentials directly. See `supabase/CLOUD_BACKUP_SETUP.md` if you're forking this repo and want Cloud Backup working on your own deployment — it needs a one-time OAuth application registration that can't be automated.
 
 ## Deploying

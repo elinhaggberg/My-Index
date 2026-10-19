@@ -10,6 +10,8 @@
 // like a feed, so this can't be used as a general-purpose proxy for
 // arbitrary web pages.
 
+const { safeFetch, BlockedAddressError } = require("./_lib/safeFetch.js");
+
 const TIMEOUT_MS = 10000;
 // Feeds that carry each post's full text (Simon Willison's, most
 // WordPress/Ghost blogs) run a lot larger than the HTML pages unfurl.js
@@ -24,19 +26,6 @@ function looksLikeFeed(body) {
   const head = body.slice(0, 2000);
   if (/<rss[\s>]/i.test(head) || /<feed[\s>]/i.test(head) || /<rdf:RDF[\s>]/i.test(head)) return true;
   return /<item\b[\s\S]*?<\/item>/i.test(body) || /<entry\b[\s\S]*?<\/entry>/i.test(body);
-}
-
-// Unlike unfurl.js (which only ever returns a handful of extracted
-// fields), this hands back a response body verbatim -- so refuse obvious
-// internal addresses outright rather than relying on looksLikeFeed alone.
-function isPrivateHost(hostname) {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || host.endsWith(".local")) return true;
-  if (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) return host.includes(":");
-  const v4 = host.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-  if (!v4) return false;
-  const [a, b] = [Number(v4[1]), Number(v4[2])];
-  return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
 }
 
 module.exports = async (req, res) => {
@@ -64,18 +53,15 @@ module.exports = async (req, res) => {
     res.status(400).json({ error: "Only http/https URLs are supported." });
     return;
   }
-  if (isPrivateHost(parsed.hostname)) {
-    res.status(400).json({ error: "That address isn't reachable from here." });
-    return;
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const response = await fetch(parsed.toString(), {
-      signal: controller.signal,
-      redirect: "follow",
+    // This hands a response body back verbatim, so it matters even more
+    // than in unfurl.js that it can't be pointed at an internal address:
+    // safeFetch refuses those on the first request and on every redirect
+    // (see api/_lib/safeFetch.js).
+    const response = await safeFetch(parsed.toString(), {
+      timeoutMs: TIMEOUT_MS,
+      maxBytes: MAX_BODY_LENGTH,
       headers: { "User-Agent": USER_AGENT, Accept: ACCEPT_HEADER },
     });
 
@@ -84,8 +70,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    let body = await response.text();
-    if (body.length > MAX_BODY_LENGTH) body = body.slice(0, MAX_BODY_LENGTH);
+    const body = await response.text();
 
     if (!looksLikeFeed(body)) {
       res.status(200).json({ error: "That address didn't return a feed — it may have moved." });
@@ -97,9 +82,12 @@ module.exports = async (req, res) => {
     res.setHeader("Cache-Control", "public, s-maxage=120, stale-while-revalidate=600");
     res.status(200).json({ xml: body, finalUrl: response.url || parsed.toString() });
   } catch (err) {
-    const message = err && err.name === "AbortError" ? "Timed out loading the feed." : "Couldn't load the feed.";
+    const message =
+      err instanceof BlockedAddressError
+        ? "That address isn't reachable from here."
+        : err && err.name === "AbortError"
+          ? "Timed out loading the feed."
+          : "Couldn't load the feed.";
     res.status(200).json({ error: message });
-  } finally {
-    clearTimeout(timeout);
   }
 };
