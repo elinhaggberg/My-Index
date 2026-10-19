@@ -73,43 +73,11 @@ export async function syncProfileChannels(profileId, previousChannels, newChanne
   }
 }
 
-// Merges server-tracked counts into local profile/channel records. Returns
-// true if anything changed, so a caller can decide whether to re-render.
-export async function fetchAndMergeCounts(getProfiles, saveProfile) {
-  if (!isConfigured()) return false;
-  const result = await callSync("get-counts", {});
-  if (!result || !Array.isArray(result.counts) || result.counts.length === 0) return false;
+// Counts used to be pulled from here (the server's hourly check, merged
+// into local profiles on Home). They now come from the on-open check in
+// js/feedCheck.js, which works without this add-on; the subscriptions above
+// are still kept up to date so switching back would need no migration.
 
-  const byChannelId = new Map(result.counts.map((row) => [row.channel_id, row.new_count]));
-  let changed = false;
-  const profiles = await getProfiles();
-  for (const profile of profiles) {
-    let profileChanged = false;
-    const channels = (profile.channels || []).map((c) => {
-      const serverCount = byChannelId.get(c.id);
-      if (serverCount != null && serverCount !== c.newCount) {
-        profileChanged = true;
-        return { ...c, newCount: serverCount };
-      }
-      return c;
-    });
-    if (profileChanged) {
-      const newTotal = channels.reduce((sum, c) => sum + (c.newCount || 0), 0);
-      await saveProfile({ ...profile, channels, newCount: newTotal });
-      changed = true;
-    }
-  }
-  return changed;
-}
-
-// One-off manual utility for Settings -- resyncs every channel that already
-// has an RSS URL, for someone who added feeds before Cloud Sync was ever
-// installed. subscribeChannel silently no-ops while unconfigured (see
-// isConfigured() above), so any channel added/saved before install
-// completed was never actually registered server-side even though it's
-// been sitting in the app the whole time. Same profiles-fetcher-as-argument
-// shape as fetchAndMergeCounts, for the same reason. Returns how many
-// channels it resynced, so the caller can show a real count back.
 export async function resyncAllChannels(getProfiles) {
   if (!isConfigured()) return 0;
   const profiles = await getProfiles();

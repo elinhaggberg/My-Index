@@ -20,28 +20,16 @@ import {
 import { resolveImageSrc } from "../imageStore.js";
 import { clearChannelServerCount } from "../feedSync.js";
 import { opensInReader } from "../channelTypes.js";
-import { parseFeed } from "../feedParse.js";
+import { loadFeed } from "../feedLoader.js";
 import { sanitizeFeedHtml, stripTrailingReadMore, revealImages } from "../feedSanitize.js";
-import { getUnreadIds, markSeen, getAlwaysImages, setAlwaysImages } from "../feedState.js";
+import { getUnreadIds, markSeen, markNoticed, getAlwaysImages, setAlwaysImages } from "../feedState.js";
 import { openSnippetEditor } from "../snippetEditor.js";
 import { formatDate, hostnameFor } from "../util.js";
 import { ICON_EXTERNAL, ICON_IMAGE } from "../icons.js";
 
-const FRESH_MS = 10 * 60 * 1000;
-// channelId -> { feed, fetchedAt, listScrollY }
-const cache = new Map();
-
-async function loadFeed(channel, { force } = {}) {
-  const cached = cache.get(channel.id);
-  if (cached && !force && Date.now() - cached.fetchedAt < FRESH_MS) return cached.feed;
-  const res = await fetch(`/api/read-feed?url=${encodeURIComponent(channel.rssUrl)}`);
-  const data = await res.json().catch(() => ({ error: "Couldn't load the feed." }));
-  if (data.error || !data.xml) throw new Error(data.error || "Couldn't load the feed.");
-  const feed = parseFeed(data.xml, data.finalUrl || channel.rssUrl);
-  if (!feed) throw new Error("This feed couldn't be read.");
-  cache.set(channel.id, { feed, fetchedAt: Date.now(), listScrollY: cached?.listScrollY || 0 });
-  return feed;
-}
+// channelId -> where the post list was scrolled to, so coming back from a
+// post lands where you left off.
+const listScroll = new Map();
 
 // A channel saved with its feed's own address as its URL (easy to do --
 // it's what a "subscribe via RSS" link hands you) would otherwise send
@@ -123,7 +111,7 @@ export async function renderFeed(root, nav, param) {
 
   let feed;
   try {
-    feed = await loadFeed(channel);
+    feed = await loadFeed(channel.rssUrl);
   } catch (err) {
     showMessage(body, `${err.message} You can still open the site itself.`, siteUrlFor(channel, null));
     return;
@@ -158,6 +146,10 @@ async function renderList(root, nav, { profile, channel, feed, siteUrl, listHash
     clearChannelNewCount(profile.id, channel.id);
     clearChannelServerCount(channel.id);
   }
+  // Everything in the list has now been seen in passing, so the next
+  // on-open check won't count it as new again -- unread dots stay until
+  // each post is actually opened.
+  markNoticed(channel.id, feed.items.map((item) => item.id));
 
   if (feed.items.length === 0) {
     showMessage(body, "This feed doesn't have any posts right now.", siteUrl);
@@ -219,16 +211,15 @@ async function renderList(root, nav, { profile, channel, feed, siteUrl, listHash
     }
 
     row.addEventListener("click", () => {
-      const entry = cache.get(channel.id);
-      if (entry) entry.listScrollY = window.scrollY;
+      listScroll.set(channel.id, window.scrollY);
       location.hash = `${listHash}/${encodeURIComponent(item.id)}`;
     });
     list.appendChild(row);
   }
 
   body.replaceChildren(header, list);
-  const entry = cache.get(channel.id);
-  if (entry?.listScrollY) window.scrollTo(0, entry.listScrollY);
+  const scrollY = listScroll.get(channel.id);
+  if (scrollY) window.scrollTo(0, scrollY);
 }
 
 // Average adult silent reading speed is ~230-260 words a minute; the lower

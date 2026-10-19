@@ -5,6 +5,7 @@ import { createProfileCardNode } from "../profileCard.js";
 import { applyProfileFilter, openProfileFilterSheet } from "../profileFilter.js";
 import { openProfileSearch } from "../profileSearch.js";
 import { openProfileEditor } from "../profileEditor.js";
+import { onCountsChanged } from "../feedCheck.js";
 
 export async function renderProfiles(root, nav) {
   const tpl = document.getElementById("tpl-profiles");
@@ -35,6 +36,11 @@ export async function renderProfiles(root, nav) {
     }
     grid.replaceChildren(...profiles.map((p) => createProfileCardNode(p, (profile) => nav.toProfile(profile.id))));
   }
+
+  const stopCounts = onCountsChanged(() => {
+    if (!document.body.contains(document.getElementById("profiles-grid"))) return stopCounts();
+    renderList();
+  });
 
   await renderList();
 }

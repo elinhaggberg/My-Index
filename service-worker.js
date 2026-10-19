@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v14";
+const CACHE_NAME = "my-index-v15";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -16,6 +16,14 @@ const APP_SHELL = [
   "./js/feedParse.js",
   "./js/feedSanitize.js",
   "./js/feedState.js",
+  "./js/feedLoader.js",
+  "./js/feedCheck.js",
+  "./js/profileImport/mf2.js",
+  "./js/profileImport/hcard.js",
+  "./js/profileImport/classify.js",
+  "./js/profileImport/resolve.js",
+  "./js/profileImport/toMyIndex.js",
+  "./js/profileImport/importSheet.js",
   "./js/imageBlob.js",
   "./js/imageStore.js",
   "./js/lazyImage.js",

@@ -6,7 +6,6 @@ import {
   getHomeFilterPref,
   setHomeFilterPref,
   createEmptySnippet,
-  saveProfile,
   exportBackupData,
   markBackedUp,
   dismissBackupBanner,
@@ -24,7 +23,7 @@ import { openSnippetDetail } from "../snippetDetail.js";
 import { openSnippetEditor } from "../snippetEditor.js";
 import { openSettingsMenu } from "../settingsMenu.js";
 import { shareOrDownload } from "../share.js";
-import { fetchAndMergeCounts } from "../feedSync.js";
+import { onCountsChanged } from "../feedCheck.js";
 import { isBackupConfigured } from "../cloudBackup.js";
 import { applySnippetFilter, isSnippetFilterActive, describeSnippetFilter, openSnippetFilterSheet } from "../snippetFilter.js";
 import { openSnippetSearch } from "../snippetSearch.js";
@@ -46,17 +45,16 @@ export async function renderHome(root, nav) {
     renderSnippetGrid();
   });
 
+  // Counts arrive from the on-open check (js/feedCheck.js), which may
+  // finish after Home has already rendered -- redraw just the profile row
+  // when it does, for as long as Home is the view on screen.
+  const stopCounts = onCountsChanged(() => {
+    if (!document.body.contains(document.getElementById("profile-row"))) return stopCounts();
+    renderProfileRow();
+  });
+
   async function renderProfileRow() {
     const row = document.getElementById("profile-row");
-
-    // Best-effort and inert unless the optional backend is configured (see
-    // supabase/SETUP.md) -- merges any server-tracked badge counts into
-    // local storage. Always runs regardless of the row's own display
-    // preference below -- this used to be gated behind it, which meant
-    // turning the row off silently stopped counts from ever being fetched
-    // anywhere in the app (Profiles tab included), not just hidden from
-    // this one row.
-    await fetchAndMergeCounts(getProfiles, saveProfile);
 
     // Opt-out in Settings -> Customize, on by default -- purely a display
     // preference for this one row; the Profiles tab (where the actual data

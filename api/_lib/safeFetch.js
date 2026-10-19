@@ -18,7 +18,7 @@
 //   - an overall time limit and a cap on how much of the body is read
 //
 // It deliberately returns a small fetch()-like object (ok, status, url,
-// headers.get, text, json), so the callers barely change.
+// headers.get, text, json, arrayBuffer), so the callers barely change.
 
 const http = require("node:http");
 const https = require("node:https");
@@ -220,6 +220,7 @@ function makeResponse(url, result) {
     headers: { get: (name) => result.headers[String(name).toLowerCase()] ?? null },
     text: async () => text(),
     json: async () => JSON.parse(text()),
+    arrayBuffer: async () => result.body,
   };
 }
 

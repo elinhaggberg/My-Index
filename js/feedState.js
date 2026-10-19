@@ -81,3 +81,42 @@ export async function getAlwaysImagesChannelIds() {
   const rows = await getAll("feedState").catch(() => []);
   return rows.filter((row) => row.alwaysImages).map((row) => row.id);
 }
+
+// ---- New-post counts (js/feedCheck.js) ----
+// The count on a profile answers "anything new since I last looked at this
+// channel?", while a post's unread dot (above) stays until that post itself
+// is opened. So the count needs its own memory: "noticed" ids, set when a
+// channel's post list is opened (or a channel is marked as read). A post is
+// counted only if it's neither read nor noticed.
+
+function trimIds(ids) {
+  return ids.length > MAX_SEEN_IDS ? ids.slice(ids.length - MAX_SEEN_IDS) : ids;
+}
+
+// Records the ids just fetched for a channel and returns how many are new.
+// The first check of a channel sets the same baseline the reader does, so
+// a newly added channel starts at zero rather than "30 new".
+export async function recordCheck(channelId, ids) {
+  const row = await readRow(channelId);
+  if (!row?.seenIds) {
+    await updateRow(channelId, { seenIds: trimIds([...ids]), latestIds: ids });
+    return 0;
+  }
+  const seen = new Set(row.seenIds);
+  const noticed = new Set(row.noticedIds || []);
+  await updateRow(channelId, { latestIds: ids });
+  return ids.filter((id) => !seen.has(id) && !noticed.has(id)).length;
+}
+
+// With no ids given, marks whatever the last check found -- what "Mark all
+// as read" on a profile, or tapping through to a channel outside the
+// reader, means.
+export async function markNoticed(channelId, ids) {
+  const row = await readRow(channelId);
+  const toAdd = ids || row?.latestIds || [];
+  if (!toAdd.length) return;
+  const noticed = row?.noticedIds || [];
+  const known = new Set(noticed);
+  const added = toAdd.filter((id) => !known.has(id));
+  if (added.length) await updateRow(channelId, { noticedIds: trimIds([...noticed, ...added]) });
+}

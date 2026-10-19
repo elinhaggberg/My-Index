@@ -16,6 +16,8 @@ import { renderTagRefChips } from "../refChips.js";
 import { hostnameFor } from "../util.js";
 import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH, ICON_CHEVRON_RIGHT } from "../icons.js";
 import { clearServerCounts, clearChannelServerCount } from "../feedSync.js";
+import { onCountsChanged } from "../feedCheck.js";
+import { markNoticed } from "../feedState.js";
 import { resolveImageSrc } from "../imageStore.js";
 import { shareOrDownload, filenameFor } from "../share.js";
 import { CHANNEL_TYPE_LABELS, opensInReader } from "../channelTypes.js";
@@ -51,6 +53,19 @@ export async function renderProfile(root, nav, id) {
       avatarEl.style.backgroundImage = "";
       avatarEl.classList.remove("has-image");
       avatarInitialEl.textContent = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
+    }
+
+    // An imported bio is the person's own words, kept apart from your note
+    // below and labelled with where it came from.
+    const bioEl = document.getElementById("profile-bio");
+    if (profile.bio) {
+      document.getElementById("profile-bio-text").textContent = profile.bio;
+      const from = hostnameFor(profile.source?.url || profile.home || "");
+      const pronouns = profile.pronouns ? `${profile.pronouns} · ` : "";
+      document.getElementById("profile-bio-source").textContent = from ? `${pronouns}From ${from}` : pronouns.replace(/ · $/, "");
+      bioEl.classList.remove("hidden");
+    } else {
+      bioEl.classList.add("hidden");
     }
 
     const noteEl = document.getElementById("profile-note");
@@ -136,6 +151,7 @@ export async function renderProfile(root, nav, id) {
               channel.newCount = 0;
               clearChannelNewCount(id, channel.id);
               clearChannelServerCount(channel.id);
+              markNoticed(channel.id);
               if (!channels.some((c) => c.newCount)) markReadBtn.classList.add("hidden");
             });
           }
@@ -151,6 +167,7 @@ export async function renderProfile(root, nav, id) {
       markReadBtn.classList.add("hidden");
       clearProfileNewCount(id);
       clearServerCounts(id);
+      channels.forEach((c) => markNoticed(c.id));
     };
 
     await renderTagRefChips(document.getElementById("profile-tag-chips"), profile.tagIds, nav);
@@ -184,6 +201,11 @@ export async function renderProfile(root, nav, id) {
       openSnippetEditor(nav, { snippet: createEmptySnippet(), isNew: true, refresh: load, presetProfileId: id });
     };
   }
+
+  const stopCounts = onCountsChanged(() => {
+    if (!document.body.contains(document.getElementById("profile-channels"))) return stopCounts();
+    load();
+  });
 
   await load();
 }

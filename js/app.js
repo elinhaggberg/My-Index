@@ -32,6 +32,7 @@ import { consumeQueuedCaptures } from "./feedSync.js";
 import { consumeOAuthRedirect } from "./supabaseOAuth.js";
 import { openCloudSyncSheet } from "./settingsMenu.js";
 import { startAutoSync } from "./cloudBackup.js";
+import { checkFeedsIfDue } from "./feedCheck.js";
 
 applyTheme();
 
@@ -212,6 +213,14 @@ migrateLegacyImages()
   });
 importQueuedCaptures();
 checkOnboarding();
+
+// New-post counts: checked when the app is opened and when it comes back
+// into view, at most every half hour (see js/feedCheck.js). Nothing runs
+// while the app isn't being looked at.
+checkFeedsIfDue();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkFeedsIfDue();
+});
 checkWhatsNew();
 
 // Inert unless Cloud Backup has actually been installed and configured

@@ -279,6 +279,10 @@
     </header>
     <div class="page-body">
       <div class="profile-avatar-large" id="profile-avatar"><span id="profile-avatar-initial"></span></div>
+      <div class="profile-bio hidden" id="profile-bio">
+        <p class="profile-bio-text" id="profile-bio-text"></p>
+        <p class="profile-bio-source" id="profile-bio-source"></p>
+      </div>
       <p class="profile-note hidden" id="profile-note"></p>
       <div class="section-label-row">
         <p class="card-detail-section-label" id="profile-channels-label">Channels</p>
@@ -320,6 +324,44 @@
     </div>
   </template>
 
+  <!-- ===== Import a profile from a link (js/profileImport/importSheet.js) ===== -->
+  <template id="tpl-profile-import">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Import from a link</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <label class="field">
+        <span>Website or profile link</span>
+        <input type="url" id="import-url-input" placeholder="example.com" autocomplete="off" autocapitalize="off" spellcheck="false" />
+      </label>
+      <div class="form-actions">
+        <button type="button" class="text-btn primary" id="import-find-btn">Find profile</button>
+      </div>
+      <p class="import-message hidden" id="import-message"></p>
+
+      <div class="import-preview hidden" id="import-preview">
+        <div class="import-person">
+          <div class="import-avatar" id="import-avatar"></div>
+          <div class="import-person-text">
+            <p class="import-name" id="import-name"></p>
+            <p class="import-pronouns hidden" id="import-pronouns"></p>
+            <p class="import-provenance" id="import-provenance"></p>
+          </div>
+        </div>
+        <p class="import-bio hidden" id="import-bio"></p>
+        <div class="section-label-row import-channels-label">
+          <p class="card-detail-section-label">Channels</p>
+          <button type="button" class="mark-read-btn hidden" id="import-toggle-all">Uncheck all</button>
+        </div>
+        <div class="import-channels" id="import-channels"></div>
+        <div class="form-actions">
+          <button type="button" class="text-btn primary" id="import-apply-btn">Use this profile</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
   <!-- ===== Profile editor ===== -->
   <template id="tpl-profile-editor">
     <div class="sheet">
@@ -328,6 +370,11 @@
         <button class="icon-btn" id="profile-editor-delete-btn" aria-label="Delete" title="Delete"><svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M136.7 5.9C141.1-7.2 153.3-16 167.1-16l113.9 0c13.8 0 26 8.8 30.4 21.9L320 32 416 32c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 96C14.3 96 0 81.7 0 64S14.3 32 32 32l96 0 8.7-26.1zM32 144l384 0 0 304c0 35.3-28.7 64-64 64L96 512c-35.3 0-64-28.7-64-64l0-304zm88 64c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24z"/></svg></button>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
+
+      <div class="profile-import-entry hidden" id="profile-editor-import-entry">
+        <button type="button" class="text-btn secondary" id="profile-editor-import-btn">Import from a link</button>
+        <p class="toggle-row-hint">Paste someone's website: their name, photo, bio and channels are filled in from what the site publishes about them.</p>
+      </div>
 
       <div class="avatar-picker">
         <div class="avatar-picker-circle" id="profile-editor-avatar-circle">

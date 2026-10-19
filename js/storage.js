@@ -236,7 +236,7 @@ export async function clearProfileNewCount(id) {
 // its actual RSS feed link) is what marks it read, mirroring the same
 // "opened it, so it's read" logic email uses per-message rather than
 // per-inbox. Recomputes the profile's own total from what's left, same
-// invariant fetchAndMergeCounts (see js/feedSync.js) maintains.
+// invariant setChannelNewCounts below maintains.
 export async function clearChannelNewCount(profileId, channelId) {
   const profile = await getOne("profiles", profileId);
   if (!profile) return profile;
@@ -246,6 +246,27 @@ export async function clearChannelNewCount(profileId, channelId) {
   const cleared = { ...profile, channels, newCount: channels.reduce((sum, c) => sum + (c.newCount || 0), 0) };
   await putOne("profiles", cleared);
   return cleared;
+}
+
+// Written by the on-open check for new posts (js/feedCheck.js). Like
+// clearChannelNewCount above, it deliberately doesn't touch updatedAt: a
+// count is derived from the feeds, not an edit to the profile, so it
+// mustn't make Cloud Backup re-send every profile after every check.
+// Returns true if anything actually changed.
+export async function setChannelNewCounts(profileId, countsByChannelId) {
+  const profile = await getOne("profiles", profileId);
+  if (!profile) return false;
+  let changed = false;
+  const channels = (profile.channels || []).map((c) => {
+    if (!countsByChannelId.has(c.id)) return c;
+    const next = countsByChannelId.get(c.id);
+    if ((c.newCount || 0) === next) return c;
+    changed = true;
+    return { ...c, newCount: next };
+  });
+  if (!changed) return false;
+  await putOne("profiles", { ...profile, channels, newCount: channels.reduce((sum, c) => sum + (c.newCount || 0), 0) });
+  return true;
 }
 
 export async function getProfilesForTag(tagId) {

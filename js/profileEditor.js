@@ -7,6 +7,7 @@ import { readAndResizeImage } from "./imageBlob.js";
 import { resolveImageSrc } from "./imageStore.js";
 import { CHANNEL_TYPES, CHANNEL_TYPE_LABELS } from "./channelTypes.js";
 import { discoverFeed } from "./discoverFeed.js";
+import { openProfileImportSheet } from "./profileImport/importSheet.js";
 
 export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
   const draft = {
@@ -294,4 +295,34 @@ export function openProfileEditor(nav, { profile, isNew, refresh, onDeleted }) {
       });
     });
   }
+
+  // ---- Import from a link (new profiles only) ----
+  // Fills the editor from what a website publishes about its owner (an
+  // h-card today; Oltra profiles later), for a last look before saving --
+  // see js/profileImport/. The user's own note is never touched: an
+  // imported bio is kept in its own field, shown on the profile page as
+  // the person's words, not yours.
+  const importEntry = el.querySelector("#profile-editor-import-entry");
+  importEntry.classList.toggle("hidden", !isNew);
+  el.querySelector("#profile-editor-import-btn").addEventListener("click", () => {
+    openProfileImportSheet({
+      onApply: (imported) => {
+        nameInput.value = imported.name || nameInput.value;
+        draft.bio = imported.bio;
+        draft.pronouns = imported.pronouns;
+        draft.home = imported.home;
+        draft.source = imported.source;
+        if (imported.image) {
+          draft.image = imported.image;
+          draft.imageAlt = imported.imageAlt;
+        }
+        // Keeps any channel already typed in by hand, adding the imported
+        // ones after it (skipping exact duplicates).
+        const existing = new Set(draft.channels.filter((c) => c.url.trim()).map((c) => c.url.trim()));
+        draft.channels = [...draft.channels.filter((c) => c.url.trim()), ...imported.channels.filter((c) => !existing.has(c.url))];
+        renderAvatar();
+        renderChannels();
+      },
+    });
+  });
 }

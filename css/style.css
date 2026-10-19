@@ -1737,3 +1737,47 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
 .customize-feed-image-row:last-child { border-bottom: none; }
 .customize-feed-image-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .customize-feed-image-row .text-btn-inline { flex-shrink: 0; font-size: 0.82rem; }
+
+/* ---- Import a profile from a link (js/profileImport/) ---- */
+.profile-import-entry { margin: 0 0 18px; }
+.profile-import-entry .text-btn { width: 100%; }
+.import-preview { margin-top: 18px; }
+.import-person { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.import-avatar {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent) center / cover no-repeat;
+  color: var(--accent-text);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.import-avatar.has-image { background-color: var(--surface-2); }
+.import-person-text { min-width: 0; }
+.import-name { margin: 0; font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700; }
+.import-pronouns { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-dim); }
+.import-provenance { margin: 4px 0 0; font-size: 0.78rem; color: var(--text-dim); }
+.import-bio { margin: 0 0 16px; font-size: 0.92rem; line-height: 1.5; }
+.import-channels-label { padding: 0; margin-top: 8px; }
+.import-channels { display: flex; flex-direction: column; margin-bottom: 14px; }
+.import-channel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.import-channel:last-child { border-bottom: none; }
+.import-channel-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.import-channel-url { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-channel-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 0.8rem; color: var(--text-dim); }
+.import-channel-right input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+.profile-bio { margin: 0 16px 14px; }
+.profile-bio-text { margin: 0; font-family: var(--font-reader); font-size: 1.02rem; line-height: 1.55; }
+.profile-bio-source { margin: 4px 0 0; font-size: 0.76rem; color: var(--text-dim); }

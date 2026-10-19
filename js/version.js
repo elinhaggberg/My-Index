@@ -3,9 +3,19 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.10.16.3";
+export const APP_VERSION = "2026.10.19";
 
 export const CHANGELOG = [
+  {
+    version: "2026.10.19",
+    date: "October 19, 2026",
+    changes: [
+      "New-post counts on profiles now work without Cloud sync. When you open the app (and when you come back to it, at most every half hour), My Index checks the feeds of the people you follow and shows how many new posts each has. Nothing runs while the app isn't open, and no account is needed.",
+      "A count shows what's new since you last looked at a channel; opening its post list clears it, while each post keeps its unread dot until you read it.",
+      "New profiles can be imported from a link: tap \"Import from a link\" in New profile and paste someone's website. If the site publishes an h-card (common on IndieWeb and many WordPress sites), their name, photo, bio and other channels are filled in, and you choose which feeds to follow. The photo is fetched once and stored on your device.",
+      "An imported bio is shown on the profile page as the person's own words, with where it came from, separate from your own note.",
+    ],
+  },
   {
     version: "2026.10.16.3",
     date: "October 16, 2026",
