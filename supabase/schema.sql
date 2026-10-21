@@ -56,6 +56,16 @@ $$;
 alter table channel_feeds enable row level security;
 alter table pending_captures enable row level security;
 
+-- Explicit grants, because Supabase stopped granting Data API access to
+-- new tables in "public" automatically (from 2026-10-30): a table created
+-- after that date is unreachable even for the Edge Functions until it's
+-- granted. Only service_role gets access -- the Edge Functions' key. The
+-- browser's anon/publishable key deliberately gets none (see the RLS note
+-- below). Safe to re-run: granting an existing privilege is a no-op.
+grant select, insert, update, delete on table channel_feeds to service_role;
+grant select, insert, update, delete on table pending_captures to service_role;
+grant execute on function increment_channel_new_count(text, integer, text) to service_role;
+
 -- No policies are defined on purpose. The anon/publishable key used by the
 -- browser can never read or write these tables directly, even if the key or
 -- project URL leaks -- there's simply no path in for it. All access goes

@@ -35,6 +35,13 @@ create index if not exists backup_records_updated_at_idx on backup_records (upda
 
 alter table backup_records enable row level security;
 
+-- Explicit grant, for the same reason as in schema.sql: from 2026-10-30
+-- Supabase no longer grants Data API access to new tables automatically,
+-- so a fresh install would otherwise leave the backup-sync Edge Function
+-- with "permission denied". service_role only; the browser's key gets
+-- nothing. Safe to re-run.
+grant select, insert, update, delete on table backup_records to service_role;
+
 -- No policies are defined on purpose, same reasoning as schema.sql -- the
 -- anon/publishable key can never read or write this table directly, even
 -- if the key or project URL leaks. All access goes through the
