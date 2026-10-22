@@ -84,12 +84,17 @@ function writeJSON(key, value) {
 }
 
 // ---- Tags ----
-// "Uncategorized" is never actually stored — it's derived (any snippet with
+// The Inbox ("uncategorized") is never actually stored — it's derived (any snippet with
 // no real tags belongs to it), same idea as the Wishlist board in My Closet
 // being an always-present entry, except here it's synthesized rather than a
 // real row, since "no tags" is already exactly the condition that defines it.
 
-export const UNCATEGORIZED_TAG = { id: UNCATEGORIZED_TAG_ID, name: "Uncategorized", isSystem: true, pinnedNote: "", image: null };
+// Shown as "Inbox": where everything saved without a tag waits -- a quick
+// capture from a Shortcut, a tip, a topic to look into -- until it's sorted
+// or let go. Nothing forces that to happen on a schedule; things simply
+// rest here until you come back to them. The id stays "uncategorized", so
+// existing data, filters and backups are untouched by the rename.
+export const UNCATEGORIZED_TAG = { id: UNCATEGORIZED_TAG_ID, name: "Inbox", isSystem: true, pinnedNote: "", image: null };
 
 export async function getTags() {
   const tags = await getAll("tags");
@@ -107,12 +112,13 @@ function normalizeTagName(name) {
 
 // Tags are a shared taxonomy (like My Closet's boards) rather than rich
 // individual records, so creating one dedupes by name instead of allowing
-// two tags that only differ in case, and the reserved "Uncategorized" name
-// always resolves to the synthetic tag rather than a real duplicate row.
+// two tags that only differ in case, and the reserved "Inbox" (formerly
+// "Uncategorized") name always resolves to the synthetic tag rather than a
+// real duplicate row.
 export async function findOrCreateTag(name) {
   const trimmed = normalizeTagName(name);
   if (!trimmed) return null;
-  if (trimmed.toLowerCase() === UNCATEGORIZED_TAG_ID) return UNCATEGORIZED_TAG;
+  if (trimmed.toLowerCase() === UNCATEGORIZED_TAG_ID || trimmed.toLowerCase() === UNCATEGORIZED_TAG.name.toLowerCase()) return UNCATEGORIZED_TAG;
 
   const existing = (await getTags()).find((t) => t.name.toLowerCase() === trimmed.toLowerCase());
   if (existing) return existing;

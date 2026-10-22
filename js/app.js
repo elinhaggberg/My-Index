@@ -52,6 +52,16 @@ registerRemoteResolver(
   })
 );
 
+// Remembers exactly which address the app was last opened with, shown at
+// the bottom of Settings. A diagnostic for working out what iOS's webapp://
+// scheme passes on from a Shortcut (path, query, fragment) -- stays on this
+// device only.
+try {
+  localStorage.setItem("mi_last_launch_v1", JSON.stringify({ href: location.href, at: Date.now() }));
+} catch {
+  // Storage unavailable -- the diagnostic just shows nothing.
+}
+
 const root = document.getElementById("app");
 
 // A back arrow (Tag/Profile detail) should return wherever the user actually
@@ -151,29 +161,62 @@ function route() {
   }
 }
 
-// Handles a link shared into the app from the OS Share Sheet — the Android
-// share_target manifest entry and the iOS Shortcut workaround (there's no
-// Web Share Target support in Safari) both land here the same way: a URL in
-// the ?url= or ?text= query param on a plain page load, no hash. Opens
-// straight into the save flow with a fetch already kicked off, landing as an
-// untagged ("Uncategorized") snippet to sort later, per the capture flow.
-function handleIncomingShare() {
+// Handles something shared into the app from outside: the Android
+// share_target manifest entry, or an iOS Shortcut that opens the installed
+// app (there's no Web Share Target support in Safari). iOS's unofficial
+// webapp:// scheme opens the installed app -- with its own storage, unlike
+// a plain https:// link, which opens Safari's -- but it's not yet clear
+// which parts of the address it passes on, so a share is accepted in either
+// place:
+//   ?url=…  /  ?text=…                (query string)
+//   #/capture/<url-encoded url or text> (fragment)
+// A link opens the save flow with a fetch already started; plain text (a
+// topic to look into, a tip someone gave you) opens it as a Note. Either
+// way it's saved untagged, so it lands in the Inbox to sort later.
+function readIncomingShare() {
   const params = new URLSearchParams(location.search);
-  const raw = params.get("url") || params.get("text") || "";
-  const match = raw.match(/https?:\/\/\S+/);
-  if (!match) return;
+  const fromQuery = params.get("url") || params.get("text") || "";
+  if (fromQuery) return { raw: fromQuery, source: "query" };
+  const hashMatch = location.hash.match(/^#\/capture\/(.+)$/);
+  if (hashMatch) {
+    let raw = hashMatch[1];
+    try {
+      raw = decodeURIComponent(raw);
+    } catch {
+      // Not encoded (or encoded oddly) -- use it as it came.
+    }
+    return { raw, source: "hash" };
+  }
+  return null;
+}
 
-  history.replaceState(null, "", location.pathname + location.hash);
+function handleIncomingShare() {
+  const incoming = readIncomingShare();
+  if (!incoming) return;
+  const raw = incoming.raw.trim();
+  history.replaceState(null, "", location.pathname + (incoming.source === "hash" ? "#/home" : location.hash));
+  if (!raw) return;
 
   const snippet = createEmptySnippet();
-  snippet.type = "link";
-  snippet.url = match[0];
-  openSnippetEditor(nav, { snippet, isNew: true, refresh: route, autoFetch: true });
+  const match = raw.match(/https?:\/\/\S+/);
+  if (match) {
+    snippet.type = "link";
+    snippet.url = match[0];
+    // Anything shared alongside the link (a page title, a few words of
+    // context) is kept as the comment rather than thrown away.
+    const rest = raw.replace(match[0], "").trim();
+    if (rest) snippet.comment = rest;
+    openSnippetEditor(nav, { snippet, isNew: true, refresh: route, autoFetch: true });
+  } else {
+    snippet.type = "note";
+    snippet.content = raw;
+    openSnippetEditor(nav, { snippet, isNew: true, refresh: route });
+  }
 }
 
 // Picks up anything shared via the iOS Shortcut capture flow while the app
 // wasn't open (see supabase/SETUP.md) -- lands each as a plain untagged
-// ("Uncategorized") Snippet, same as the manual share-sheet flow above, just
+// Snippet in the Inbox, same as the manual share-sheet flow above, just
 // without a fetch/editor step since there's no active save session to show
 // it in. Best-effort and inert unless the optional backend is configured.
 async function importQueuedCaptures() {

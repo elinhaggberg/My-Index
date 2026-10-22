@@ -71,6 +71,19 @@ export function openSettingsMenu(nav, refresh) {
   const el = sheet.el;
   el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
 
+  // See js/app.js: the address the app was last opened with, for checking
+  // what an iOS Shortcut's webapp:// link actually passes on.
+  try {
+    const last = JSON.parse(localStorage.getItem("mi_last_launch_v1") || "null");
+    if (last?.href) {
+      const lastEl = el.querySelector("#settings-last-launch");
+      lastEl.textContent = `Last opened as: ${last.href} (${new Date(last.at).toLocaleString()})`;
+      lastEl.classList.remove("hidden");
+    }
+  } catch {
+    // Nothing stored -- leave it hidden.
+  }
+
   el.querySelector("#instructions-btn").addEventListener("click", () => {
     sheet.close();
     openInstructions();

@@ -24,7 +24,9 @@ export async function renderTags(root, nav) {
   }
 
   const grid = document.getElementById("tags-grid");
-  const entries = [...tags.map((t) => ({ tag: t, count: countFor(t.id) })), { tag: UNCATEGORIZED_TAG, count: uncategorizedCount }];
+  // The Inbox comes first: it's where new things arrive, not one theme
+  // among the others.
+  const entries = [{ tag: UNCATEGORIZED_TAG, count: uncategorizedCount }, ...tags.map((t) => ({ tag: t, count: countFor(t.id) }))];
 
   if (tags.length === 0 && uncategorizedCount === 0) {
     const empty = document.createElement("p");

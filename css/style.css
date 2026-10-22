@@ -1781,3 +1781,5 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
 .profile-bio { margin: 0 16px 14px; }
 .profile-bio-text { margin: 0; font-family: var(--font-reader); font-size: 1.02rem; line-height: 1.55; }
 .profile-bio-source { margin: 4px 0 0; font-size: 0.76rem; color: var(--text-dim); }
+
+.settings-diagnostic { margin: 16px 0 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-dim); overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }

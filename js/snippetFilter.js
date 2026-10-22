@@ -1,4 +1,4 @@
-import { getTags, getHomeFilterPref, setHomeFilterPref, UNCATEGORIZED_TAG_ID } from "./storage.js";
+import { getTags, getHomeFilterPref, setHomeFilterPref, UNCATEGORIZED_TAG_ID, UNCATEGORIZED_TAG } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { SNIPPET_TYPES, typeFor } from "./snippetTypes.js";
 
@@ -42,7 +42,7 @@ export function describeSnippetFilter(pref, tagsById) {
   const clauses = [];
   if (pref.tagIds?.length) {
     const names = pref.tagIds
-      .map((id) => (id === UNCATEGORIZED_TAG_ID ? "Uncategorized" : tagsById.get(id)?.name))
+      .map((id) => (id === UNCATEGORIZED_TAG_ID ? UNCATEGORIZED_TAG.name : tagsById.get(id)?.name))
       .filter(Boolean);
     if (names.length) clauses.push(names.join(", "));
   }
@@ -64,7 +64,7 @@ export async function openSnippetFilterSheet(onChange) {
 
   const tagRow = el.querySelector("#filter-tag-row");
   const tags = await getTags();
-  const tagOptions = [{ id: UNCATEGORIZED_TAG_ID, name: "Uncategorized" }, ...tags];
+  const tagOptions = [{ id: UNCATEGORIZED_TAG_ID, name: UNCATEGORIZED_TAG.name }, ...tags];
   function renderTagRow() {
     tagRow.replaceChildren(
       ...tagOptions.map((t) => {

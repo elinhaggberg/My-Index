@@ -11,7 +11,7 @@ Discovery already happens elsewhere — a blog post, a recommendation, a podcast
 ## Core objects
 
 - **Profile** — a person you're curious about: a name, an optional note, one or more Channels (blog, podcast, newsletter, social, other), and one or more Tags.
-- **Tag** (Theme) — shared between Profiles and Snippets, with an optional pinned note. The built-in **Uncategorized** tag automatically holds any untagged Snippet so nothing gets lost.
+- **Tag** (Theme) — shared between Profiles and Snippets, with an optional pinned note. The built-in **Inbox** (stored internally as the `uncategorized` tag) automatically holds any untagged Snippet, so a quick capture from a Shortcut or the share sheet always has somewhere to land and nothing gets lost. It's listed first among the tags.
 - **Snippet** — a captured link, quote, note, book, or podcast episode, with your own comment, zero or more Tags, and optional links to one or more Profiles.
 
 A Tag's page is auto-generated: its pinned note at the top, followed by every Profile and Snippet that references it — this is how people and ideas cross-reference each other.

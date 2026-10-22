@@ -3,9 +3,18 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.10.19";
+export const APP_VERSION = "2026.10.22";
 
 export const CHANGELOG = [
+  {
+    version: "2026.10.22",
+    date: "October 22, 2026",
+    changes: [
+      "\"Uncategorized\" is now the Inbox, listed first among the tags: everything saved without a tag waits there until you sort it, or let it rest until it still seems worth keeping.",
+      "Shared text without a link (a topic to look into, a tip someone gave you) is now saved as a Note instead of being ignored, and text shared alongside a link is kept as its comment.",
+      "Things can be shared into the app as #/capture/<text or link> as well as ?url= / ?text=, for iOS Shortcuts that open the installed app. The bottom of Settings shows the exact address the app was last opened with, to help set such a Shortcut up.",
+    ],
+  },
   {
     version: "2026.10.19",
     date: "October 19, 2026",
