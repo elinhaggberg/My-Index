@@ -117,24 +117,33 @@ Medical Tracker's `supabaseConfig.js`), then:
 - Home fetches counts (`get-counts`) on load and merges them into local
   badges; visiting a Profile's page clears its badge locally **and** calls
   `clear-counts` so the server-side count resets too.
-- On open, the app calls `consume-captures` once to pull in anything shared
-  via the iOS Shortcut since its last run, adding each as an untagged
-  ("Uncategorized") Snippet.
+- On open, and whenever it comes back into view, the app calls
+  `consume-captures` to pull in anything shared via the iOS Shortcut since
+  its last run, adding each as an untagged Snippet in the Inbox.
 
 ## 6. Set up the iOS Shortcut (optional, only for the Shortcut capture flow)
 
-Create a Shortcut with a "Share Sheet" input that accepts URLs, and add an
-"Get Contents of URL" action:
+In the installed app, open **Settings → Share from iOS**: it lists every
+value below for this device, ready to copy, so there's no need to dig the
+device id out of developer tools. Set it up from the installed app, not from
+Safari: the two have separate storage, and so separate device ids.
 
-- URL: `https://<your-project-ref>.supabase.co/functions/v1/sync-index`
-- Method: POST
-- Headers: `Content-Type: application/json`, `apikey: <your publishable key>`,
-  `Authorization: Bearer <your publishable key>`
-- Request body (JSON): `{"action": "capture", "deviceId": "<your device id>", "url": "[Shared URL]"}`
+Create a Shortcut that shows in the Share Sheet and accepts URLs and text,
+then add:
 
-Your device id is generated the first time the app opens and stored in
-`localStorage` as `mi_device_id_v1` — there's no UI surfacing it yet, so
-read it from the browser's dev tools once to paste into the Shortcut.
+1. **Get Contents of URL**
+   - URL: `https://<your-project-ref>.supabase.co/functions/v1/sync-index`
+   - Method: POST
+   - Headers: `Content-Type: application/json`, `apikey: <your publishable key>`
+     (no `Authorization` header -- see the note on JWT verification above)
+   - Request body (JSON): `{"action": "capture", "deviceId": "<your device id>", "url": "[Shortcut Input]"}`
+2. **Open URLs**: `webapp://<the app's domain>/`
+
+iOS's `webapp://` scheme (unofficial, iOS 26) opens the installed app, but
+passes on nothing beyond its address -- hence the queue. The app picks up
+anything waiting when it opens or comes back into view, and saves it to the
+Inbox: a link as a Link snippet (its title fetched afterwards), plain text
+as a Note.
 
 ## Troubleshooting: no feeds are updating at all
 

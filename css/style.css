@@ -1783,3 +1783,23 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
 .profile-bio-source { margin: 4px 0 0; font-size: 0.76rem; color: var(--text-dim); }
 
 .settings-diagnostic { margin: 16px 0 0; font-size: 0.72rem; line-height: 1.4; color: var(--text-dim); overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+
+/* ---- Share from iOS (js/shortcutSetup.js) ---- */
+.shortcut-intro { margin: 0 0 14px; font-size: 0.9rem; line-height: 1.5; color: var(--text-dim); }
+.shortcut-steps { margin: 0 0 16px; padding-left: 1.2em; font-size: 0.9rem; line-height: 1.5; }
+.shortcut-steps li { margin-bottom: 8px; }
+.shortcut-values { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.shortcut-value { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.shortcut-value-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.shortcut-value-label { font-size: 0.78rem; font-weight: 700; color: var(--text-dim); }
+.shortcut-copy-btn { padding: 4px 10px; font-size: 0.78rem; }
+.shortcut-value-code {
+  display: block;
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.shortcut-value-hint { margin: 4px 0 0; font-size: 0.76rem; color: var(--text-dim); }

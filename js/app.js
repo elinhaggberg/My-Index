@@ -214,21 +214,63 @@ function handleIncomingShare() {
   }
 }
 
-// Picks up anything shared via the iOS Shortcut capture flow while the app
-// wasn't open (see supabase/SETUP.md) -- lands each as a plain untagged
-// Snippet in the Inbox, same as the manual share-sheet flow above, just
-// without a fetch/editor step since there's no active save session to show
-// it in. Best-effort and inert unless the optional backend is configured.
+// Picks up anything sent from the iOS Shortcut (see the "Share from iOS"
+// sheet in Settings): the Shortcut queues it in the user's own Supabase
+// project, then opens the installed app with webapp:// -- which passes on
+// nothing but the app's address, hence the queue. Each item lands in the
+// Inbox as it is, without an editor in between: capture fast, sort later.
+// A link becomes a Link snippet; plain text (a topic, a tip) a Note.
+// Runs on start and whenever the app comes back into view, since webapp://
+// may just bring an already-open app to the front without reloading it.
+// Inert unless the optional backend is configured.
+let importingCaptures = false;
 async function importQueuedCaptures() {
-  const urls = await consumeQueuedCaptures();
-  if (urls.length === 0) return;
-  for (const url of urls) {
-    const snippet = createEmptySnippet();
-    snippet.type = "link";
-    snippet.url = url;
-    await saveSnippet(snippet);
+  if (importingCaptures) return;
+  importingCaptures = true;
+  try {
+    const items = await consumeQueuedCaptures();
+    if (items.length === 0) return;
+    for (const raw of items) {
+      const text = String(raw || "").trim();
+      if (!text) continue;
+      const snippet = createEmptySnippet();
+      const match = text.match(/https?:\/\/\S+/);
+      if (match) {
+        snippet.type = "link";
+        snippet.url = match[0];
+        const rest = text.replace(match[0], "").trim();
+        if (rest) snippet.comment = rest;
+      } else {
+        snippet.type = "note";
+        snippet.content = text;
+      }
+      await saveSnippet(snippet);
+      if (snippet.type === "link") fillLinkDetails(snippet);
+    }
+    route();
+  } finally {
+    importingCaptures = false;
   }
-  route();
+}
+
+// A queued link arrives as a bare address; fetch its title and site name
+// afterwards, the same details the editor's "Fetch details" fills in.
+// Best-effort and in the background -- the snippet is already saved.
+async function fillLinkDetails(snippet) {
+  try {
+    const res = await fetch(`/api/unfurl?url=${encodeURIComponent(snippet.url)}`);
+    const data = await res.json();
+    if (!data.title && !data.siteName) return;
+    await saveSnippet({
+      ...snippet,
+      content: snippet.content || data.title || "",
+      siteName: data.siteName || snippet.siteName,
+      image: snippet.image || data.image || "",
+    });
+    route();
+  } catch {
+    // Offline or blocked -- the link is saved either way.
+  }
 }
 
 window.addEventListener("hashchange", route);
@@ -262,7 +304,10 @@ checkOnboarding();
 // while the app isn't being looked at.
 checkFeedsIfDue();
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") checkFeedsIfDue();
+  if (document.visibilityState === "visible") {
+    checkFeedsIfDue();
+    importQueuedCaptures();
+  }
 });
 checkWhatsNew();
 

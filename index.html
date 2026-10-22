@@ -362,6 +362,28 @@
     </div>
   </template>
 
+  <!-- ===== iOS Shortcut setup (js/shortcutSetup.js) ===== -->
+  <template id="tpl-shortcut-setup">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>Share from iOS</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <p class="shortcut-intro">An iOS Shortcut in the share sheet that sends a link or a bit of text straight to your Inbox. It goes through your own Cloud sync project, then opens My Index, which picks it up.</p>
+      <p class="shortcut-intro hidden" id="shortcut-not-ready">This needs Cloud sync with RSS sync installed: Settings → Cloud sync. Open this again afterwards.</p>
+      <p class="shortcut-intro hidden" id="shortcut-rss-note">If sending doesn't work, check that RSS sync is installed in Cloud sync: the Shortcut uses its function.</p>
+      <div class="hidden" id="shortcut-steps">
+        <ol class="shortcut-steps">
+          <li>New Shortcut → in its settings, turn on <strong>Show in Share Sheet</strong> and let it receive <strong>URLs and Text</strong>.</li>
+          <li>Add <strong>Get Contents of URL</strong> (Hämta innehåll från URL) with the address below. Method: <strong>POST</strong>. Under <strong>Headers</strong>, add the two headers below. Request body: <strong>JSON</strong>, with the three fields below; for <code>url</code>, pick <em>Shortcut Input</em>.</li>
+          <li>Add <strong>Open URLs</strong> (Öppna URL:er) with the last address below.</li>
+        </ol>
+        <div class="shortcut-values" id="shortcut-values"></div>
+        <p class="shortcut-intro">The device id belongs to this installed app. Set the Shortcut up from here, not from Safari, or things will be sent to the wrong place.</p>
+      </div>
+    </div>
+  </template>
+
   <!-- ===== Profile editor ===== -->
   <template id="tpl-profile-editor">
     <div class="sheet">
@@ -547,6 +569,9 @@
       <button type="button" class="menu-item" id="cloud-sync-btn">
         <svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M144 224c-53 0-96 43-96 96s43 96 96 96l288 0c44.2 0 80-35.8 80-80c0-38.8-27.6-71.1-64.3-78.4c.2-2.5 .3-5 .3-7.6c0-53-43-96-96-96c-19.6 0-37.9 5.9-53.1 16.1C185.5 130.6 145.5 96 96 96C43 96 0 139 0 192c0 20.3 6.3 39.1 17 54.6C7.4 261.3 0 279.5 0 300z"/></svg>
         <span>Cloud sync</span>
+      </button>
+      <button type="button" class="menu-item" id="shortcut-setup-btn">
+        <span>Share from iOS</span>
       </button>
       <button type="button" class="menu-item" id="app-library-link-btn">
         <svg class="icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false"><path d="M64 32C28.7 32 0 60.7 0 96l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64L64 32zM64 224c-35.3 0-64 28.7-64 64l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64l-64 0zM256 96l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64l-64 0c-35.3 0-64 28.7-64 64zM320 224c-35.3 0-64 28.7-64 64l0 64c0 35.3 28.7 64 64 64l64 0c35.3 0 64-28.7 64-64l0-64c0-35.3-28.7-64-64-64l-64 0z"/></svg>

@@ -1,4 +1,5 @@
 import { openSheet } from "./sheet.js";
+import { openShortcutSetup } from "./shortcutSetup.js";
 import {
   exportBackupData,
   importData,
@@ -102,6 +103,10 @@ export function openSettingsMenu(nav, refresh) {
   el.querySelector("#import-btn").addEventListener("click", () => {
     sheet.close();
     openImport(refresh);
+  });
+  el.querySelector("#shortcut-setup-btn").addEventListener("click", () => {
+    sheet.close();
+    openShortcutSetup();
   });
   el.querySelector("#app-library-link-btn").addEventListener("click", () => {
     sheet.close();

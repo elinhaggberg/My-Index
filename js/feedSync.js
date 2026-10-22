@@ -17,7 +17,7 @@ export function isFeedSyncConfigured() {
   return isConfigured();
 }
 
-function getDeviceId() {
+export function getDeviceId() {
   let id = localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
     id = crypto.randomUUID ? crypto.randomUUID() : "dev-" + Date.now() + "-" + Math.random().toString(16).slice(2);

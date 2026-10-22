@@ -3,9 +3,17 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.10.22";
+export const APP_VERSION = "2026.10.22.2";
 
 export const CHANGELOG = [
+  {
+    version: "2026.10.22.2",
+    date: "October 22, 2026",
+    changes: [
+      "New in Settings: \"Share from iOS\" lists everything an iOS Shortcut needs to send a link or a bit of text straight to your Inbox from the share sheet, ready to copy. It uses Cloud sync (with RSS sync installed).",
+      "Things sent from the Shortcut are now picked up whenever the app comes back into view, not only when it starts, and land in the Inbox as they are: links get their title fetched afterwards, plain text becomes a Note.",
+    ],
+  },
   {
     version: "2026.10.22",
     date: "October 22, 2026",
