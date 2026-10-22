@@ -17,6 +17,10 @@ import { openSheet } from "../sheet.js";
 import { readAndResizeImage } from "../imageBlob.js";
 import { resolveImageSrc } from "../imageStore.js";
 import { ICON_TAG } from "../icons.js";
+import { openCloudSyncSheet } from "../settingsMenu.js";
+import { openShortcutSetup } from "../shortcutSetup.js";
+
+const INBOX_INTRO_KEY = "mi_inbox_intro_dismissed_v1";
 
 export async function renderTag(root, nav, id) {
   const tpl = document.getElementById("tpl-tag");
@@ -60,6 +64,28 @@ export async function renderTag(root, nav, id) {
         pinnedEl.classList.add("hidden");
       }
     }
+
+    // A short explanation the first time the Inbox is opened, until it's
+    // dismissed -- what it's for, and how to send things to it from the
+    // share menu.
+    const introEl = document.getElementById("inbox-intro");
+    let introDismissed = false;
+    try {
+      introDismissed = localStorage.getItem(INBOX_INTRO_KEY) === "1";
+    } catch {
+      // No storage -- show it; it just can't be remembered as dismissed.
+    }
+    introEl.classList.toggle("hidden", !(tag.isSystem && !introDismissed));
+    document.getElementById("inbox-intro-close").onclick = () => {
+      introEl.classList.add("hidden");
+      try {
+        localStorage.setItem(INBOX_INTRO_KEY, "1");
+      } catch {
+        // Ignore.
+      }
+    };
+    document.getElementById("inbox-intro-cloud").onclick = () => openCloudSyncSheet();
+    document.getElementById("inbox-intro-shortcut").onclick = () => openShortcutSetup();
 
     const profileRow = document.getElementById("tag-profile-row");
     const profiles = tag.isSystem ? [] : await getProfilesForTag(id);

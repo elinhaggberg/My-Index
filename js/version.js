@@ -3,9 +3,17 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.10.22.2";
+export const APP_VERSION = "2026.10.22.3";
 
 export const CHANGELOG = [
+  {
+    version: "2026.10.22.3",
+    date: "October 22, 2026",
+    changes: [
+      "The Inbox has its own look on the Tags page: an inbox icon on a darker beige, so it stands apart from your themes.",
+      "The first time you open the Inbox, a short note explains what it's for and how to send things to it from the share menu on iPhone and Android. Dismiss it with the ×.",
+    ],
+  },
   {
     version: "2026.10.22.2",
     date: "October 22, 2026",

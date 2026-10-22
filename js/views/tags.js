@@ -2,6 +2,7 @@ import { getTags, getProfiles, getSnippets, getUncategorizedCount, UNCATEGORIZED
 import { renderTabbar } from "../tabbar.js";
 import { openSettingsMenu } from "../settingsMenu.js";
 import { resolveImageSrc } from "../imageStore.js";
+import { ICON_INBOX } from "../icons.js";
 
 export async function renderTags(root, nav) {
   const tpl = document.getElementById("tpl-tags");
@@ -41,6 +42,10 @@ export async function renderTags(root, nav) {
       const tpl2 = document.getElementById("tpl-tag-tile");
       const node = tpl2.content.cloneNode(true);
       const iconBox = node.querySelector(".tag-tile-icon");
+      if (tag.isSystem) {
+        iconBox.innerHTML = ICON_INBOX;
+        iconBox.classList.add("inbox");
+      }
       if (tag.image) {
         iconBox.classList.add("has-image");
         resolveImageSrc(tag.image).then((src) => {

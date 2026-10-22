@@ -61,3 +61,8 @@ export const ICON_SEARCH =
 
 export const ICON_IMAGE =
   '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.8" fill="currentColor" stroke="none"/><path d="M3.5 17l5.5-5.5 3 3L18 8.5l2.5 2.5"/></svg>';
+
+// An inbox tray -- the Inbox tag's tile, so it reads as where new things
+// arrive rather than one theme among the others.
+export const ICON_INBOX =
+  '<svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M3 13l2.6-7.4A2 2 0 0 1 7.5 4.3h9a2 2 0 0 1 1.9 1.3L21 13"/><path d="M3 13v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5h-5.2l-1.3 2.6h-5l-1.3-2.6z"/></svg>';

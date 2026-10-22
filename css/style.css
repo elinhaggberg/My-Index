@@ -1803,3 +1803,25 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
   -webkit-user-select: text;
 }
 .shortcut-value-hint { margin: 4px 0 0; font-size: 0.76rem; color: var(--text-dim); }
+
+/* ---- Inbox (the untagged "uncategorized" tag) ---- */
+/* A darker beige than the other tiles' backgrounds, so the Inbox reads as
+   a different kind of place -- where things arrive -- not one theme among
+   the others. Mixed from theme tokens, so it follows every theme. */
+.tag-tile-icon.inbox {
+  background: color-mix(in srgb, var(--surface-2) 72%, var(--text-dim));
+  color: var(--text);
+}
+.inbox-intro {
+  position: relative;
+  margin: 4px 16px 18px;
+  padding: 14px 44px 4px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-2) 72%, var(--text-dim));
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.inbox-intro p { margin: 0 0 10px; }
+.inbox-intro-close { position: absolute; top: 4px; right: 4px; font-size: 1.4rem; color: var(--text); }
+.inbox-intro .inbox-intro-link { color: var(--text); font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 2px; cursor: pointer; }
