@@ -1,7 +1,7 @@
 import { getSnippet, deleteSnippet, exportSnippetData } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { shareOrDownload, filenameFor } from "./share.js";
-import { hostnameFor } from "./util.js";
+import { safeLinkUrl, hostnameFor } from "./util.js";
 import { typeFor } from "./snippetTypes.js";
 import { COMPACT_CONTENT_THRESHOLD } from "./snippetCard.js";
 import { openSnippetEditor } from "./snippetEditor.js";
@@ -52,8 +52,8 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
   }
 
   const linkEl = el.querySelector("#detail-link");
-  if (snippet.url) {
-    linkEl.href = snippet.url;
+  if (safeLinkUrl(snippet.url)) {
+    linkEl.href = safeLinkUrl(snippet.url);
     el.querySelector("#detail-link-text").textContent = snippet.siteName || hostnameFor(snippet.url);
     linkEl.classList.remove("hidden");
   }

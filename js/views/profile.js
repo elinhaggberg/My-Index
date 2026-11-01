@@ -13,7 +13,7 @@ import { openSnippetEditor } from "../snippetEditor.js";
 import { createEmptySnippet } from "../storage.js";
 import { openProfileEditor } from "../profileEditor.js";
 import { renderTagRefChips } from "../refChips.js";
-import { hostnameFor } from "../util.js";
+import { hostnameFor, safeLinkUrl } from "../util.js";
 import { ICON_EXTERNAL, ICON_RSS, ICON_SEARCH, ICON_CHEVRON_RIGHT } from "../icons.js";
 import { clearServerCounts, clearChannelServerCount } from "../feedSync.js";
 import { onCountsChanged } from "../feedCheck.js";
@@ -104,8 +104,8 @@ export async function renderProfile(root, nav, id) {
           row.className = "channel-view-row";
           if (inReader) {
             row.href = `#/feed/${encodeURIComponent(id)}/${encodeURIComponent(channel.id)}`;
-          } else {
-            row.href = channel.url;
+          } else if (safeLinkUrl(channel.url)) {
+            row.href = safeLinkUrl(channel.url);
             row.target = "_blank";
             row.rel = "noopener noreferrer";
           }

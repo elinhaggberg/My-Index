@@ -24,7 +24,7 @@ import { loadFeed } from "../feedLoader.js";
 import { sanitizeFeedHtml, stripTrailingReadMore, revealImages } from "../feedSanitize.js";
 import { getUnreadIds, markSeen, markNoticed, getAlwaysImages, setAlwaysImages } from "../feedState.js";
 import { openSnippetEditor } from "../snippetEditor.js";
-import { formatDate, hostnameFor } from "../util.js";
+import { formatDate, hostnameFor, safeLinkUrl } from "../util.js";
 import { ICON_EXTERNAL, ICON_IMAGE } from "../icons.js";
 
 // channelId -> where the post list was scrolled to, so coming back from a
@@ -51,8 +51,9 @@ function siteUrlFor(channel, feed) {
 
 function setOpenInBrowser(root, url) {
   const link = root.querySelector("#feed-open-btn");
-  if (url) {
-    link.href = url;
+  const safe = safeLinkUrl(url);
+  if (safe) {
+    link.href = safe;
     link.classList.remove("hidden");
   } else {
     link.classList.add("hidden");
@@ -65,10 +66,10 @@ function showMessage(body, text, url) {
   const p = document.createElement("p");
   p.textContent = text;
   wrap.appendChild(p);
-  if (url) {
+  if (safeLinkUrl(url)) {
     const a = document.createElement("a");
     a.className = "text-btn secondary feed-message-link";
-    a.href = url;
+    a.href = safeLinkUrl(url);
     a.target = "_blank";
     a.rel = "noopener noreferrer";
     a.textContent = "Open in browser";
@@ -443,7 +444,7 @@ function createImagePrompt(content, channel, feed, siteUrl) {
 
 async function renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash }) {
   const body = root.querySelector("#feed-body");
-  const link = item.link || siteUrl;
+  const link = safeLinkUrl(item.link) || safeLinkUrl(siteUrl);
   setOpenInBrowser(root, link);
   markSeen(channel.id, [item.id]);
   window.scrollTo(0, 0);
@@ -565,7 +566,7 @@ function wireSaveButton(root, nav, { profile, feed, item, content, siteUrl }) {
     const quote = captured || selectedText();
     captured = "";
     const snippet = createEmptySnippet();
-    snippet.url = item.link || siteUrl;
+    snippet.url = safeLinkUrl(item.link) || safeLinkUrl(siteUrl);
     snippet.siteName = feed.title || hostnameFor(snippet.url);
     if (quote) {
       snippet.type = "quote";

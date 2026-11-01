@@ -85,10 +85,14 @@ function parseDate(str) {
   return Number.isNaN(d.getTime()) ? null : d.getTime();
 }
 
+// Only http(s) addresses are kept: a feed is someone else's content, and
+// its links end up as buttons in the reader ("Open in browser") and in
+// saved snippets. Anything else (javascript:, data:, …) is dropped here.
 function resolve(href, base) {
   if (!href) return "";
   try {
-    return new URL(href.trim(), base || undefined).toString();
+    const url = new URL(href.trim(), base || undefined);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
   } catch {
     return "";
   }
