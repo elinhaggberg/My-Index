@@ -142,7 +142,10 @@ export function formatSyncedAgo(date) {
   return date.toLocaleDateString();
 }
 
-async function callBackupApi(action, body) {
+async function callBackupApi(action, body, { quiet = false } = {}) {
+  const note = (text) => {
+    if (!quiet) setLastSyncProblem(text);
+  };
   const config = getApiConfig();
   const passphrase = getBackupPassphrase();
   if (!config?.url || !config?.anonKey || !passphrase) return null;
@@ -154,14 +157,14 @@ async function callBackupApi(action, body) {
     });
     if (!res.ok) {
       const detail = await res.json().then((j) => j?.error).catch(() => "");
-      setLastSyncProblem(`${action === "push" ? "Upload" : "Download"} failed (${res.status})${detail ? `: ${detail}` : ""}`);
+      note(`${action === "push" ? "Upload" : "Download"} failed (${res.status})${detail ? `: ${detail}` : ""}`);
       return null;
     }
     const json = await res.json();
     if (action === "push" || action === "pull") clearLastSyncProblem(action);
     return json;
   } catch (err) {
-    setLastSyncProblem(`${action === "push" ? "Upload" : "Download"} couldn't reach the project${err?.message ? `: ${err.message}` : ""}`);
+    note(`${action === "push" ? "Upload" : "Download"} couldn't reach the project${err?.message ? `: ${err.message}` : ""}`);
     return null;
   }
 }
@@ -221,7 +224,7 @@ function toTombstoneRecord(t) {
 // the server makes resending everything safe, just a bit more bandwidth
 // than strictly necessary -- an acceptable trade at personal-register
 // scale (dozens to low hundreds of records).
-export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones, getPrefsSnapshot, getPrefsUpdatedAt }) {
+export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones, clearTombstones, getPrefsSnapshot, getPrefsUpdatedAt }, { quiet = false } = {}) {
   if (!isBackupConfigured()) return { applied: 0 };
   const [profiles, tags, snippets, tombstones] = await Promise.all([getProfiles(), getTags(), getSnippets(), getTombstones()]);
   const records = [
@@ -239,7 +242,7 @@ export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones
     records.push({ store: PREFS_STORE, recordId: PREFS_RECORD_ID, data: getPrefsSnapshot(), updatedAt: prefsUpdatedAt });
   }
   if (records.length === 0) return { applied: 0 };
-  const result = await callBackupApi("push", { records });
+  const result = await callBackupApi("push", { records }, { quiet });
   if (!result) return { applied: 0, failed: true };
   // Only clears once the request actually went through -- a failed/dropped
   // push (result is null, see callBackupApi) leaves the tombstones in place
@@ -312,10 +315,11 @@ async function runSync(storageFns) {
   if (!isBackupConfigured()) return { synced: false };
   // Either half failing counts: a push that silently failed is how
   // deletions once went missing without anyone noticing.
-  let push = await pushAll(storageFns);
   // A request cut off on the way (iOS freezing the app as it goes to the
   // background, the network not up yet right after opening) usually goes
-  // through a moment later -- one more try before calling it failed.
+  // through a moment later -- one more try before calling it failed, and
+  // only that second failure is reported as a problem.
+  let push = await pushAll(storageFns, { quiet: true });
   if (push.failed) {
     await wait(2000);
     push = await pushAll(storageFns);
