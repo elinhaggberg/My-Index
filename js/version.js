@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.05";
+export const APP_VERSION = "2026.11.05.2";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.05.2",
+    date: "November 5, 2026",
+    changes: [
+      "Pictures on snippet cards (book covers, photos, link previews) now show whole, in their own shape, instead of being cropped to a wide strip. Very tall pictures, like phone screenshots, are capped so they don't take over the grid.",
+    ],
+  },
   {
     version: "2026.11.05",
     date: "November 5, 2026",

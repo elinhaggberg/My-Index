@@ -21,6 +21,46 @@ import { isExcerpt, isSource, pageLabel, getExcerptCount } from "./sources.js";
 // disagreeing about what counts as "long."
 export const COMPACT_CONTENT_THRESHOLD = 240;
 
+// Cards show a snippet's whole picture (a book cover, a photo) in its own
+// proportions rather than cropped to one fixed shape. The grid is laid out
+// before images load, so each image's proportions are remembered once
+// known (on this device, by image) and reserved straight away the next
+// time it's drawn -- keeping the columns even. Very tall images are capped
+// so one phone screenshot can't take over a column.
+const RATIO_KEY = "mi_image_ratios_v1";
+const MAX_REMEMBERED = 500;
+const TALLEST = 1.75; // height as a multiple of width
+
+let ratios = null;
+function readRatios() {
+  if (!ratios) {
+    try {
+      ratios = JSON.parse(localStorage.getItem(RATIO_KEY) || "{}");
+    } catch {
+      ratios = {};
+    }
+  }
+  return ratios;
+}
+
+function rememberRatio(ref, ratio) {
+  const all = readRatios();
+  if (all[ref] === ratio) return;
+  delete all[ref];
+  all[ref] = ratio;
+  const keys = Object.keys(all);
+  for (const k of keys.slice(0, Math.max(0, keys.length - MAX_REMEMBERED))) delete all[k];
+  try {
+    localStorage.setItem(RATIO_KEY, JSON.stringify(all));
+  } catch {
+    // Storage full or unavailable -- the image still shows correctly.
+  }
+}
+
+function applyRatio(img, ratio) {
+  img.style.aspectRatio = String(Math.max(ratio, 1 / TALLEST));
+}
+
 export function createSnippetNode(snippet, onOpen) {
   const tpl = document.getElementById("tpl-pin-card");
   const node = tpl.content.cloneNode(true);
@@ -30,6 +70,15 @@ export function createSnippetNode(snippet, onOpen) {
 
   if (snippet.image) {
     img.alt = "";
+    const ref = String(snippet.image);
+    const known = readRatios()[ref];
+    if (known) applyRatio(img, known);
+    img.addEventListener("load", () => {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      const ratio = Math.round((img.naturalWidth / img.naturalHeight) * 1000) / 1000;
+      applyRatio(img, ratio);
+      rememberRatio(ref, ratio);
+    });
     lazyLoadImage(img, snippet.image);
   }
 
