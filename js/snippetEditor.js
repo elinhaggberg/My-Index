@@ -6,6 +6,7 @@ import { readAndResizeImage } from "./imageBlob.js";
 import { resolveImageSrc } from "./imageStore.js";
 import { SNIPPET_TYPES, typeFor } from "./snippetTypes.js";
 import { hostnameFor } from "./util.js";
+import { renderSourceField } from "./sourcePicker.js";
 
 export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileId, presetTagId, autoFetch }) {
   const draft = { ...snippet, tagIds: [...(snippet.tagIds || [])], profileIds: [...(snippet.profileIds || [])] };
@@ -24,6 +25,10 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
       content: draft.content?.trim() || "",
       title: draft.title?.trim() || "",
       author: draft.author?.trim() || "",
+      // Only an excerpt (quote, note, poem) has a source and a page; a type
+      // switched away from those drops them rather than keeping hidden data.
+      sourceId: typeFor(draft.type).excerpt ? draft.sourceId || null : null,
+      page: typeFor(draft.type).excerpt ? (draft.page || "").trim() : "",
     };
     try {
       await saveSnippet(finalSnippet);
@@ -42,6 +47,7 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   const titleField = el.querySelector("#editor-title-field");
   const authorField = el.querySelector("#editor-author-field");
   const imageUploadActions = el.querySelector("#editor-image-upload-actions");
+  const sourceSection = el.querySelector("#editor-source-section");
   function renderContentField() {
     const type = typeFor(draft.type);
     contentInput.placeholder = type.contentPlaceholder;
@@ -49,6 +55,7 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     titleField.classList.toggle("hidden", !type.hasTitle);
     authorField.classList.toggle("hidden", !type.hasAuthor);
     imageUploadActions.classList.toggle("hidden", draft.type !== "image");
+    sourceSection.classList.toggle("hidden", !type.excerpt);
   }
   typeRow.replaceChildren(
     ...SNIPPET_TYPES.map((t) => {
@@ -167,6 +174,14 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   // skip straight to "fetching" instead of making you tap Fetch yourself
   // right after sharing a link into the app.
   if (autoFetch && draft.url) runFetch();
+
+  // ---- Source and page (excerpts only) ----
+  renderSourceField(el.querySelector("#editor-source-field"), { draft });
+  const pageInput = el.querySelector("#editor-page-input");
+  pageInput.value = draft.page || "";
+  pageInput.addEventListener("input", () => {
+    draft.page = pageInput.value;
+  });
 
   // ---- Comment ----
   const commentInput = el.querySelector("#editor-comment");

@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v19";
+const CACHE_NAME = "my-index-v20";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -35,6 +35,8 @@ const APP_SHELL = [
   "./js/tabbar.js",
   "./js/masonry.js",
   "./js/snippetTypes.js",
+  "./js/sources.js",
+  "./js/sourcePicker.js",
   "./js/snippetCard.js",
   "./js/snippetEditor.js",
   "./js/snippetDetail.js",

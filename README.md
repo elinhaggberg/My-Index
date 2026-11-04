@@ -13,6 +13,7 @@ Discovery already happens elsewhere — a blog post, a recommendation, a podcast
 - **Profile** — a person you're curious about: a name, an optional note, one or more Channels (blog, podcast, newsletter, social, other), and one or more Tags.
 - **Tag** (Theme) — shared between Profiles and Snippets, with an optional pinned note. The built-in **Inbox** (stored internally as the `uncategorized` tag) automatically holds any untagged Snippet, so a quick capture from a Shortcut or the share sheet always has somewhere to land and nothing gets lost. It has its own tab next to Home, Profiles and Tags, and its items stay out of Home's "Recently saved" until they're tagged. An optional count of new items on the tab (off by default) can be reset with "Mark all as reviewed".
 - **Snippet** — a captured link, quote, note, book, or podcast episode, with your own comment, zero or more Tags, and optional links to one or more Profiles.
+- **Sources and excerpts** — a quote, note or poem can point to the saved book, article, episode or video it came from, with a page. Both stay ordinary snippets; a source lists its excerpts in page order. Excerpts sharing a link with a saved article are connected automatically.
 
 A Tag's page is auto-generated: its pinned note at the top, followed by every Profile and Snippet that references it — this is how people and ideas cross-reference each other.
 

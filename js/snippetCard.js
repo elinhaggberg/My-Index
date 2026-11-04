@@ -2,6 +2,7 @@ import { hostnameFor } from "./util.js";
 import { typeFor } from "./snippetTypes.js";
 import { ICON_LINK } from "./icons.js";
 import { lazyLoadImage } from "./lazyImage.js";
+import { isExcerpt, isSource, pageLabel, getExcerptCount } from "./sources.js";
 
 // Builds one Pinterest-style grid tile from the shared <template id="tpl-pin-card">.
 // A snippet's image is either a remote URL fetched via unfurl (a Link/Video
@@ -51,9 +52,10 @@ export function createSnippetNode(snippet, onOpen) {
     }
   }
 
-  if (type.hasAuthor && snippet.author) {
+  const page = isExcerpt(snippet) ? pageLabel(snippet.page) : "";
+  if ((type.hasAuthor && snippet.author) || page) {
     const authorEl = node.querySelector(".pin-author");
-    authorEl.textContent = `— ${snippet.author}`;
+    authorEl.textContent = [type.hasAuthor && snippet.author ? `— ${snippet.author}` : "", page].filter(Boolean).join(", ");
     authorEl.classList.remove("hidden");
   }
 
@@ -69,6 +71,18 @@ export function createSnippetNode(snippet, onOpen) {
     comment.className = "pin-comment";
     comment.textContent = snippet.comment;
     node.querySelector(".pin-body").appendChild(comment);
+  }
+
+  // A source with excerpts says so, so it's visible from the grid that
+  // there's more inside.
+  if (isSource(snippet)) {
+    getExcerptCount(snippet).then((count) => {
+      if (!count) return;
+      const tally = document.createElement("p");
+      tally.className = "pin-excerpt-count";
+      tally.textContent = `${count} excerpt${count === 1 ? "" : "s"}`;
+      article.querySelector(".pin-body").appendChild(tally);
+    });
   }
 
   article.addEventListener("click", () => onOpen(snippet));

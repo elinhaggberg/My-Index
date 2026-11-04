@@ -1,4 +1,5 @@
-import { getSnippet, deleteSnippet, exportSnippetData } from "./storage.js";
+import { getSnippet, getSnippets, deleteSnippet, exportSnippetData } from "./storage.js";
+import { isExcerpt, isSource, findSource, findExcerpts, findSiblings, sourceTitle, pageLabel } from "./sources.js";
 import { openSheet } from "./sheet.js";
 import { shareOrDownload, filenameFor } from "./share.js";
 import { safeLinkUrl, hostnameFor } from "./util.js";
@@ -45,9 +46,10 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
     }
   }
 
-  if (type.hasAuthor && snippet.author) {
+  const page = isExcerpt(snippet) ? pageLabel(snippet.page) : "";
+  if ((type.hasAuthor && snippet.author) || page) {
     const authorEl = el.querySelector("#detail-author");
-    authorEl.textContent = `— ${snippet.author}`;
+    authorEl.textContent = [type.hasAuthor && snippet.author ? `— ${snippet.author}` : "", page].filter(Boolean).join(", ");
     authorEl.classList.remove("hidden");
   }
 
@@ -62,6 +64,34 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
   if (snippet.comment) {
     commentEl.textContent = snippet.comment;
     commentEl.classList.remove("hidden");
+  }
+
+  // ---- Source and excerpts (js/sources.js) ----
+  // Opening another snippet from here swaps this sheet for that one's.
+  const openOther = (other) => {
+    sheet.close();
+    openSnippetDetail(nav, other, refresh);
+  };
+  const all = await getSnippets();
+  if (isExcerpt(snippet)) {
+    const source = findSource(snippet, all);
+    if (source) {
+      el.querySelector("#detail-source").replaceChildren(sourceRow(source, () => openOther(source)));
+      el.querySelector("#detail-source-section").classList.remove("hidden");
+    }
+    const siblings = findSiblings(snippet, all);
+    if (siblings.length) {
+      el.querySelector("#detail-excerpts-label").textContent = `${siblings.length} more from ${source ? "this source" : "this page"}`;
+      el.querySelector("#detail-excerpts").replaceChildren(...siblings.map((s) => excerptRow(s, () => openOther(s))));
+      el.querySelector("#detail-excerpts-section").classList.remove("hidden");
+    }
+  } else if (isSource(snippet)) {
+    const excerpts = findExcerpts(snippet, all);
+    if (excerpts.length) {
+      el.querySelector("#detail-excerpts-label").textContent = `Excerpts (${excerpts.length})`;
+      el.querySelector("#detail-excerpts").replaceChildren(...excerpts.map((s) => excerptRow(s, () => openOther(s))));
+      el.querySelector("#detail-excerpts-section").classList.remove("hidden");
+    }
   }
 
   const tagsSection = el.querySelector("#detail-tags-section");
@@ -97,4 +127,39 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
       refresh();
     });
   });
+}
+
+function sourceRow(source, onOpen) {
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "detail-source-row";
+  row.innerHTML = typeFor(source.type).icon;
+  const text = document.createElement("span");
+  text.className = "detail-source-text";
+  const title = document.createElement("span");
+  title.className = "detail-source-title";
+  title.textContent = sourceTitle(source);
+  const meta = document.createElement("span");
+  meta.className = "detail-source-meta";
+  meta.textContent = [typeFor(source.type).label, source.siteName].filter(Boolean).join(" · ");
+  text.append(title, meta);
+  row.appendChild(text);
+  row.addEventListener("click", onOpen);
+  return row;
+}
+
+function excerptRow(excerpt, onOpen) {
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "excerpt-row";
+  const page = document.createElement("span");
+  page.className = "excerpt-row-page";
+  page.textContent = pageLabel(excerpt.page);
+  const text = document.createElement("span");
+  text.className = "excerpt-row-text";
+  const body = (excerpt.content || excerpt.title || "").replace(/\s+/g, " ").trim();
+  text.textContent = body.length > 180 ? body.slice(0, 180).replace(/\s+\S*$/, "") + "…" : body;
+  row.append(page, text);
+  row.addEventListener("click", onOpen);
+  return row;
 }

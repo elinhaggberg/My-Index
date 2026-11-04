@@ -1837,3 +1837,56 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
   line-height: 17px;
   text-align: center;
 }
+
+/* ---- Sources and excerpts (js/sources.js) ---- */
+.source-field { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.source-field-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+.source-field-btn.chosen { border-style: solid; background: var(--surface-2); color: var(--text); }
+.source-field-btn .icon { width: 1rem; height: 1rem; color: var(--accent); flex-shrink: 0; }
+.source-field-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-field-clear { font-size: 0.82rem; }
+.editor-source-label { margin-top: 4px; }
+
+.source-picker-list { display: flex; flex-direction: column; margin-bottom: 8px; }
+.source-picker-row, .detail-source-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 2px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.source-picker-row:last-child { border-bottom: none; }
+.source-picker-row .icon, .detail-source-row .icon { width: 1.15rem; height: 1.15rem; color: var(--accent); flex-shrink: 0; }
+.source-picker-row.active .source-picker-title { color: var(--accent); }
+.source-picker-text, .detail-source-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.source-picker-title, .detail-source-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-picker-meta, .detail-source-meta { font-size: 0.78rem; color: var(--text-dim); }
+.detail-source-row { margin-bottom: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+
+.excerpt-list { display: flex; flex-direction: column; margin-bottom: 14px; }
+.excerpt-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 2px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.excerpt-row:last-child { border-bottom: none; }
+.excerpt-row-page { flex: 0 0 3.6em; font-size: 0.78rem; font-weight: 600; color: var(--text-dim); padding-top: 2px; }
+.excerpt-row-text { flex: 1; font-family: var(--font-heading); font-size: 0.95rem; line-height: 1.45; font-style: italic; }
+.pin-excerpt-count { margin: 6px 0 0; font-size: 0.78rem; font-weight: 600; color: var(--accent); }

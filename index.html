@@ -394,6 +394,24 @@
     </div>
   </template>
 
+  <!-- ===== Source picker (js/sourcePicker.js) ===== -->
+  <template id="tpl-source-picker">
+    <div class="sheet">
+      <header class="sheet-header">
+        <h2>From which source?</h2>
+        <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
+      </header>
+      <label class="field">
+        <input type="text" id="source-picker-search" placeholder="Search books, articles, episodes…" autocomplete="off" />
+      </label>
+      <div class="source-picker-list" id="source-picker-list"></div>
+      <p class="empty-state hidden" id="source-picker-empty">Nothing saved matches that yet.</p>
+      <div class="form-actions">
+        <button type="button" class="text-btn secondary hidden" id="source-picker-create-btn"></button>
+      </div>
+    </div>
+  </template>
+
   <!-- ===== Profile editor ===== -->
   <template id="tpl-profile-editor">
     <div class="sheet">
@@ -490,6 +508,14 @@
         <span>Author</span>
         <input type="text" id="editor-author-input" maxlength="120" placeholder="Who wrote this?" autocomplete="off" />
       </label>
+      <div class="hidden" id="editor-source-section">
+        <p class="card-detail-section-label editor-source-label">From</p>
+        <div class="source-field" id="editor-source-field"></div>
+        <label class="field">
+          <span>Page</span>
+          <input type="text" id="editor-page-input" maxlength="40" placeholder="e.g. 42" autocomplete="off" inputmode="text" />
+        </label>
+      </div>
       <label class="field">
         <span>Your notes</span>
         <textarea id="editor-comment" maxlength="1000" placeholder="Why did you save this?"></textarea>
@@ -542,6 +568,14 @@
         <svg class="icon icon-line" viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h12v12"/><path d="M21 3L10 14"/><path d="M17 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6"/></svg>
       </a>
       <p class="card-detail-note hidden" id="detail-comment"></p>
+      <div class="hidden" id="detail-source-section">
+        <p class="card-detail-section-label">From</p>
+        <div id="detail-source"></div>
+      </div>
+      <div class="hidden" id="detail-excerpts-section">
+        <p class="card-detail-section-label" id="detail-excerpts-label"></p>
+        <div class="excerpt-list" id="detail-excerpts"></div>
+      </div>
       <div class="hidden" id="detail-tags-section">
         <p class="card-detail-section-label">Tags</p>
         <div class="board-chip-list" id="detail-tag-chips"></div>

@@ -3,9 +3,18 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.04";
+export const APP_VERSION = "2026.11.04.2";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.04.2",
+    date: "November 4, 2026",
+    changes: [
+      "Quotes, notes and poems can now say where they're from: pick a saved book, article, episode or video under \"From\" when saving, and add a page. A book that isn't saved yet can be added right from the picker.",
+      "A source lists all its excerpts in page order, and shows how many it has on its card. An excerpt shows its source and the other excerpts from it.",
+      "Quotes saved from the same article are connected automatically through their shared link, even without picking a source.",
+    ],
+  },
   {
     version: "2026.11.04",
     date: "November 4, 2026",
