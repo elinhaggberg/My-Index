@@ -273,7 +273,11 @@ export async function syncNow(storageFns) {
   // deletions once went missing without anyone noticing.
   const push = await pushAll(storageFns);
   const pull = await pullChanges(storageFns);
-  return { synced: !push.failed && !pull.failed, pulled: pull.pulled };
+  const result = { synced: !push.failed && !pull.failed, pulled: pull.pulled };
+  // Every sync -- the automatic ones and Sync now -- announces what it
+  // brought in, so the page on screen can redraw (see js/app.js).
+  window.dispatchEvent(new CustomEvent("mi:synced", { detail: result }));
+  return result;
 }
 
 let periodicTimer = null;

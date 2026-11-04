@@ -335,23 +335,32 @@ checkWhatsNew();
 // Inert unless Cloud Backup has actually been installed and configured
 // (see js/cloudBackup.js) -- a no-op otherwise. Runs a sync immediately,
 // then periodically/on-visibility-change while the app stays open. Theme
-// and title are re-applied live after every round via onSynced below; a
-// background pull of profiles/tags/snippets still doesn't re-render
-// whatever view happens to be open right now, so content shows up on the
-// next navigation or reload rather than instantly -- a known limitation,
-// not a bug.
+// and title are re-applied live after every round via onSynced below; the
+// page itself redraws on "mi:synced" (further down).
 startAutoSync(
   { getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion, getPrefsSnapshot, getPrefsUpdatedAt, applyPrefsSnapshot },
-  (result) => {
+  () => {
     applyTheme();
     const homeTitleEl = document.getElementById("home-title");
     if (homeTitleEl) homeTitleEl.textContent = getHomeTitle();
-    // Something arrived from another device (a new snippet, or one deleted
-    // there): show it now rather than on the next navigation. Not while a
-    // dialog is open, so nothing jumps under someone mid-task.
-    if (result?.pulled && !hasOpenSheet()) route();
   }
 );
+
+// Something arrived from another device (a new snippet, or one deleted
+// there): redraw the page now rather than on the next navigation. With a
+// dialog open (Settings, after Sync now), as soon as the last one closes,
+// so nothing jumps under someone mid-task.
+let refreshAfterSheets = false;
+window.addEventListener("mi:synced", (e) => {
+  if (!e.detail?.pulled) return;
+  if (hasOpenSheet()) refreshAfterSheets = true;
+  else route();
+});
+window.addEventListener("mi:sheets-closed", () => {
+  if (!refreshAfterSheets) return;
+  refreshAfterSheets = false;
+  route();
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

@@ -60,6 +60,7 @@ export function openSheet(templateId, { panel = false, keepOnNavigate = false } 
     closed = true;
     const i = stack.indexOf(entry);
     if (i !== -1) stack.splice(i, 1);
+    if (stack.length === 0) window.dispatchEvent(new Event("mi:sheets-closed"));
     if (asPanel) {
       if (currentPanel === entry) {
         currentPanel = null;
