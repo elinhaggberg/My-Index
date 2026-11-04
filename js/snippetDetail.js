@@ -11,7 +11,7 @@ import { resolveImageSrc } from "./imageStore.js";
 
 export async function openSnippetDetail(nav, snippetRef, refresh) {
   const snippet = (await getSnippet(snippetRef.id)) || snippetRef;
-  const sheet = openSheet("tpl-snippet-detail");
+  const sheet = openSheet("tpl-snippet-detail", { panel: true });
   const el = sheet.el;
   el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
 
@@ -69,7 +69,7 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
   // ---- Source and excerpts (js/sources.js) ----
   // Opening another snippet from here swaps this sheet for that one's.
   const openOther = (other) => {
-    sheet.close();
+    sheet.close({ instant: true });
     openSnippetDetail(nav, other, refresh);
   };
   const all = await getSnippets();

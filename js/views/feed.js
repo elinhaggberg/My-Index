@@ -26,10 +26,29 @@ import { getUnreadIds, markSeen, markNoticed, getAlwaysImages, setAlwaysImages }
 import { openSnippetEditor } from "../snippetEditor.js";
 import { formatDate, hostnameFor, safeLinkUrl } from "../util.js";
 import { ICON_EXTERNAL, ICON_IMAGE } from "../icons.js";
+import { desktopQuery, hasOpenSheet } from "../sheet.js";
 
 // channelId -> where the post list was scrolled to, so coming back from a
 // post lands where you left off.
 const listScroll = new Map();
+
+// j / k step through a channel's posts (j: next, older; k: previous,
+// newer). One listener for the whole app, pointed at whichever reader is
+// showing; cleared when it isn't.
+let readerKeys = null;
+document.addEventListener("keydown", (e) => {
+  if (!readerKeys || e.metaKey || e.ctrlKey || e.altKey || hasOpenSheet()) return;
+  if (e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+  if (!document.body.contains(readerKeys.root)) {
+    readerKeys = null;
+    return;
+  }
+  const key = e.key.toLowerCase();
+  if (key === "j" || key === "k") {
+    e.preventDefault();
+    readerKeys.step(key === "j" ? 1 : -1);
+  }
+});
 
 // A channel saved with its feed's own address as its URL (easy to do --
 // it's what a "subscribe via RSS" link hands you) would otherwise send
@@ -94,9 +113,11 @@ export async function renderFeed(root, nav, param) {
   const body = root.querySelector("#feed-body");
   const titleEl = root.querySelector("#feed-title");
   const listHash = `#/feed/${encodeURIComponent(profileId)}/${encodeURIComponent(channelId)}`;
-  root.querySelector(".back-btn").addEventListener("click", () =>
-    nav.back(itemId ? listHash : `#/profile/${encodeURIComponent(profileId)}`)
-  );
+  // On a wide screen the list and the open post sit side by side, so there
+  // is no separate list page to go back to.
+  const split = desktopQuery.matches;
+  const profileHash = `#/profile/${encodeURIComponent(profileId)}`;
+  root.querySelector(".back-btn").addEventListener("click", () => nav.back(itemId && !split ? listHash : profileHash));
 
   const profile = await getProfile(profileId);
   const channel = profile?.channels?.find((c) => c.id === channelId);
@@ -123,21 +144,47 @@ export async function renderFeed(root, nav, param) {
   const siteUrl = siteUrlFor(channel, feed);
   titleEl.textContent = feed.title || hostnameFor(siteUrl) || profile.name;
 
+  const item = itemId ? feed.items.find((i) => i.id === itemId) : null;
+  const step = (dir) => {
+    const index = item ? feed.items.indexOf(item) + dir : 0;
+    const target = feed.items[index];
+    if (!target) return;
+    const hash = `${listHash}/${encodeURIComponent(target.id)}`;
+    // Moving from post to post replaces the history entry, like "Next post".
+    if (split || item) nav.replace(hash);
+    else location.hash = hash;
+  };
+  readerKeys = { root: body, step };
+
+  if (split) {
+    const layout = document.createElement("div");
+    layout.className = "reader-split";
+    const listPane = document.createElement("aside");
+    listPane.className = "reader-split-list";
+    const articlePane = document.createElement("div");
+    articlePane.className = "reader-split-article";
+    layout.append(listPane, articlePane);
+    body.replaceChildren(layout);
+    await renderList(root, nav, { profile, channel, feed, siteUrl, listHash, target: listPane, split, currentId: item?.id });
+    if (item) await renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash, target: articlePane });
+    else if (itemId) showMessage(articlePane, "This post is no longer in the feed.", siteUrl);
+    else if (feed.items.length) showMessage(articlePane, "Choose a post to read it here. (j and k move between posts.)");
+    return;
+  }
+
   if (itemId) {
-    const item = feed.items.find((i) => i.id === itemId);
     if (!item) {
       setOpenInBrowser(root, siteUrl);
       showMessage(body, "This post is no longer in the feed.", siteUrl);
       return;
     }
-    await renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash });
+    await renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash, target: body });
   } else {
-    await renderList(root, nav, { profile, channel, feed, siteUrl, listHash });
+    await renderList(root, nav, { profile, channel, feed, siteUrl, listHash, target: body });
   }
 }
 
-async function renderList(root, nav, { profile, channel, feed, siteUrl, listHash }) {
-  const body = root.querySelector("#feed-body");
+async function renderList(root, nav, { profile, channel, feed, siteUrl, listHash, target: body, split = false, currentId = null }) {
   setOpenInBrowser(root, siteUrl);
 
   // Opening the reader is what "having looked" at a channel's new posts
@@ -187,6 +234,10 @@ async function renderList(root, nav, { profile, channel, feed, siteUrl, listHash
     const row = document.createElement("button");
     row.type = "button";
     row.className = "feed-item-row" + (unread.has(item.id) ? " unread" : "");
+    if (item.id === currentId) {
+      row.classList.add("current");
+      row.setAttribute("aria-current", "true");
+    }
 
     const titleRow = document.createElement("span");
     titleRow.className = "feed-item-title";
@@ -212,15 +263,28 @@ async function renderList(root, nav, { profile, channel, feed, siteUrl, listHash
     }
 
     row.addEventListener("click", () => {
-      listScroll.set(channel.id, window.scrollY);
-      location.hash = `${listHash}/${encodeURIComponent(item.id)}`;
+      const hash = `${listHash}/${encodeURIComponent(item.id)}`;
+      if (split) {
+        // The list keeps its own scroll; swapping posts replaces the
+        // history entry, so Back leaves the reader instead of stepping
+        // through every post read.
+        listScroll.set(channel.id, body.scrollTop);
+        nav.replace(hash);
+      } else {
+        listScroll.set(channel.id, window.scrollY);
+        location.hash = hash;
+      }
     });
     list.appendChild(row);
   }
 
   body.replaceChildren(header, list);
   const scrollY = listScroll.get(channel.id);
-  if (scrollY) window.scrollTo(0, scrollY);
+  if (split) {
+    if (scrollY) body.scrollTop = scrollY;
+    // Stepping with j/k can walk off the visible part of the list.
+    list.querySelector(".current")?.scrollIntoView({ block: "nearest" });
+  } else if (scrollY) window.scrollTo(0, scrollY);
 }
 
 // Average adult silent reading speed is ~230-260 words a minute; the lower
@@ -442,8 +506,7 @@ function createImagePrompt(content, channel, feed, siteUrl) {
   return prompt;
 }
 
-async function renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash }) {
-  const body = root.querySelector("#feed-body");
+async function renderItem(root, nav, { profile, channel, feed, item, siteUrl, listHash, target: body }) {
   const link = safeLinkUrl(item.link) || safeLinkUrl(siteUrl);
   setOpenInBrowser(root, link);
   markSeen(channel.id, [item.id]);

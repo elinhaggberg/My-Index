@@ -28,23 +28,82 @@ function unlockBodyScroll() {
   }
 }
 
-export function openSheet(templateId) {
+// Wide screens (the same breakpoint as the desktop layout in style.css).
+export const desktopQuery = window.matchMedia("(min-width: 1000px)");
+
+// Every open sheet, oldest first, so Esc can close the one on top.
+const stack = [];
+// The one side panel, if open (see openSheet's `panel` option).
+let currentPanel = null;
+
+// `panel: true` asks for a side panel instead of a modal on a wide screen:
+// it slides in from the right, leaves the page behind it scrollable and
+// clickable, and opening another panel replaces it. On a phone it's an
+// ordinary sheet.
+export function openSheet(templateId, { panel = false } = {}) {
+  const asPanel = panel && desktopQuery.matches;
+  if (asPanel && currentPanel) currentPanel.close({ instant: true });
+
   const tpl = document.getElementById(templateId);
   const backdrop = document.createElement("div");
-  backdrop.className = "sheet-backdrop";
+  backdrop.className = asPanel ? "sheet-backdrop sheet-panel-host" : "sheet-backdrop";
   backdrop.appendChild(tpl.content.cloneNode(true));
   document.body.appendChild(backdrop);
-  lockBodyScroll();
+  if (!asPanel) lockBodyScroll();
 
   let closed = false;
-  function close() {
+  const entry = { el: backdrop, close };
+  function close({ instant = false } = {}) {
     if (closed) return;
     closed = true;
-    backdrop.remove();
-    unlockBodyScroll();
+    const i = stack.indexOf(entry);
+    if (i !== -1) stack.splice(i, 1);
+    if (asPanel) {
+      if (currentPanel === entry) {
+        currentPanel = null;
+        document.body.classList.remove("side-panel-open");
+      }
+      window.removeEventListener("hashchange", onNavigate);
+      if (instant) backdrop.remove();
+      else {
+        backdrop.classList.add("closing");
+        setTimeout(() => backdrop.remove(), 180);
+      }
+    } else {
+      backdrop.remove();
+      unlockBodyScroll();
+    }
   }
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
-  });
-  return { el: backdrop, close };
+  // A panel belongs to the page it was opened on.
+  function onNavigate() {
+    close({ instant: true });
+  }
+  if (asPanel) {
+    currentPanel = entry;
+    // Makes room for the panel, so the cards it would cover move over.
+    document.body.classList.add("side-panel-open");
+    window.addEventListener("hashchange", onNavigate);
+  } else {
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) close();
+    });
+  }
+  stack.push(entry);
+  return entry;
+}
+
+export function hasOpenSheet() {
+  return stack.length > 0;
+}
+
+// Esc: closes the sheet on top, through its own close button when it has
+// one, so whatever that button does on the way out (saving a draft,
+// refreshing the page) still happens.
+export function closeTopSheet() {
+  const top = stack[stack.length - 1];
+  if (!top) return false;
+  const btn = top.el.querySelector(".sheet-header .close-btn, .close-btn");
+  if (btn) btn.click();
+  else top.close();
+  return true;
 }

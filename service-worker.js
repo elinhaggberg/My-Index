@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-index-v24";
+const CACHE_NAME = "my-index-v25";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -30,6 +30,8 @@ const APP_SHELL = [
   "./js/theme.js",
   "./js/util.js",
   "./js/sheet.js",
+  "./js/sidebar.js",
+  "./js/shortcuts.js",
   "./js/share.js",
   "./js/icons.js",
   "./js/tabbar.js",

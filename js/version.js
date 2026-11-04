@@ -3,9 +3,19 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.05.2";
+export const APP_VERSION = "2026.11.06";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.06",
+    date: "November 6, 2026",
+    changes: [
+      "A desktop layout for wide screens: a sidebar replaces the bottom bar, the grid gets more columns, and dialogs open in the middle of the window.",
+      "On a computer, a snippet opens in a panel on the right, and the grid stays usable behind it. Click another card to switch.",
+      "The reader shows the list of posts and the open post side by side on a wide screen.",
+      "Keyboard shortcuts: N to save something new, / to search, Esc to close, and j / k for the next and previous post in the reader.",
+    ],
+  },
   {
     version: "2026.11.05.2",
     date: "November 5, 2026",

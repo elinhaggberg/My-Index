@@ -33,6 +33,10 @@ import { consumeOAuthRedirect } from "./supabaseOAuth.js";
 import { openCloudSyncSheet } from "./settingsMenu.js";
 import { startAutoSync } from "./cloudBackup.js";
 import { checkFeedsIfDue } from "./feedCheck.js";
+import { renderSidebar, updateSidebar } from "./sidebar.js";
+import { openSettingsMenu } from "./settingsMenu.js";
+import { openSnippetSearch } from "./snippetSearch.js";
+import { wireShortcuts } from "./shortcuts.js";
 
 applyTheme();
 
@@ -123,6 +127,8 @@ function route() {
     skipPush = false;
     currentHash = hash;
   }
+
+  updateSidebar(hash);
 
   const match = hash.match(/^#\/([a-z]+)(?:\/(.+))?$/);
   const view = match ? match[1] : "home";
@@ -274,6 +280,15 @@ async function fillLinkDetails(snippet) {
 }
 
 window.addEventListener("hashchange", route);
+
+// Desktop sidebar (shown by CSS on wide screens only; see js/sidebar.js).
+const actions = {
+  onNew: () => openSnippetEditor(nav, { snippet: createEmptySnippet(), isNew: true, refresh: route }),
+  onSearch: () => openSnippetSearch(nav, route),
+  onSettings: () => openSettingsMenu(nav, route),
+};
+renderSidebar(nav, actions);
+wireShortcuts(actions);
 
 // Picks up the redirect back from Supabase's consent screen (see
 // supabaseOAuth.js / api/oauth-callback.js) before anything else touches

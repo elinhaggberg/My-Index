@@ -1892,3 +1892,130 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
 .pin-excerpt-count { margin: 6px 0 0; font-size: 0.78rem; font-weight: 600; color: var(--accent); }
 .source-picker-new-btn { margin-left: auto; color: var(--accent); }
 .source-picker-new-btn .icon { width: 1rem; height: 1rem; }
+
+/* ===== Desktop (wide screens) ===== */
+.desktop-sidebar { display: none; }
+@media (min-width: 1000px) {
+  :root { --sidebar-width: 236px; }
+  .desktop-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 28px 16px 20px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    z-index: 16;
+  }
+  .sidebar-title { margin: 0 10px 16px; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; }
+  .sidebar-new-btn { margin: 0 4px 18px; padding: 11px 14px; border-radius: 12px; }
+  .sidebar-nav, .sidebar-footer { display: flex; flex-direction: column; gap: 2px; }
+  .sidebar-footer { margin-top: auto; }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  .sidebar-item .icon { width: 1.2rem; height: 1.2rem; flex-shrink: 0; }
+  .sidebar-item:hover { background: var(--surface-2); color: var(--text); }
+  .sidebar-item.active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+  .sidebar-count { margin-left: auto; min-width: 20px; padding: 1px 7px; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-size: 0.72rem; text-align: center; }
+
+  /* The phone's bottom bar and floating + give way to the sidebar, and so
+     do the search/settings buttons each page repeats in its top bar. */
+  .tabbar, .fab, .topbar #search-btn, .topbar #settings-btn { display: none !important; }
+  #app { max-width: 1480px; margin: 0 0 0 var(--sidebar-width); padding: 0 32px; }
+  .page-body { padding-bottom: 48px; }
+  .home-topbar { padding-top: 32px; }
+
+  /* Sheets open as centred dialogs instead of sliding up from the bottom. */
+  .sheet-backdrop { align-items: center; padding: 32px; }
+  .sheet { max-width: 640px; max-height: 86vh; border-radius: 20px; padding: 12px 24px 28px; }
+
+  /* Profile page: who they are on the left, what you've saved on the right. */
+  #app:has(#profile-snippets-grid) .page-body {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    column-gap: 40px;
+    align-items: start;
+  }
+  #app:has(#profile-snippets-grid) .page-body > :not(#profile-snippets-grid):not(.profile-snippets-label) { grid-column: 1; }
+  #app:has(#profile-snippets-grid) .profile-snippets-label { display: none; }
+  #app:has(#profile-snippets-grid) #profile-snippets-grid { grid-column: 2; grid-row: 1 / span 20; }
+  #app:has(#profile-snippets-grid) .page-body .channel-view-list,
+  #app:has(#profile-snippets-grid) .page-body .card-detail-section-label,
+  #app:has(#profile-snippets-grid) .page-body .section-label-row { padding-left: 0; padding-right: 0; }
+  #app:has(#profile-snippets-grid) .channel-view-row.profile-search-link { margin-left: 0; margin-right: 0; }
+
+  /* Reader: a calm reading column in the middle of the window. */
+  .reader-article { padding-top: 24px; }
+  .feed-list { max-width: 760px; }
+  .reader-actions { left: var(--sidebar-width); }
+
+  /* Reader in two parts: the channel's posts on the left with their own
+     scroll, the open post on the right (the page itself scrolls, so the
+     progress line and the title in the top bar keep working). */
+  .reader-split { display: grid; grid-template-columns: 360px minmax(0, 1fr); column-gap: 32px; align-items: start; }
+  .reader-split-list {
+    position: sticky;
+    top: 64px;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-right: 1px solid var(--border);
+    padding-right: 8px;
+  }
+  .reader-split-list .feed-list { padding: 0 4px 24px 0; }
+  .reader-split-list .feed-item-row { padding: 12px 12px; border-radius: 10px; border-bottom-color: transparent; }
+  .reader-split-list .feed-item-title { font-size: 0.98rem; }
+  .reader-split-list .feed-item-excerpt { font-size: 0.86rem; -webkit-line-clamp: 2; }
+  .feed-item-row:hover { background: var(--surface-2); }
+  .feed-item-row.current { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .reader-split-article { min-width: 0; }
+  .reader-split-article > .empty-state { padding-top: 18vh; }
+  #app:has(.reader-split) .reader-actions { left: calc(var(--sidebar-width) + 32px + 392px); }
+
+  /* The snippet detail as a side panel: slides in from the right and
+     leaves the grid behind it usable -- click another card to swap it. */
+  .sheet-backdrop.sheet-panel-host {
+    background: transparent;
+    pointer-events: none;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 0;
+    z-index: 19;
+  }
+  :root { --panel-width: min(460px, 40vw); }
+  body.side-panel-open #app { margin-right: var(--panel-width); }
+  .sheet-panel-host .sheet {
+    pointer-events: auto;
+    width: var(--panel-width);
+    max-width: none;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    border-left: 1px solid var(--border);
+    box-shadow: -14px 0 40px rgba(0, 0, 0, 0.12);
+    padding: 20px 28px 36px;
+    animation: panel-in 0.2s ease-out;
+  }
+  .sheet-panel-host.closing .sheet { animation: panel-out 0.18s ease-in forwards; }
+}
+@keyframes panel-in {
+  from { transform: translateX(32px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes panel-out {
+  to { transform: translateX(32px); opacity: 0; }
+}
