@@ -3,9 +3,17 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.04.4";
+export const APP_VERSION = "2026.11.05";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.05",
+    date: "November 5, 2026",
+    changes: [
+      "Books can have a cover image: Camera and Library now show for Book snippets too.",
+      "Books exported from My Bookshelf can be imported (Settings → Import): title, author, cover, link and your note carry over, and genres become tags. A whole My Bookshelf backup works too, without changing My Index's theme or title.",
+    ],
+  },
   {
     version: "2026.11.04.4",
     date: "November 4, 2026",

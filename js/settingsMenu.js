@@ -790,6 +790,11 @@ function openImport(refresh) {
       if (result.profileCount) parts.push(`${result.profileCount} profile${result.profileCount !== 1 ? "s" : ""}`);
       if (result.snippetCount) parts.push(`${result.snippetCount} snippet${result.snippetCount !== 1 ? "s" : ""}`);
       let text = parts.length ? `Imported ${parts.join(" and ")}.` : "Import complete.";
+      if (result.fromBookshelf) {
+        text = result.snippetCount
+          ? `Imported ${result.snippetCount} book${result.snippetCount !== 1 ? "s" : ""} from My Bookshelf.`
+          : "No books with a title found in that file.";
+      }
       if (result.preferencesApplied) {
         text += " Restored your theme/settings too.";
         applyTheme();

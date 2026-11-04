@@ -507,7 +507,48 @@ async function reviveImage(image, id) {
   }
 }
 
+// A book exported from My Bookshelf (a single book, or a whole Bookshelf
+// backup) becomes a Book snippet here: title, author, cover, link and the
+// reader's own note carry over, and its genres become tags. Shelf-specific
+// details (rating, format, reading dates) have no place in a snippet and
+// are left behind. A Bookshelf backup is also marked "backup", so this is
+// told apart by its list of books -- and never applies Bookshelf's own
+// theme or title to My Index.
+async function importBookshelfBooks(data) {
+  const str = (v) => (typeof v === "string" ? v.trim() : "");
+  const books = data.books.filter((b) => b && typeof b === "object" && str(b.title));
+  let snippetCount = 0;
+  const tagNames = new Set();
+  for (const b of books) {
+    const id = uid();
+    const tagIds = [];
+    for (const genre of Array.isArray(b.genres) ? b.genres : []) {
+      const tag = typeof genre === "string" ? await findOrCreateTag(genre) : null;
+      if (tag && tag.id !== UNCATEGORIZED_TAG_ID && !tagIds.includes(tag.id)) {
+        tagIds.push(tag.id);
+        tagNames.add(tag.name);
+      }
+    }
+    await putOne("snippets", {
+      ...createEmptySnippet(),
+      id,
+      type: "book",
+      content: str(b.title),
+      author: str(b.author),
+      url: str(b.url),
+      siteName: str(b.siteName),
+      comment: str(b.note),
+      image: await reviveImage(str(b.coverImage), id),
+      tagIds,
+      createdAt: Date.now(),
+    });
+    snippetCount++;
+  }
+  return { profileCount: 0, snippetCount, tagCount: tagNames.size, preferencesApplied: false, fromBookshelf: true };
+}
+
 export async function importData(data) {
+  if (data && Array.isArray(data.books)) return importBookshelfBooks(data);
   if (!data || !["backup", "profile", "snippet"].includes(data.type)) {
     throw new Error("That doesn't look like a My Index export file.");
   }

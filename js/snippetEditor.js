@@ -54,7 +54,7 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     contentInput.rows = type.long ? 5 : 2;
     titleField.classList.toggle("hidden", !type.hasTitle);
     authorField.classList.toggle("hidden", !type.hasAuthor);
-    imageUploadActions.classList.toggle("hidden", draft.type !== "image");
+    imageUploadActions.classList.toggle("hidden", !type.imageUpload);
     sourceSection.classList.toggle("hidden", !type.excerpt);
   }
   typeRow.replaceChildren(
