@@ -298,11 +298,28 @@ export async function pullChanges({ upsertRecords, applyRemoteDeletion, applyPre
 // below call too -- push first (send whatever's changed here), then pull
 // (pick up whatever changed elsewhere), so a round-trip always leaves this
 // device caught up in both directions.
-export async function syncNow(storageFns) {
+// One sync at a time: opening the app and it becoming visible can ask for
+// two at once, and the second just joins the one already running.
+let inFlight = null;
+export function syncNow(storageFns) {
+  if (!inFlight) inFlight = runSync(storageFns).finally(() => (inFlight = null));
+  return inFlight;
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function runSync(storageFns) {
   if (!isBackupConfigured()) return { synced: false };
   // Either half failing counts: a push that silently failed is how
   // deletions once went missing without anyone noticing.
-  const push = await pushAll(storageFns);
+  let push = await pushAll(storageFns);
+  // A request cut off on the way (iOS freezing the app as it goes to the
+  // background, the network not up yet right after opening) usually goes
+  // through a moment later -- one more try before calling it failed.
+  if (push.failed) {
+    await wait(2000);
+    push = await pushAll(storageFns);
+  }
   const pull = await pullChanges(storageFns);
   const result = { synced: !push.failed && !pull.failed, pulled: pull.pulled };
   // Every sync -- the automatic ones and Sync now -- announces what it
