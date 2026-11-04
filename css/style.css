@@ -1971,12 +1971,15 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
   .sheet-backdrop:has(> .card-detail-sheet) { align-items: flex-end; padding-bottom: 0; }
   :root .card-detail-sheet {
     max-width: 780px;
-    min-height: 44vh;
+    min-height: 62vh;
     max-height: 90vh;
     padding: 18px 40px 64px;
     border-radius: 20px 20px 0 0;
   }
   :root[data-theme="playful"] .card-detail-sheet { border-radius: 28px 28px 0 0; }
+  /* A tall picture (a book cover, a phone screenshot) is capped by height
+     and centred, so it doesn't fill the whole sheet; wide ones still span it. */
+  .card-detail-sheet .card-detail-media { width: auto; max-width: 100%; max-height: 42vh; margin: 0 auto 18px; }
 
   /* Profile page: who they are on the left, what you've saved on the right. */
   #app:has(#profile-snippets-grid) .page-body {
