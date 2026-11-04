@@ -9,7 +9,9 @@ import { openSheet } from "./sheet.js";
 import { isSource, sourceTitle } from "./sources.js";
 import { typeFor } from "./snippetTypes.js";
 
-export async function renderSourceField(container, { draft, onChange, onAuthorFilled }) {
+// openEditor: the snippet editor's own opener, passed in by it (rather than
+// imported here, which would make the two modules import each other).
+export async function renderSourceField(container, { draft, onChange, onAuthorFilled, openEditor }) {
   async function drawSummary() {
     const all = await getSnippets();
     const current = draft.sourceId ? all.find((s) => s.id === draft.sourceId) : null;
@@ -115,6 +117,30 @@ export async function renderSourceField(container, { draft, onChange, onAuthorFi
       };
       await saveSnippet(book);
       choose(book.id);
+    });
+
+    // "+" opens the full snippet editor on top, to save any kind of source
+    // (book, article link, episode, video…) with every field. Whatever was
+    // typed in the search becomes its title. Once saved, it's chosen as
+    // this excerpt's source straight away.
+    el.querySelector("#source-picker-new-btn").addEventListener("click", () => {
+      if (!openEditor) return;
+      const source = {
+        ...createEmptySnippet(),
+        type: "book",
+        content: searchInput.value.trim(),
+        tagIds: [...(draft.tagIds || [])],
+        profileIds: [...(draft.profileIds || [])],
+      };
+      openEditor({
+        snippet: source,
+        isNew: true,
+        refresh: async () => {
+          const saved = (await getSnippets()).find((s) => s.id === source.id);
+          if (saved && isSource(saved)) choose(saved.id);
+          else drawList();
+        },
+      });
     });
 
     searchInput.addEventListener("input", drawList);

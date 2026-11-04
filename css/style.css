@@ -1890,3 +1890,5 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
 .excerpt-row-page { flex: 0 0 3.6em; font-size: 0.78rem; font-weight: 600; color: var(--text-dim); padding-top: 2px; }
 .excerpt-row-text { flex: 1; font-family: var(--font-heading); font-size: 0.95rem; line-height: 1.45; font-style: italic; }
 .pin-excerpt-count { margin: 6px 0 0; font-size: 0.78rem; font-weight: 600; color: var(--accent); }
+.source-picker-new-btn { margin-left: auto; color: var(--accent); }
+.source-picker-new-btn .icon { width: 1rem; height: 1rem; }

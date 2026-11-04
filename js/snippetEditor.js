@@ -178,6 +178,7 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   // ---- Source and page (excerpts only) ----
   renderSourceField(el.querySelector("#editor-source-field"), {
     draft,
+    openEditor: (options) => openSnippetEditor(nav, options),
     onAuthorFilled: (author) => {
       authorInput.value = author;
     },
