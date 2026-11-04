@@ -3,9 +3,18 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.06";
+export const APP_VERSION = "2026.11.06.2";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.06.2",
+    date: "November 6, 2026",
+    changes: [
+      "Cloud sync shows that it's on, even on a device paired with a code: the project, when it last synced, a live check that the project answers, and Sync now. Settings shows On or Off next to Cloud sync.",
+      "A paired device can turn Cloud sync off for itself.",
+      "Sync now says so when the project can't be reached, instead of reporting \"Synced!\" anyway.",
+    ],
+  },
   {
     version: "2026.11.06",
     date: "November 6, 2026",

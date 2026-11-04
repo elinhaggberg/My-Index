@@ -50,6 +50,9 @@ import {
   getBackupPassphrase,
   getLastSyncedDisplay,
   syncNow,
+  checkBackupHealth,
+  formatSyncedAgo,
+  clearBackupPassphrase,
   applyPairingCode,
 } from "./cloudBackup.js";
 import { ICON_CHECK } from "./icons.js";
@@ -114,6 +117,18 @@ export function openSettingsMenu(nav, refresh) {
     sheet.close();
     openAppLibraryPromo();
   });
+  // Whether Cloud sync is running on this device, read from its settings
+  // rather than from a Supabase login: a device paired with a code never
+  // has one, and still syncs.
+  const statusEl = el.querySelector("#cloud-sync-menu-status");
+  if (getApiConfig()?.url) {
+    const last = isBackupConfigured() ? getLastSyncedDisplay() : null;
+    statusEl.textContent = last ? `On · synced ${formatSyncedAgo(last)}` : "On";
+    statusEl.classList.add("on");
+  } else {
+    statusEl.textContent = "Off";
+  }
+  statusEl.classList.remove("hidden");
   el.querySelector("#cloud-sync-btn").addEventListener("click", () => {
     sheet.close();
     openCloudSyncSheet();
@@ -354,14 +369,77 @@ export function openCloudSyncSheet(oauthResult) {
 
   function renderLastSynced() {
     const last = getLastSyncedDisplay();
-    lastSyncedEl.textContent = last ? `Last synced ${last.toLocaleString()}.` : "Not synced yet.";
+    lastSyncedEl.textContent = last ? `Last synced ${formatSyncedAgo(last)} (${last.toLocaleString()}).` : "Not synced yet.";
+  }
+
+  // A real round-trip to the project, so "on" means it actually answers
+  // with this device's passphrase -- not just that settings are stored.
+  const healthEl = el.querySelector("#cloud-sync-health");
+  async function runHealthCheck() {
+    healthEl.classList.remove("hidden", "error");
+    healthEl.textContent = "Checking the connection…";
+    const health = await checkBackupHealth();
+    healthEl.classList.toggle("error", health !== "ok");
+    healthEl.textContent =
+      health === "ok"
+        ? "Your project answers and accepts this device."
+        : health === "bad-passphrase"
+          ? "Your project no longer accepts this device's passphrase. Pair it again with a new code from a device that syncs."
+          : "Your project can't be reached right now (offline, or the project is paused).";
+  }
+
+  const pairedSectionEl = el.querySelector("#cloud-sync-paired-section");
+  const disconnectBtn = el.querySelector("#cloud-sync-disconnect-btn");
+
+  // Set up with a pairing code (or connected before the Supabase login was
+  // removed): no login to list projects with, but syncing all the same.
+  // Shows what's running and the everyday actions; managing features needs
+  // a Supabase login, offered behind "Manage connection".
+  function renderPaired() {
+    const config = getApiConfig();
+    disconnectedEl.classList.add("hidden");
+    connectedEl.classList.remove("hidden");
+    el.querySelector("#cloud-sync-loading").classList.add("hidden");
+    el.querySelector("#cloud-sync-project-picker").replaceChildren();
+    const ref = config.ref || hostnameFor(config.url).split(".")[0];
+    el.querySelector("#cloud-sync-status-line").textContent = `✓ Cloud sync is on — project ${ref}`;
+    installSectionEl.classList.add("hidden");
+    joinSectionEl.classList.add("hidden");
+    resyncSectionEl.classList.add("hidden");
+    pairedSectionEl.classList.remove("hidden");
+    disconnectBtn.textContent = "Turn off Cloud sync on this device";
+
+    const backup = isBackupConfigured();
+    backupSectionEl.classList.toggle("hidden", !backup);
+    if (backup) {
+      renderLastSynced();
+      backupMessageEl.classList.add("hidden");
+      pairingCodeEl.classList.add("hidden");
+      copyPairingActionsEl.classList.add("hidden");
+      passphraseBoxEl.classList.add("hidden");
+      runHealthCheck();
+    } else {
+      healthEl.classList.add("hidden");
+    }
+    const features = [backup && "Cloud Backup", config.ref && getInstalledFeatures(config.ref).rssSync && "RSS sync"].filter(Boolean);
+    featureSummaryEl.replaceChildren(
+      ...features.map((label) => {
+        const row = document.createElement("p");
+        row.className = "cloud-sync-feature-summary-row";
+        row.innerHTML = `${ICON_CHECK}<span>${label}</span>`;
+        return row;
+      })
+    );
+    featureSummaryEl.classList.toggle("hidden", features.length === 0);
+    updateManageVisibility(true);
   }
 
   async function runSyncNow() {
     setButtonBusy(syncNowBtn, "Syncing…");
     backupMessageEl.classList.add("hidden");
     try {
-      await syncNow(STORAGE_FNS);
+      const { synced } = await syncNow(STORAGE_FNS);
+      if (!synced) throw new Error("not synced");
       applyTheme();
       const homeTitleEl = document.getElementById("home-title");
       if (homeTitleEl) homeTitleEl.textContent = getHomeTitle();
@@ -422,6 +500,15 @@ export function openCloudSyncSheet(oauthResult) {
 
   async function render() {
     const connected = isCloudSyncConnected();
+    // The pitch is for someone deciding whether to turn it on.
+    el.querySelector("#cloud-sync-top-intro").classList.toggle("hidden", Boolean(getApiConfig()?.url));
+    if (!connected && getApiConfig()?.url) {
+      renderPaired();
+      return;
+    }
+    pairedSectionEl.classList.add("hidden");
+    healthEl.classList.add("hidden");
+    disconnectBtn.textContent = "Disconnect";
     disconnectedEl.classList.toggle("hidden", connected);
     connectedEl.classList.toggle("hidden", !connected);
     if (!connected) {
@@ -543,6 +630,7 @@ export function openCloudSyncSheet(oauthResult) {
     resyncSectionEl.classList.toggle("hidden", !installed.rssSync);
     resyncMessageEl.classList.add("hidden");
     backupSectionEl.classList.toggle("hidden", !installed.backup || !isBackupConfigured());
+    if (installed.backup && isBackupConfigured()) runHealthCheck();
     if (installed.backup) {
       renderLastSynced();
       backupMessageEl.classList.add("hidden");
@@ -583,7 +671,18 @@ export function openCloudSyncSheet(oauthResult) {
     sheet.close();
     openCloudRestoreSheet();
   });
-  el.querySelector("#cloud-sync-disconnect-btn").addEventListener("click", () => {
+  el.querySelector("#cloud-sync-paired-connect-btn").addEventListener("click", () => {
+    location.href = getConnectUrl();
+  });
+  disconnectBtn.addEventListener("click", () => {
+    if (!isCloudSyncConnected()) {
+      // A paired device: this is the only off switch it has.
+      const ok = confirm(
+        "Turn off Cloud sync on this device? Everything stays here and in your Supabase project. To turn it on again, you'll need a new pairing code."
+      );
+      if (!ok) return;
+      clearBackupPassphrase();
+    }
     disconnectCloudSync();
     render();
   });

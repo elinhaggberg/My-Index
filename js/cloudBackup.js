@@ -111,6 +111,37 @@ export async function verifyPassphrase(passphrase, config) {
   }
 }
 
+// The live check behind Cloud sync's status: "ok", "bad-passphrase" (the
+// project answers but no longer accepts this device's passphrase), or
+// "unreachable" (offline, or the project is paused or gone). Uses the
+// same tiny pull as verifyPassphrase.
+export async function checkBackupHealth() {
+  const config = getApiConfig();
+  const passphrase = getBackupPassphrase();
+  if (!config?.url || !config?.anonKey || !passphrase) return "unreachable";
+  try {
+    const res = await fetch(`${config.url}/functions/v1/backup-sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: config.anonKey, "x-backup-passphrase": passphrase },
+      body: JSON.stringify({ action: "pull", since: "9999-12-31T00:00:00.000Z" }),
+    });
+    if (res.status === 401) return "bad-passphrase";
+    return res.ok ? "ok" : "unreachable";
+  } catch {
+    return "unreachable";
+  }
+}
+
+// "just now", "12 min ago", "3 h ago", or the date for anything older.
+export function formatSyncedAgo(date) {
+  if (!date) return "";
+  const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 24 * 60) return `${Math.round(minutes / 60)} h ago`;
+  return date.toLocaleDateString();
+}
+
 async function callBackupApi(action, body) {
   const config = getApiConfig();
   const passphrase = getBackupPassphrase();
@@ -200,7 +231,7 @@ export async function pullChanges({ upsertRecords, applyRemoteDeletion, applyPre
   if (!isBackupConfigured()) return { pulled: 0 };
   const since = getLastSyncedAt();
   const result = await callBackupApi("pull", since ? { since } : {});
-  if (!result?.records) return { pulled: 0 };
+  if (!result?.records) return { pulled: 0, failed: true };
 
   const byStore = { profiles: [], tags: [], snippets: [] };
   const deletions = [];
@@ -228,8 +259,10 @@ export async function pullChanges({ upsertRecords, applyRemoteDeletion, applyPre
 export async function syncNow(storageFns) {
   if (!isBackupConfigured()) return { synced: false };
   await pushAll(storageFns);
-  await pullChanges(storageFns);
-  return { synced: true };
+  // The pull is the round-trip that always happens, so it's what says
+  // whether the project actually answered.
+  const { failed } = await pullChanges(storageFns);
+  return { synced: !failed };
 }
 
 let periodicTimer = null;

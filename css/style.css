@@ -1134,6 +1134,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
 }
 .menu-item:last-child { border-bottom: none; }
 .menu-item .icon { width: 1.1em; height: 1.1em; color: var(--text-dim); flex-shrink: 0; }
+.menu-item-status { margin-left: auto; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); }
+.menu-item-status.on { color: var(--accent); }
+.cloud-sync-health { margin: -4px 0 12px; font-size: 0.85rem; color: var(--text-dim); }
+.cloud-sync-health.error { color: var(--danger, #c0392b); }
 
 /* Instructions */
 .instructions-body {

@@ -614,6 +614,7 @@
       <button type="button" class="menu-item" id="cloud-sync-btn">
         <svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path d="M144 224c-53 0-96 43-96 96s43 96 96 96l288 0c44.2 0 80-35.8 80-80c0-38.8-27.6-71.1-64.3-78.4c.2-2.5 .3-5 .3-7.6c0-53-43-96-96-96c-19.6 0-37.9 5.9-53.1 16.1C185.5 130.6 145.5 96 96 96C43 96 0 139 0 192c0 20.3 6.3 39.1 17 54.6C7.4 261.3 0 279.5 0 300z"/></svg>
         <span>Cloud sync</span>
+        <span class="menu-item-status hidden" id="cloud-sync-menu-status"></span>
       </button>
       <button type="button" class="menu-item" id="shortcut-setup-btn">
         <span>Share from iOS</span>
@@ -760,7 +761,7 @@
         <h2>Cloud sync</h2>
         <button class="icon-btn close-btn" aria-label="Close"><svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false"><path d="M55.1 73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L147.2 256 9.9 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192.5 301.3 329.9 438.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.8 256 375.1 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192.5 210.7 55.1 73.4z"/></svg></button>
       </header>
-      <p class="cloud-sync-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges and/or a full cloud backup, without giving up the local-first design. Already syncing another Make It Local app? You can connect this one to that same project instead of starting from scratch — no new account or project needed.</p>
+      <p class="cloud-sync-intro" id="cloud-sync-top-intro">Optional and off by default. My Index never hosts your data — connect your own free Supabase project instead, to enable RSS "new content" badges and/or a full cloud backup, without giving up the local-first design. Already syncing another Make It Local app? You can connect this one to that same project instead of starting from scratch — no new account or project needed.</p>
       <p class="import-message hidden" id="cloud-sync-message"></p>
       <div class="hidden" id="cloud-sync-disconnected">
         <div id="cloud-wizard-step-1">
@@ -804,6 +805,7 @@
       <div class="hidden" id="cloud-sync-connected">
         <p class="cloud-sync-status hidden" id="cloud-sync-loading"><span class="btn-spinner" aria-hidden="true"></span>Loading your Supabase projects…</p>
         <p class="cloud-sync-status" id="cloud-sync-status-line"></p>
+        <p class="cloud-sync-health hidden" id="cloud-sync-health"></p>
         <div class="cloud-sync-feature-summary hidden" id="cloud-sync-feature-summary"></div>
 
         <div class="hidden" id="cloud-sync-resync-section">
@@ -863,6 +865,12 @@
             <div class="cloud-sync-steps" id="cloud-sync-install-steps"></div>
             <div class="form-actions">
               <button type="button" class="text-btn primary" id="cloud-sync-install-btn">Install selected</button>
+            </div>
+          </div>
+          <div class="hidden" id="cloud-sync-paired-section">
+            <p class="cloud-sync-intro">This device was set up with a pairing code, so it syncs without signing in to Supabase. To add or update features (like RSS sync), connect Supabase on this device. You only need to do that once per change.</p>
+            <div class="form-actions">
+              <button type="button" class="text-btn secondary" id="cloud-sync-paired-connect-btn">Connect Supabase</button>
             </div>
           </div>
           <div class="form-actions">
