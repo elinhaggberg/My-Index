@@ -152,8 +152,39 @@ async function callBackupApi(action, body) {
       headers: { "Content-Type": "application/json", apikey: config.anonKey, "x-backup-passphrase": passphrase },
       body: JSON.stringify({ action, ...body }),
     });
-    if (!res.ok) return null;
-    return await res.json();
+    if (!res.ok) {
+      const detail = await res.json().then((j) => j?.error).catch(() => "");
+      setLastSyncProblem(`${action === "push" ? "Upload" : "Download"} failed (${res.status})${detail ? `: ${detail}` : ""}`);
+      return null;
+    }
+    const json = await res.json();
+    if (action === "push" || action === "pull") clearLastSyncProblem(action);
+    return json;
+  } catch (err) {
+    setLastSyncProblem(`${action === "push" ? "Upload" : "Download"} couldn't reach the project${err?.message ? `: ${err.message}` : ""}`);
+    return null;
+  }
+}
+
+// The most recent thing that went wrong with a sync, in words, shown in
+// the Cloud sync sheet -- so a failing upload is visible from the app
+// itself instead of only in the Supabase dashboard. Cleared by the next
+// successful round-trip of the same kind.
+const LAST_PROBLEM_KEY = "mi_backup_last_problem_v1";
+function setLastSyncProblem(text) {
+  localStorage.setItem(LAST_PROBLEM_KEY, JSON.stringify({ text, at: new Date().toISOString() }));
+}
+function clearLastSyncProblem(action) {
+  try {
+    const p = JSON.parse(localStorage.getItem(LAST_PROBLEM_KEY) || "null");
+    if (p && p.text.startsWith(action === "push" ? "Upload" : "Download")) localStorage.removeItem(LAST_PROBLEM_KEY);
+  } catch {
+    localStorage.removeItem(LAST_PROBLEM_KEY);
+  }
+}
+export function getLastSyncProblem() {
+  try {
+    return JSON.parse(localStorage.getItem(LAST_PROBLEM_KEY) || "null");
   } catch {
     return null;
   }

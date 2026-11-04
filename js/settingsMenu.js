@@ -51,11 +51,13 @@ import {
   getLastSyncedDisplay,
   syncNow,
   checkBackupHealth,
+  getLastSyncProblem,
   formatSyncedAgo,
   clearBackupPassphrase,
   applyPairingCode,
 } from "./cloudBackup.js";
 import { ICON_CHECK } from "./icons.js";
+import { APP_VERSION } from "./version.js";
 import { hostnameFor } from "./util.js";
 import { getAlwaysImagesChannelIds, setAlwaysImages } from "./feedState.js";
 
@@ -76,6 +78,11 @@ export function openSettingsMenu(nav, refresh) {
   const sheet = openSheet("tpl-settings-menu");
   const el = sheet.el;
   el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
+
+  // Which version is running -- the first thing to check when one device
+  // behaves differently from another (an iPhone home-screen app can hold
+  // on to an older version until it's fully closed and reopened).
+  el.querySelector("#settings-version").textContent = `My Index ${APP_VERSION}`;
 
   // See js/app.js: the address the app was last opened with, for checking
   // what an iOS Shortcut's webapp:// link actually passes on.
@@ -367,9 +374,23 @@ export function openCloudSyncSheet(oauthResult) {
     }
   }
 
+  const diagnosticEl = el.querySelector("#cloud-sync-diagnostic");
   function renderLastSynced() {
     const last = getLastSyncedDisplay();
     lastSyncedEl.textContent = last ? `Last synced ${formatSyncedAgo(last)} (${last.toLocaleString()}).` : "Not synced yet.";
+    renderDiagnostic();
+  }
+  // What's still waiting to go up, and the last error if there was one --
+  // enough to tell from the app alone where a sync is getting stuck.
+  async function renderDiagnostic() {
+    const waiting = (await getTombstones()).length;
+    const problem = getLastSyncProblem();
+    const lines = [
+      waiting ? `${waiting} deletion${waiting === 1 ? "" : "s"} waiting to upload.` : "No deletions waiting to upload.",
+      problem ? `Last problem (${new Date(problem.at).toLocaleString()}): ${problem.text}` : "",
+    ].filter(Boolean);
+    diagnosticEl.textContent = lines.join(" ");
+    diagnosticEl.classList.remove("hidden");
   }
 
   // A real round-trip to the project, so "on" means it actually answers
@@ -450,6 +471,7 @@ export function openCloudSyncSheet(oauthResult) {
       backupMessageEl.textContent = "Couldn't sync right now. Please try again.";
       backupMessageEl.classList.remove("hidden");
       backupMessageEl.classList.add("error");
+      renderDiagnostic();
     } finally {
       restoreButton(syncNowBtn, "Sync now");
     }
