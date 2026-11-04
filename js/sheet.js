@@ -39,8 +39,10 @@ let currentPanel = null;
 // `panel: true` asks for a side panel instead of a modal on a wide screen:
 // it slides in from the right, leaves the page behind it scrollable and
 // clickable, and opening another panel replaces it. On a phone it's an
-// ordinary sheet.
-export function openSheet(templateId, { panel = false } = {}) {
+// ordinary sheet. A panel closes when the page changes, unless
+// `keepOnNavigate` (a half-written new snippet shouldn't vanish because
+// you clicked over to a tag to check something).
+export function openSheet(templateId, { panel = false, keepOnNavigate = false } = {}) {
   const asPanel = panel && desktopQuery.matches;
   if (asPanel && currentPanel) currentPanel.close({ instant: true });
 
@@ -82,7 +84,7 @@ export function openSheet(templateId, { panel = false } = {}) {
     currentPanel = entry;
     // Makes room for the panel, so the cards it would cover move over.
     document.body.classList.add("side-panel-open");
-    window.addEventListener("hashchange", onNavigate);
+    if (!keepOnNavigate) window.addEventListener("hashchange", onNavigate);
   } else {
     backdrop.addEventListener("click", (e) => {
       if (e.target === backdrop) close();
@@ -90,6 +92,10 @@ export function openSheet(templateId, { panel = false } = {}) {
   }
   stack.push(entry);
   return entry;
+}
+
+export function getOpenPanel() {
+  return currentPanel;
 }
 
 export function hasOpenSheet() {

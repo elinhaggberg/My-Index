@@ -1898,7 +1898,7 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
 .source-picker-new-btn .icon { width: 1rem; height: 1rem; }
 
 /* ===== Desktop (wide screens) ===== */
-.desktop-sidebar { display: none; }
+.desktop-sidebar, .desktop-new-btn { display: none; }
 @media (min-width: 1000px) {
   :root { --sidebar-width: 236px; }
   .desktop-sidebar {
@@ -1916,7 +1916,19 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
     z-index: 16;
   }
   .sidebar-title { margin: 0 10px 16px; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; }
-  .sidebar-new-btn { margin: 0 4px 18px; padding: 11px 14px; border-radius: 12px; }
+  .sidebar-title { margin-bottom: 22px; }
+  .desktop-new-btn {
+    display: block;
+    position: fixed;
+    top: 22px;
+    right: 32px;
+    z-index: 18;
+    padding: 11px 18px;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  }
+  /* Room for it at the right end of every top bar. */
+  .topbar { padding-right: 200px; }
   .sidebar-nav, .sidebar-footer { display: flex; flex-direction: column; gap: 2px; }
   .sidebar-footer { margin-top: auto; }
   .sidebar-item {

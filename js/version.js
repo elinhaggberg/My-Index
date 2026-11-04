@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.06.2";
+export const APP_VERSION = "2026.11.06.3";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.06.3",
+    date: "November 6, 2026",
+    changes: [
+      "On a computer, \"Save something\" is now top right and opens in a panel that slides in from the right, so the page stays in view while you write. Snippets open as a dialog in the middle again.",
+    ],
+  },
   {
     version: "2026.11.06.2",
     date: "November 6, 2026",

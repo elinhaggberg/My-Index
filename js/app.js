@@ -37,6 +37,7 @@ import { renderSidebar, updateSidebar } from "./sidebar.js";
 import { openSettingsMenu } from "./settingsMenu.js";
 import { openSnippetSearch } from "./snippetSearch.js";
 import { wireShortcuts } from "./shortcuts.js";
+import { getOpenPanel } from "./sheet.js";
 
 applyTheme();
 
@@ -283,7 +284,12 @@ window.addEventListener("hashchange", route);
 
 // Desktop sidebar (shown by CSS on wide screens only; see js/sidebar.js).
 const actions = {
-  onNew: () => openSnippetEditor(nav, { snippet: createEmptySnippet(), isNew: true, refresh: route }),
+  onNew: () => {
+    // Already writing one in the side panel: go back to it, don't start over.
+    const open = getOpenPanel();
+    if (open) return open.el.querySelector("textarea, input")?.focus();
+    openSnippetEditor(nav, { snippet: createEmptySnippet(), isNew: true, refresh: route, panel: true });
+  },
   onSearch: () => openSnippetSearch(nav, route),
   onSettings: () => openSettingsMenu(nav, route),
 };

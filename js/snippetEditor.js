@@ -8,12 +8,14 @@ import { SNIPPET_TYPES, typeFor } from "./snippetTypes.js";
 import { hostnameFor } from "./util.js";
 import { renderSourceField } from "./sourcePicker.js";
 
-export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileId, presetTagId, autoFetch }) {
+export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileId, presetTagId, autoFetch, panel = false }) {
   const draft = { ...snippet, tagIds: [...(snippet.tagIds || [])], profileIds: [...(snippet.profileIds || [])] };
   if (presetProfileId && !draft.profileIds.includes(presetProfileId)) draft.profileIds.push(presetProfileId);
   if (presetTagId && presetTagId !== "uncategorized" && !draft.tagIds.includes(presetTagId)) draft.tagIds.push(presetTagId);
 
-  const sheet = openSheet("tpl-snippet-editor");
+  // panel: on a wide screen, "Save something" slides in from the right
+  // (see openSheet) so the page stays in view while you write.
+  const sheet = openSheet("tpl-snippet-editor", { panel, keepOnNavigate: panel });
   const el = sheet.el;
   el.querySelector(".close-btn").addEventListener("click", () => sheet.close());
   el.querySelector("#editor-heading").textContent = isNew ? "Save something" : "Edit";
