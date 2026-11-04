@@ -37,7 +37,7 @@ import { renderSidebar, updateSidebar } from "./sidebar.js";
 import { openSettingsMenu } from "./settingsMenu.js";
 import { openSnippetSearch } from "./snippetSearch.js";
 import { wireShortcuts } from "./shortcuts.js";
-import { getOpenPanel } from "./sheet.js";
+import { getOpenPanel, hasOpenSheet } from "./sheet.js";
 
 applyTheme();
 
@@ -342,10 +342,14 @@ checkWhatsNew();
 // not a bug.
 startAutoSync(
   { getProfiles, getTags, getSnippets, upsertRecords, getTombstones, clearTombstones, applyRemoteDeletion, getPrefsSnapshot, getPrefsUpdatedAt, applyPrefsSnapshot },
-  () => {
+  (result) => {
     applyTheme();
     const homeTitleEl = document.getElementById("home-title");
     if (homeTitleEl) homeTitleEl.textContent = getHomeTitle();
+    // Something arrived from another device (a new snippet, or one deleted
+    // there): show it now rather than on the next navigation. Not while a
+    // dialog is open, so nothing jumps under someone mid-task.
+    if (result?.pulled && !hasOpenSheet()) route();
   }
 );
 

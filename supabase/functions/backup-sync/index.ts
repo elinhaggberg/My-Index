@@ -93,7 +93,8 @@ Deno.serve(async (req) => {
           const { error } = await supabase.from("backup_records").upsert({
             store: r.store,
             record_id: r.recordId,
-            data: r.data ?? null,
+            // data is NOT NULL; a deletion carries no content.
+            data: r.deleted ? {} : (r.data ?? {}),
             updated_at: r.updatedAt,
             deleted: Boolean(r.deleted),
           });

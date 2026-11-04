@@ -174,8 +174,12 @@ async function toRecord(store, record) {
   };
 }
 
+// `data` is an empty object, not null: backup_records.data is NOT NULL
+// (backup_schema.sql), so a null there made the whole push fail at the
+// first deletion -- the records before it got through, every deletion
+// didn't, and the tombstones were retried (and failed) on every sync.
 function toTombstoneRecord(t) {
-  return { store: t.store, recordId: t.recordId, data: null, updatedAt: new Date(t.deletedAt).toISOString(), deleted: true };
+  return { store: t.store, recordId: t.recordId, data: {}, updatedAt: new Date(t.deletedAt).toISOString(), deleted: true };
 }
 
 // Always sends the full current dataset rather than trying to diff "what
@@ -205,6 +209,7 @@ export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones
   }
   if (records.length === 0) return { applied: 0 };
   const result = await callBackupApi("push", { records });
+  if (!result) return { applied: 0, failed: true };
   // Only clears once the request actually went through -- a failed/dropped
   // push (result is null, see callBackupApi) leaves the tombstones in place
   // so the next sync attempt tries them again instead of quietly losing the
@@ -217,7 +222,7 @@ export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones
     await Promise.all(tombstones.map((t) => deleteRecordImage(t.store, t.recordId)));
     await clearTombstones(tombstones.map((t) => t.id));
   }
-  return { applied: result?.applied ?? 0 };
+  return { applied: result.applied ?? 0 };
 }
 
 // Pulls everything changed since the last successful sync (or everything,
@@ -258,11 +263,11 @@ export async function pullChanges({ upsertRecords, applyRemoteDeletion, applyPre
 // device caught up in both directions.
 export async function syncNow(storageFns) {
   if (!isBackupConfigured()) return { synced: false };
-  await pushAll(storageFns);
-  // The pull is the round-trip that always happens, so it's what says
-  // whether the project actually answered.
-  const { failed } = await pullChanges(storageFns);
-  return { synced: !failed };
+  // Either half failing counts: a push that silently failed is how
+  // deletions once went missing without anyone noticing.
+  const push = await pushAll(storageFns);
+  const pull = await pullChanges(storageFns);
+  return { synced: !push.failed && !pull.failed, pulled: pull.pulled };
 }
 
 let periodicTimer = null;
@@ -282,7 +287,7 @@ let periodicTimer = null;
 export function startAutoSync(storageFns, onSynced) {
   if (!isBackupConfigured()) return;
 
-  const run = () => syncNow(storageFns).then(() => onSynced?.());
+  const run = () => syncNow(storageFns).then((result) => onSynced?.(result));
   run();
   if (periodicTimer) clearInterval(periodicTimer);
   periodicTimer = setInterval(run, PERIODIC_INTERVAL_MS);
