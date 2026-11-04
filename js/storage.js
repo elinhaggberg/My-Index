@@ -331,9 +331,13 @@ export async function deleteSnippet(id, { tombstone = true } = {}) {
 // is explicit at the call site instead of a bare `{ tombstone: false }`
 // showing up in the middle of feature code.
 export async function applyRemoteDeletion(store, recordId) {
-  if (store === "profiles") return deleteProfile(recordId, { tombstone: false });
-  if (store === "tags") return deleteTag(recordId, { tombstone: false });
-  if (store === "snippets") return deleteSnippet(recordId, { tombstone: false });
+  // Every pull carries every deletion still on record (up to 90 days), so
+  // only act on what this device still has.
+  if (!["profiles", "tags", "snippets"].includes(store) || !(await getOne(store, recordId))) return false;
+  if (store === "profiles") await deleteProfile(recordId, { tombstone: false });
+  if (store === "tags") await deleteTag(recordId, { tombstone: false });
+  if (store === "snippets") await deleteSnippet(recordId, { tombstone: false });
+  return true;
 }
 
 export async function getSnippetsForProfile(profileId) {
@@ -396,10 +400,20 @@ export async function getUncategorizedCount() {
 // -- revives it into this device's own image store the same way an
 // imported backup file's image is, keyed by the record's own id so every
 // device agrees on the same image-store key for the same record too.
+// Only takes a pulled record that is newer than this device's own copy (or
+// that it doesn't have): a pull now brings everything, every time (see
+// pullChanges), and this device's own records coming back unchanged
+// shouldn't overwrite anything -- least of all a local image reference
+// with the cloud one.
+const stamp = (r) => Number(r?.updatedAt || r?.createdAt || 0);
 export async function upsertRecords(store, records) {
-  if (!["profiles", "tags", "snippets"].includes(store) || !records.length) return;
-  const revived = await Promise.all(records.map(async (r) => ({ ...r, image: await reviveImage(r.image, r.id) })));
+  if (!["profiles", "tags", "snippets"].includes(store) || !records.length) return 0;
+  const local = new Map((await getAll(store)).map((r) => [r.id, r]));
+  const fresh = records.filter((r) => !local.has(r.id) || stamp(r) > stamp(local.get(r.id)));
+  if (!fresh.length) return 0;
+  const revived = await Promise.all(fresh.map(async (r) => ({ ...r, image: await reviveImage(r.image, r.id) })));
   await putMany(store, revived);
+  return fresh.length;
 }
 
 // ---- Export / import ----
@@ -813,6 +827,9 @@ export function getPrefsUpdatedAt() {
 // if it were a fresh local edit.
 export function applyPrefsSnapshot(prefs, updatedAt) {
   if (!prefs) return;
+  // Not older than what this device already has (see upsertRecords).
+  const localAt = localStorage.getItem(PREFS_UPDATED_AT_KEY);
+  if (updatedAt && localAt && new Date(localAt) >= new Date(updatedAt)) return;
   if (prefs.theme) writeJSON(THEME_KEY, prefs.theme);
   if (prefs.homeTitle) {
     const trimmed = String(prefs.homeTitle).trim();

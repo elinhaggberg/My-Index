@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.06.4";
+export const APP_VERSION = "2026.11.06.5";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.06.5",
+    date: "November 6, 2026",
+    changes: [
+      "Fixed: something saved on one device could be skipped by another if that one happened to sync in between. Each sync now checks everything in your backup, so anything missed before shows up on the next sync.",
+    ],
+  },
   {
     version: "2026.11.06.4",
     date: "November 6, 2026",

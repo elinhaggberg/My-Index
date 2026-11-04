@@ -234,8 +234,13 @@ export async function pushAll({ getProfiles, getTags, getSnippets, getTombstones
 // behavior of silently dropping it.
 export async function pullChanges({ upsertRecords, applyRemoteDeletion, applyPrefsSnapshot }) {
   if (!isBackupConfigured()) return { pulled: 0 };
-  const since = getLastSyncedAt();
-  const result = await callBackupApi("pull", since ? { since } : {});
+  // Always everything, not "changed since the last sync": the server
+  // filters by each record's own timestamp, which is when it was edited on
+  // its device, not when it reached the cloud. A note written on the phone
+  // at 10:00 and synced at 10:05 was older than a 10:03 sync elsewhere, so
+  // that device never asked for it again. At personal-register scale the
+  // whole set is small, and upsertRecords keeps only what's newer.
+  const result = await callBackupApi("pull", {});
   if (!result?.records) return { pulled: 0, failed: true };
 
   const byStore = { profiles: [], tags: [], snippets: [] };
@@ -249,12 +254,13 @@ export async function pullChanges({ upsertRecords, applyRemoteDeletion, applyPre
     if (r.deleted) deletions.push(r);
     else if (r.data) byStore[r.store].push(r.data);
   }
+  let changed = 0;
   for (const store of SYNCABLE_STORES) {
-    if (byStore[store].length) await upsertRecords(store, byStore[store]);
+    if (byStore[store].length) changed += (await upsertRecords(store, byStore[store])) || 0;
   }
-  for (const r of deletions) await applyRemoteDeletion(r.store, r.record_id);
+  for (const r of deletions) if (await applyRemoteDeletion(r.store, r.record_id)) changed++;
   if (result.pulledAt) setLastSyncedAt(result.pulledAt);
-  return { pulled: result.records.length };
+  return { pulled: changed };
 }
 
 // The manual "Sync now" action, and what the periodic/visibility triggers
