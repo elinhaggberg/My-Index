@@ -1,8 +1,7 @@
-import { getTags, getProfiles, getSnippets, getUncategorizedCount, UNCATEGORIZED_TAG } from "../storage.js";
+import { getTags, getProfiles, getSnippets } from "../storage.js";
 import { renderTabbar } from "../tabbar.js";
 import { openSettingsMenu } from "../settingsMenu.js";
 import { resolveImageSrc } from "../imageStore.js";
-import { ICON_INBOX } from "../icons.js";
 
 export async function renderTags(root, nav) {
   const tpl = document.getElementById("tpl-tags");
@@ -11,12 +10,7 @@ export async function renderTags(root, nav) {
 
   document.getElementById("settings-btn").addEventListener("click", () => openSettingsMenu(nav, () => renderTags(root, nav)));
 
-  const [tags, profiles, snippets, uncategorizedCount] = await Promise.all([
-    getTags(),
-    getProfiles(),
-    getSnippets(),
-    getUncategorizedCount(),
-  ]);
+  const [tags, profiles, snippets] = await Promise.all([getTags(), getProfiles(), getSnippets()]);
 
   function countFor(tagId) {
     const p = profiles.filter((x) => x.tagIds?.includes(tagId)).length;
@@ -25,11 +19,11 @@ export async function renderTags(root, nav) {
   }
 
   const grid = document.getElementById("tags-grid");
-  // The Inbox comes first: it's where new things arrive, not one theme
-  // among the others.
-  const entries = [{ tag: UNCATEGORIZED_TAG, count: uncategorizedCount }, ...tags.map((t) => ({ tag: t, count: countFor(t.id) }))];
+  // The Inbox has its own tab now (see js/tabbar.js), so it isn't listed
+  // here among the themes.
+  const entries = tags.map((t) => ({ tag: t, count: countFor(t.id) }));
 
-  if (tags.length === 0 && uncategorizedCount === 0) {
+  if (tags.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
     empty.textContent = "No themes yet. Tag a profile or a snippet to start building your index.";
@@ -42,10 +36,6 @@ export async function renderTags(root, nav) {
       const tpl2 = document.getElementById("tpl-tag-tile");
       const node = tpl2.content.cloneNode(true);
       const iconBox = node.querySelector(".tag-tile-icon");
-      if (tag.isSystem) {
-        iconBox.innerHTML = ICON_INBOX;
-        iconBox.classList.add("inbox");
-      }
       if (tag.image) {
         iconBox.classList.add("has-image");
         resolveImageSrc(tag.image).then((src) => {

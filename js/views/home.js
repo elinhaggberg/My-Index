@@ -90,7 +90,11 @@ export async function renderHome(root, nav) {
     headlineEl.classList.toggle("filtered-headline", active);
 
     const allSnippets = (await getSnippets()).sort((a, b) => b.createdAt - a.createdAt);
-    const snippets = active ? applySnippetFilter(allSnippets, pref) : allSnippets;
+    // Untagged things wait in the Inbox until they've been sorted, so
+    // "Recently saved" only shows what's been given a tag. (Filtering for
+    // the Inbox explicitly still finds them.)
+    const sorted = allSnippets.filter((s) => (s.tagIds || []).length > 0);
+    const snippets = active ? applySnippetFilter(allSnippets, pref) : sorted;
 
     if (active) {
       const tagsById = new Map((await getTags()).map((t) => [t.id, t]));
@@ -103,7 +107,11 @@ export async function renderHome(root, nav) {
       resetLazyGrid();
       const empty = document.createElement("p");
       empty.className = "empty-state";
-      empty.textContent = active ? "Nothing matches this filter." : "Nothing saved yet. Tap + to save your first link, quote, or note.";
+      empty.textContent = active
+        ? "Nothing matches this filter."
+        : allSnippets.length
+          ? "Nothing sorted yet. New things wait in the Inbox until you give them a tag."
+          : "Nothing saved yet. Tap + to save your first link, quote, or note.";
       grid.replaceChildren(empty);
       return;
     }

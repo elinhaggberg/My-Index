@@ -17,6 +17,8 @@ import {
   setShowProfileRow,
   getLoadFeedImages,
   setLoadFeedImages,
+  getShowInboxCount,
+  setShowInboxCount,
   getPrefsSnapshot,
   getPrefsUpdatedAt,
   applyPrefsSnapshot,
@@ -668,6 +670,13 @@ function openCustomize(refresh) {
   showProfileRowToggle.checked = getShowProfileRow();
   showProfileRowToggle.addEventListener("change", () => {
     setShowProfileRow(showProfileRowToggle.checked);
+    if (refresh) refresh();
+  });
+
+  const inboxCountToggle = el.querySelector("#customize-show-inbox-count");
+  inboxCountToggle.checked = getShowInboxCount();
+  inboxCountToggle.addEventListener("change", () => {
+    setShowInboxCount(inboxCountToggle.checked);
     if (refresh) refresh();
   });
 

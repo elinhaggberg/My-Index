@@ -6,6 +6,9 @@ import {
   deleteTag,
   createEmptySnippet,
   UNCATEGORIZED_TAG_ID,
+  getShowInboxCount,
+  getInboxNewCount,
+  markInboxReviewed,
 } from "../storage.js";
 import { renderMasonry } from "../masonry.js";
 import { resetLazyGrid } from "../lazyImage.js";
@@ -19,6 +22,7 @@ import { resolveImageSrc } from "../imageStore.js";
 import { ICON_TAG } from "../icons.js";
 import { openCloudSyncSheet } from "../settingsMenu.js";
 import { openShortcutSetup } from "../shortcutSetup.js";
+import { renderTabbar, refreshInboxBadge } from "../tabbar.js";
 
 const INBOX_INTRO_KEY = "mi_inbox_intro_dismissed_v1";
 
@@ -26,7 +30,14 @@ export async function renderTag(root, nav, id) {
   const tpl = document.getElementById("tpl-tag");
   root.replaceChildren(tpl.content.cloneNode(true));
 
-  root.querySelector(".back-btn").addEventListener("click", () => nav.back("#/tags"));
+  // The Inbox is reached from its own tab, so it gets the tab bar and no
+  // back arrow; every other tag is a page you drill into from Tags.
+  if (id === UNCATEGORIZED_TAG_ID) {
+    root.querySelector(".back-btn").classList.add("hidden");
+    renderTabbar(root, nav, "inbox");
+  } else {
+    root.querySelector(".back-btn").addEventListener("click", () => nav.back("#/tags"));
+  }
 
   async function load() {
     const tag = await getTag(id);
@@ -86,6 +97,18 @@ export async function renderTag(root, nav, id) {
     };
     document.getElementById("inbox-intro-cloud").onclick = () => openCloudSyncSheet();
     document.getElementById("inbox-intro-shortcut").onclick = () => openShortcutSetup();
+
+    // "Mark all as reviewed" -- only alongside the count it resets, and only
+    // when something new is waiting. Nothing leaves the Inbox.
+    const reviewRow = document.getElementById("inbox-review-row");
+    const newCount = tag.isSystem && getShowInboxCount() ? await getInboxNewCount() : 0;
+    reviewRow.classList.toggle("hidden", !newCount);
+    document.getElementById("inbox-review-label").textContent = `${newCount} new`;
+    document.getElementById("inbox-review-btn").onclick = async () => {
+      await markInboxReviewed();
+      reviewRow.classList.add("hidden");
+      refreshInboxBadge();
+    };
 
     const profileRow = document.getElementById("tag-profile-row");
     const profiles = tag.isSystem ? [] : await getProfilesForTag(id);

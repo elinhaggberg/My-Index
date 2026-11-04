@@ -7,6 +7,8 @@ const HOME_TITLE_KEY = "mi_home_title_v1";
 const SHOW_PROFILE_ROW_KEY = "mi_show_profile_row_v1";
 const FEED_IMAGES_KEY = "mi_feed_images_v1";
 const READER_TEXT_SIZE_KEY = "mi_reader_text_size_v1";
+const SHOW_INBOX_COUNT_KEY = "mi_show_inbox_count_v1";
+const INBOX_REVIEWED_KEY = "mi_inbox_reviewed_v1";
 const LAST_SEEN_VERSION_KEY = "mi_last_seen_version_v1";
 const LAST_BACKUP_KEY = "mi_last_backup_at_v1";
 const BACKUP_BANNER_DISMISSED_KEY = "mi_backup_banner_dismissed_at_v1";
@@ -345,6 +347,38 @@ export async function getSnippetsForTag(tagId) {
     return snippets.filter((s) => !s.tagIds || s.tagIds.length === 0).sort((a, b) => b.createdAt - a.createdAt);
   }
   return snippets.filter((s) => s.tagIds?.includes(tagId)).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+// "Mark all as reviewed" in the Inbox: everything currently there stays
+// there, but stops counting as new. The count on the Inbox tab is then only
+// what's arrived since. Stored as the ids reviewed (not a date), so a
+// snippet synced in from another device with an older date still counts as
+// new here.
+function readReviewedIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(INBOX_REVIEWED_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+function inboxSnippets(snippets) {
+  return snippets.filter((s) => !s.tagIds || s.tagIds.length === 0);
+}
+
+export async function getInboxNewCount() {
+  const reviewed = readReviewedIds();
+  return inboxSnippets(await getSnippets()).filter((s) => !reviewed.has(s.id)).length;
+}
+
+export async function markInboxReviewed() {
+  // Only ids still in the Inbox are kept, so the list never outgrows it.
+  const ids = inboxSnippets(await getSnippets()).map((s) => s.id);
+  try {
+    localStorage.setItem(INBOX_REVIEWED_KEY, JSON.stringify(ids));
+  } catch {
+    // No storage -- the count just can't be reset on this device.
+  }
 }
 
 export async function getUncategorizedCount() {
@@ -689,6 +723,17 @@ export function getLoadFeedImages() {
 
 export function setLoadFeedImages(value) {
   localStorage.setItem(FEED_IMAGES_KEY, value ? "1" : "0");
+}
+
+// The little count on the Inbox tab. Off by default -- the Inbox is meant
+// to let things rest, and a number can feel like a nag -- so it's only
+// shown for people who turn it on (Customize). A per-device choice.
+export function getShowInboxCount() {
+  return localStorage.getItem(SHOW_INBOX_COUNT_KEY) === "1";
+}
+
+export function setShowInboxCount(value) {
+  localStorage.setItem(SHOW_INBOX_COUNT_KEY, value ? "1" : "0");
 }
 
 // The feed reader's text size (its "Aa" control): "small", "medium" or

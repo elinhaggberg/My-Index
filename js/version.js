@@ -3,9 +3,18 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.10.22.3";
+export const APP_VERSION = "2026.11.04";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.04",
+    date: "November 4, 2026",
+    changes: [
+      "The Inbox is now a tab of its own at the bottom of the screen, next to Home, Profiles and Tags.",
+      "\"Recently saved\" on Home only shows things that have a tag. Untagged things wait in the Inbox until you sort them.",
+      "Optional: a small count of new items on the Inbox tab (off by default; turn it on in Customize). \"Mark all as reviewed\" in the Inbox resets it, so only things that arrive afterwards count as new. Nothing leaves the Inbox until you tag it.",
+    ],
+  },
   {
     version: "2026.10.22.3",
     date: "October 22, 2026",

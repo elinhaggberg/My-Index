@@ -152,6 +152,10 @@
     </header>
     <div class="page-body">
       <div class="tag-cover-image hidden" id="tag-cover-image"></div>
+      <div class="section-label-row inbox-review-row hidden" id="inbox-review-row">
+        <p class="card-detail-section-label" id="inbox-review-label"></p>
+        <button type="button" class="mark-read-btn" id="inbox-review-btn">Mark all as reviewed</button>
+      </div>
       <div class="inbox-intro hidden" id="inbox-intro">
         <button type="button" class="icon-btn inbox-intro-close" id="inbox-intro-close" aria-label="Dismiss">×</button>
         <p>Snippets without tags are placed here. Use it as a place to store content, notes and other ideas you want to return to later.</p>
@@ -662,6 +666,10 @@
       <label class="toggle-row">
         <input type="checkbox" id="customize-show-profile-row" />
         <span>Show the profile row on Home</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="customize-show-inbox-count" />
+        <span>Show a count of new items on the Inbox tab</span>
       </label>
       <p class="customize-section-label">Images in feeds</p>
       <label class="toggle-row customize-feed-images-row">
