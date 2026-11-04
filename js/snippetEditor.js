@@ -176,7 +176,12 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   if (autoFetch && draft.url) runFetch();
 
   // ---- Source and page (excerpts only) ----
-  renderSourceField(el.querySelector("#editor-source-field"), { draft });
+  renderSourceField(el.querySelector("#editor-source-field"), {
+    draft,
+    onAuthorFilled: (author) => {
+      authorInput.value = author;
+    },
+  });
   const pageInput = el.querySelector("#editor-page-input");
   pageInput.value = draft.page || "";
   pageInput.addEventListener("input", () => {

@@ -1,14 +1,15 @@
 // "From" in the snippet editor: which saved snippet an excerpt (quote,
 // note, poem) comes from -- a book, an article, an episode. Searchable
 // like the profile picker. A book that isn't in the register yet can be
-// added from here in one step; it's saved as an ordinary Book snippet.
+// added from here in one step; it's saved as an ordinary Book snippet,
+// with the excerpt's author if one has been filled in.
 
 import { getSnippets, createEmptySnippet, saveSnippet } from "./storage.js";
 import { openSheet } from "./sheet.js";
 import { isSource, sourceTitle } from "./sources.js";
 import { typeFor } from "./snippetTypes.js";
 
-export async function renderSourceField(container, { draft, onChange }) {
+export async function renderSourceField(container, { draft, onChange, onAuthorFilled }) {
   async function drawSummary() {
     const all = await getSnippets();
     const current = draft.sourceId ? all.find((s) => s.id === draft.sourceId) : null;
@@ -48,8 +49,17 @@ export async function renderSourceField(container, { draft, onChange }) {
     const listEl = el.querySelector("#source-picker-list");
     const createBtn = el.querySelector("#source-picker-create-btn");
 
-    function choose(id) {
+    async function choose(id) {
       draft.sourceId = id;
+      // An excerpt without an author takes its source's (a quote from a
+      // book is by the book's author, more often than not).
+      if (!(draft.author || "").trim()) {
+        const source = (await getSnippets()).find((s) => s.id === id);
+        if (source?.author) {
+          draft.author = source.author;
+          onAuthorFilled?.(source.author);
+        }
+      }
       onChange?.();
       drawSummary();
       sheet.close();
@@ -78,7 +88,7 @@ export async function renderSourceField(container, { draft, onChange }) {
           title.textContent = sourceTitle(s);
           const meta = document.createElement("span");
           meta.className = "source-picker-meta";
-          meta.textContent = [typeFor(s.type).label, s.siteName].filter(Boolean).join(" · ");
+          meta.textContent = [typeFor(s.type).label, s.author, s.siteName].filter(Boolean).join(" · ");
           text.append(title, meta);
           row.appendChild(text);
           row.addEventListener("click", () => choose(s.id));
@@ -95,7 +105,14 @@ export async function renderSourceField(container, { draft, onChange }) {
     createBtn.addEventListener("click", async () => {
       const title = searchInput.value.trim();
       if (!title) return;
-      const book = { ...createEmptySnippet(), type: "book", content: title, tagIds: [...(draft.tagIds || [])], profileIds: [...(draft.profileIds || [])] };
+      const book = {
+        ...createEmptySnippet(),
+        type: "book",
+        content: title,
+        author: (draft.author || "").trim(),
+        tagIds: [...(draft.tagIds || [])],
+        profileIds: [...(draft.profileIds || [])],
+      };
       await saveSnippet(book);
       choose(book.id);
     });

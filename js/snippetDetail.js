@@ -141,7 +141,7 @@ function sourceRow(source, onOpen) {
   title.textContent = sourceTitle(source);
   const meta = document.createElement("span");
   meta.className = "detail-source-meta";
-  meta.textContent = [typeFor(source.type).label, source.siteName].filter(Boolean).join(" · ");
+  meta.textContent = [typeFor(source.type).label, source.author, source.siteName].filter(Boolean).join(" · ");
   text.append(title, meta);
   row.appendChild(text);
   row.addEventListener("click", onOpen);
