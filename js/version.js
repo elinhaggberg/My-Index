@@ -10,7 +10,7 @@ export const CHANGELOG = [
     version: "2026.11.06.3",
     date: "November 6, 2026",
     changes: [
-      "On a computer, \"Save something\" is now top right and opens in a panel that slides in from the right, so the page stays in view while you write. Snippets open as a dialog in the middle again.",
+      "On a computer, \"Save something\" is now top right and opens in a panel that slides in from the right, so the page stays in view while you write. Snippets open as a larger sheet resting on the bottom edge, and other dialogs are rounded on every corner.",
     ],
   },
   {
@@ -27,7 +27,6 @@ export const CHANGELOG = [
     date: "November 6, 2026",
     changes: [
       "A desktop layout for wide screens: a sidebar replaces the bottom bar, the grid gets more columns, and dialogs open in the middle of the window.",
-      "On a computer, a snippet opens in a panel on the right, and the grid stays usable behind it. Click another card to switch.",
       "The reader shows the list of posts and the open post side by side on a wide screen.",
       "Keyboard shortcuts: N to save something new, / to search, Esc to close, and j / k for the next and previous post in the reader.",
     ],

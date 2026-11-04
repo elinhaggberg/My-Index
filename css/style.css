@@ -1112,6 +1112,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; font-family: var(--font-heading); }
    abruptly that the text reads as flush against the bottom edge. */
 .card-detail-sheet {
   min-height: 260px;
+  /* A real bottom margin, so the last thing in it never sits down by the
+     edge of the screen. */
+  padding-bottom: calc(44px + env(safe-area-inset-bottom));
 }
 
 /* Delete confirmation */
@@ -1956,8 +1959,24 @@ figure .reader-img, figure .reader-img-placeholder { margin: 0 auto; }
   .home-topbar { padding-top: 32px; }
 
   /* Sheets open as centred dialogs instead of sliding up from the bottom. */
-  .sheet-backdrop { align-items: center; padding: 32px; }
-  .sheet { max-width: 640px; max-height: 86vh; border-radius: 20px; padding: 12px 24px 28px; }
+  /* Centred over the content, not the whole window with the sidebar. */
+  .sheet-backdrop { align-items: center; padding: 32px 32px 32px calc(var(--sidebar-width) + 32px); }
+  .sheet { max-width: 640px; max-height: 86vh; padding: 12px 24px 28px; }
+  /* Centred dialogs are rounded on every corner (the playful theme's own
+     rule only rounds the top, for the phone's bottom sheet). */
+  :root .sheet { border-radius: 20px; }
+  :root[data-theme="playful"] .sheet { border-radius: 28px; }
+
+  /* A snippet opens as a large sheet resting on the bottom edge instead. */
+  .sheet-backdrop:has(> .card-detail-sheet) { align-items: flex-end; padding-bottom: 0; }
+  :root .card-detail-sheet {
+    max-width: 780px;
+    min-height: 44vh;
+    max-height: 90vh;
+    padding: 18px 40px 64px;
+    border-radius: 20px 20px 0 0;
+  }
+  :root[data-theme="playful"] .card-detail-sheet { border-radius: 28px 28px 0 0; }
 
   /* Profile page: who they are on the left, what you've saved on the right. */
   #app:has(#profile-snippets-grid) .page-body {
