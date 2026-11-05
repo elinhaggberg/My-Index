@@ -184,6 +184,7 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     onAuthorFilled: (author) => {
       authorInput.value = author;
     },
+    onTagsInherited: () => drawTags(),
   });
   const pageInput = el.querySelector("#editor-page-input");
   pageInput.value = draft.page || "";
@@ -199,14 +200,18 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   });
 
   // ---- Tags ----
-  renderTagChips(el.querySelector("#editor-tag-chips"), {
-    selectedIds: draft.tagIds,
-    onToggle: (tagId) => {
-      const idx = draft.tagIds.indexOf(tagId);
-      if (idx >= 0) draft.tagIds.splice(idx, 1);
-      else draft.tagIds.push(tagId);
-    },
-  });
+  // Redrawn when choosing a source adds that source's tags.
+  function drawTags() {
+    renderTagChips(el.querySelector("#editor-tag-chips"), {
+      selectedIds: draft.tagIds,
+      onToggle: (tagId) => {
+        const idx = draft.tagIds.indexOf(tagId);
+        if (idx >= 0) draft.tagIds.splice(idx, 1);
+        else draft.tagIds.push(tagId);
+      },
+    });
+  }
+  drawTags();
 
   // ---- Profiles ----
   renderProfileChips(el.querySelector("#editor-profile-chips"), {

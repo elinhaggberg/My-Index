@@ -11,7 +11,7 @@ import { typeFor } from "./snippetTypes.js";
 
 // openEditor: the snippet editor's own opener, passed in by it (rather than
 // imported here, which would make the two modules import each other).
-export async function renderSourceField(container, { draft, onChange, onAuthorFilled, openEditor }) {
+export async function renderSourceField(container, { draft, onChange, onAuthorFilled, onTagsInherited, openEditor }) {
   async function drawSummary() {
     const all = await getSnippets();
     const current = draft.sourceId ? all.find((s) => s.id === draft.sourceId) : null;
@@ -53,10 +53,18 @@ export async function renderSourceField(container, { draft, onChange, onAuthorFi
 
     async function choose(id) {
       draft.sourceId = id;
+      const source = (await getSnippets()).find((s) => s.id === id);
+      // An excerpt files under what its source is filed under: the
+      // source's tags are added to whatever it already has (copied once,
+      // so either can be retagged on its own afterwards).
+      const inherited = (source?.tagIds || []).filter((t) => t !== "uncategorized" && !draft.tagIds.includes(t));
+      if (inherited.length) {
+        draft.tagIds.push(...inherited);
+        onTagsInherited?.();
+      }
       // An excerpt without an author takes its source's (a quote from a
       // book is by the book's author, more often than not).
       if (!(draft.author || "").trim()) {
-        const source = (await getSnippets()).find((s) => s.id === id);
         if (source?.author) {
           draft.author = source.author;
           onAuthorFilled?.(source.author);
