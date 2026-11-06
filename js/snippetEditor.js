@@ -27,10 +27,10 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
       content: draft.content?.trim() || "",
       title: draft.title?.trim() || "",
       author: draft.author?.trim() || "",
-      // Only an excerpt (quote, note, poem) has a source and a page; a type
-      // switched away from those drops them rather than keeping hidden data.
-      sourceId: typeFor(draft.type).excerpt ? draft.sourceId || null : null,
-      page: typeFor(draft.type).excerpt ? (draft.page || "").trim() : "",
+      // Any type can come from a source (js/sources.js); a page only
+      // means something alongside one.
+      sourceId: draft.sourceId || null,
+      page: draft.sourceId ? (draft.page || "").trim() : "",
     };
     try {
       await saveSnippet(finalSnippet);
@@ -57,7 +57,7 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     titleField.classList.toggle("hidden", !type.hasTitle);
     authorField.classList.toggle("hidden", !type.hasAuthor);
     imageUploadActions.classList.toggle("hidden", !type.imageUpload);
-    sourceSection.classList.toggle("hidden", !type.excerpt);
+    sourceSection.classList.remove("hidden");
   }
   typeRow.replaceChildren(
     ...SNIPPET_TYPES.map((t) => {
@@ -177,7 +177,7 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   // right after sharing a link into the app.
   if (autoFetch && draft.url) runFetch();
 
-  // ---- Source and page (excerpts only) ----
+  // ---- Source and page (any type) ----
   renderSourceField(el.querySelector("#editor-source-field"), {
     draft,
     openEditor: (options) => openSnippetEditor(nav, options),

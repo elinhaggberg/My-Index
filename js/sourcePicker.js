@@ -1,12 +1,12 @@
-// "From" in the snippet editor: which saved snippet an excerpt (quote,
-// note, poem) comes from -- a book, an article, an episode. Searchable
+// "From" in the snippet editor: which saved snippet this one comes from --
+// a book, an article, an episode, a web page. Any type can have one. Searchable
 // like the profile picker. A book that isn't in the register yet can be
 // added from here in one step; it's saved as an ordinary Book snippet,
 // with the excerpt's author if one has been filled in.
 
 import { getSnippets, createEmptySnippet, saveSnippet } from "./storage.js";
 import { openSheet } from "./sheet.js";
-import { isSource, sourceTitle } from "./sources.js";
+import { canBeSourceOf, sourceTitle } from "./sources.js";
 import { typeFor } from "./snippetTypes.js";
 
 // openEditor: the snippet editor's own opener, passed in by it (rather than
@@ -66,7 +66,7 @@ export async function renderSourceField(container, { draft, onChange, onAuthorFi
       if (inherited.length || inheritedProfiles.length) onTagsInherited?.();
       // An excerpt without an author takes its source's (a quote from a
       // book is by the book's author, more often than not).
-      if (!(draft.author || "").trim()) {
+      if (typeFor(draft.type).hasAuthor && !(draft.author || "").trim()) {
         if (source?.author) {
           draft.author = source.author;
           onAuthorFilled?.(source.author);
@@ -80,8 +80,9 @@ export async function renderSourceField(container, { draft, onChange, onAuthorFi
     async function drawList() {
       const q = searchInput.value.trim();
       const ql = q.toLowerCase();
-      const sources = (await getSnippets())
-        .filter((s) => isSource(s) && s.id !== draft.id)
+      const all = await getSnippets();
+      const sources = all
+        .filter((s) => canBeSourceOf(s, draft, all))
         .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       const matches = ql
         ? sources.filter((s) => [sourceTitle(s), s.author, s.siteName, s.url].some((v) => (v || "").toLowerCase().includes(ql)))

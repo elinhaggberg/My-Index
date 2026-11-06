@@ -8,6 +8,10 @@
 //     the reader and the article saved as a Link
 // An excerpt can also carry a page ("42", "s. 42", "ch. 3"), so excerpts
 // from a source can be listed in reading order.
+// Any snippet can name a source explicitly -- an image or a link can come
+// from a particular web page or book too. The implicit same-link pairing
+// stays for excerpts only, so two links to the same page don't claim each
+// other.
 
 import { getSnippets } from "./storage.js";
 import { typeFor } from "./snippetTypes.js";
@@ -57,14 +61,14 @@ export function findSource(excerpt, all) {
     const explicit = all.find((s) => s.id === excerpt.sourceId);
     if (explicit) return explicit;
   }
-  if (!excerpt.url) return null;
+  if (!isExcerpt(excerpt) || !excerpt.url) return null;
   return all.find((s) => s.id !== excerpt.id && isSource(s) && sameLink(s.url, excerpt.url)) || null;
 }
 
 // Every excerpt that belongs to a source, in reading order.
 export function findExcerpts(source, all) {
   return all
-    .filter((s) => s.id !== source.id && isExcerpt(s) && (s.sourceId === source.id || (!s.sourceId && source.url && sameLink(s.url, source.url))))
+    .filter((s) => s.id !== source.id && (s.sourceId === source.id || (isExcerpt(s) && !s.sourceId && source.url && sameLink(s.url, source.url))))
     .sort(byPage);
 }
 
@@ -73,8 +77,22 @@ export function findExcerpts(source, all) {
 export function findSiblings(excerpt, all) {
   const source = findSource(excerpt, all);
   if (source) return findExcerpts(source, all).filter((s) => s.id !== excerpt.id);
-  if (!excerpt.url) return [];
+  if (!isExcerpt(excerpt) || !excerpt.url) return [];
   return all.filter((s) => s.id !== excerpt.id && isExcerpt(s) && !s.sourceId && sameLink(s.url, excerpt.url)).sort(byPage);
+}
+
+// Whether `candidate` can be `snippet`'s source: not itself, and not
+// anything that (through its own sources) already comes from `snippet` --
+// no loops.
+export function canBeSourceOf(candidate, snippet, all) {
+  if (!isSource(candidate) || candidate.id === snippet.id) return false;
+  const byId = new Map(all.map((s) => [s.id, s]));
+  const seen = new Set();
+  for (let s = candidate; s?.sourceId && !seen.has(s.id); s = byId.get(s.sourceId)) {
+    seen.add(s.id);
+    if (s.sourceId === snippet.id) return false;
+  }
+  return true;
 }
 
 // Excerpt counts for a grid's source cards: one read of all snippets shared

@@ -101,7 +101,7 @@ export function createSnippetNode(snippet, onOpen) {
     }
   }
 
-  const page = isExcerpt(snippet) ? pageLabel(snippet.page) : "";
+  const page = isExcerpt(snippet) || snippet.sourceId ? pageLabel(snippet.page) : "";
   if ((type.hasAuthor && snippet.author) || page) {
     const authorEl = node.querySelector(".pin-author");
     authorEl.textContent = [type.hasAuthor && snippet.author ? `— ${snippet.author}` : "", page].filter(Boolean).join(", ");

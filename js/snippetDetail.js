@@ -46,7 +46,7 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
     }
   }
 
-  const page = isExcerpt(snippet) ? pageLabel(snippet.page) : "";
+  const page = isExcerpt(snippet) || snippet.sourceId ? pageLabel(snippet.page) : "";
   if ((type.hasAuthor && snippet.author) || page) {
     const authorEl = el.querySelector("#detail-author");
     authorEl.textContent = [type.hasAuthor && snippet.author ? `— ${snippet.author}` : "", page].filter(Boolean).join(", ");
@@ -73,25 +73,24 @@ export async function openSnippetDetail(nav, snippetRef, refresh) {
     openSnippetDetail(nav, other, refresh);
   };
   const all = await getSnippets();
-  if (isExcerpt(snippet)) {
-    const source = findSource(snippet, all);
-    if (source) {
-      el.querySelector("#detail-source").replaceChildren(sourceRow(source, () => openOther(source)));
-      el.querySelector("#detail-source-section").classList.remove("hidden");
-    }
-    const siblings = findSiblings(snippet, all);
-    if (siblings.length) {
-      el.querySelector("#detail-excerpts-label").textContent = `${siblings.length} more from ${source ? "this source" : "this page"}`;
-      el.querySelector("#detail-excerpts").replaceChildren(...siblings.map((s) => excerptRow(s, () => openOther(s))));
-      el.querySelector("#detail-excerpts-section").classList.remove("hidden");
-    }
-  } else if (isSource(snippet)) {
-    const excerpts = findExcerpts(snippet, all);
-    if (excerpts.length) {
-      el.querySelector("#detail-excerpts-label").textContent = `Excerpts (${excerpts.length})`;
-      el.querySelector("#detail-excerpts").replaceChildren(...excerpts.map((s) => excerptRow(s, () => openOther(s))));
-      el.querySelector("#detail-excerpts-section").classList.remove("hidden");
-    }
+  // Where it comes from (any type can name a source)...
+  const source = findSource(snippet, all);
+  if (source) {
+    el.querySelector("#detail-source").replaceChildren(sourceRow(source, () => openOther(source)));
+    el.querySelector("#detail-source-section").classList.remove("hidden");
+  }
+  // ...and, below, what came from it -- or, for something that isn't a
+  // source with excerpts of its own, the rest saved from the same place.
+  const excerpts = isSource(snippet) ? findExcerpts(snippet, all) : [];
+  const siblings = excerpts.length ? [] : findSiblings(snippet, all);
+  if (excerpts.length) {
+    el.querySelector("#detail-excerpts-label").textContent = `Excerpts (${excerpts.length})`;
+    el.querySelector("#detail-excerpts").replaceChildren(...excerpts.map((s) => excerptRow(s, () => openOther(s))));
+    el.querySelector("#detail-excerpts-section").classList.remove("hidden");
+  } else if (siblings.length) {
+    el.querySelector("#detail-excerpts-label").textContent = `${siblings.length} more from ${source ? "this source" : "this page"}`;
+    el.querySelector("#detail-excerpts").replaceChildren(...siblings.map((s) => excerptRow(s, () => openOther(s))));
+    el.querySelector("#detail-excerpts-section").classList.remove("hidden");
   }
 
   const tagsSection = el.querySelector("#detail-tags-section");

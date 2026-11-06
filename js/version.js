@@ -3,9 +3,16 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.07.2";
+export const APP_VERSION = "2026.11.07.3";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.07.3",
+    date: "November 7, 2026",
+    changes: [
+      "Every kind of snippet can have a source now, not just quotes, notes and poems: an image or a link can come from a particular web page or book too. It shows under From, and in the source's list of what came from it.",
+    ],
+  },
   {
     version: "2026.11.07.2",
     date: "November 7, 2026",
