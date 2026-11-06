@@ -13,6 +13,7 @@ import {
   shouldShowStorageWarning,
   dismissStorageWarningBanner,
   getShowProfileRow,
+  byFiledAtDesc,
 } from "../storage.js";
 import { renderTabbar } from "../tabbar.js";
 import { renderMasonry } from "../masonry.js";
@@ -89,7 +90,7 @@ export async function renderHome(root, nav) {
     clearBtn.classList.toggle("hidden", !active);
     headlineEl.classList.toggle("filtered-headline", active);
 
-    const allSnippets = (await getSnippets()).sort((a, b) => b.createdAt - a.createdAt);
+    const allSnippets = (await getSnippets()).sort(byFiledAtDesc);
     // Untagged things wait in the Inbox until they've been sorted, so
     // "Recently saved" only shows what's been given a tag. (Filtering for
     // the Inbox explicitly still finds them.)

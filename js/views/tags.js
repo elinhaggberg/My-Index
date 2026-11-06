@@ -19,6 +19,8 @@ export async function renderTags(root, nav) {
   }
 
   const grid = document.getElementById("tags-grid");
+  // Navigated away while the tags were loading.
+  if (!grid) return;
   // The Inbox has its own tab now (see js/tabbar.js), so it isn't listed
   // here among the themes.
   const entries = tags.map((t) => ({ tag: t, count: countFor(t.id) }));

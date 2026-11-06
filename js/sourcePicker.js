@@ -58,10 +58,12 @@ export async function renderSourceField(container, { draft, onChange, onAuthorFi
       // source's tags are added to whatever it already has (copied once,
       // so either can be retagged on its own afterwards).
       const inherited = (source?.tagIds || []).filter((t) => t !== "uncategorized" && !draft.tagIds.includes(t));
-      if (inherited.length) {
-        draft.tagIds.push(...inherited);
-        onTagsInherited?.();
-      }
+      if (inherited.length) draft.tagIds.push(...inherited);
+      // ...and its profiles the same way (a quote from Franklin's book is
+      // Franklin's).
+      const inheritedProfiles = (source?.profileIds || []).filter((p) => !draft.profileIds.includes(p));
+      if (inheritedProfiles.length) draft.profileIds.push(...inheritedProfiles);
+      if (inherited.length || inheritedProfiles.length) onTagsInherited?.();
       // An excerpt without an author takes its source's (a quote from a
       // book is by the book's author, more often than not).
       if (!(draft.author || "").trim()) {

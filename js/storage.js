@@ -309,11 +309,22 @@ export function createEmptySnippet() {
   };
 }
 
+// Where a snippet sits in "Recently saved" (and on its tags and profiles):
+// when it was filed -- the moment it left the Inbox by getting its first
+// tag -- or, for something tagged when saved, when it was saved. The Inbox
+// itself keeps arrival order (createdAt).
+export function filedAt(snippet) {
+  return snippet.filedAt || snippet.createdAt || 0;
+}
+export const byFiledAtDesc = (a, b) => filedAt(b) - filedAt(a);
+
 export async function saveSnippet(snippet) {
   const previous = await getOne("snippets", snippet.id);
   const image = await storeImageIfBlob(snippet.id, snippet.image);
   await cleanupOldImage(previous?.image, image);
   const withTimestamp = { ...snippet, image, updatedAt: Date.now() };
+  // Leaving the Inbox: from untagged to tagged.
+  if (previous && !(previous.tagIds || []).length && (snippet.tagIds || []).length) withTimestamp.filedAt = Date.now();
   await putOne("snippets", withTimestamp);
   return withTimestamp;
 }
@@ -342,7 +353,7 @@ export async function applyRemoteDeletion(store, recordId) {
 
 export async function getSnippetsForProfile(profileId) {
   const snippets = await getSnippets();
-  return snippets.filter((s) => s.profileIds?.includes(profileId)).sort((a, b) => b.createdAt - a.createdAt);
+  return snippets.filter((s) => s.profileIds?.includes(profileId)).sort(byFiledAtDesc);
 }
 
 export async function getSnippetsForTag(tagId) {
@@ -350,7 +361,7 @@ export async function getSnippetsForTag(tagId) {
   if (tagId === UNCATEGORIZED_TAG_ID) {
     return snippets.filter((s) => !s.tagIds || s.tagIds.length === 0).sort((a, b) => b.createdAt - a.createdAt);
   }
-  return snippets.filter((s) => s.tagIds?.includes(tagId)).sort((a, b) => b.createdAt - a.createdAt);
+  return snippets.filter((s) => s.tagIds?.includes(tagId)).sort(byFiledAtDesc);
 }
 
 // "Mark all as reviewed" in the Inbox: everything currently there stays

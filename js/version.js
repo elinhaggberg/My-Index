@@ -3,9 +3,17 @@
 // last saw and shows the "What's new" sheet for anything newer. Keep the
 // version string in YYYY.MM.DD form (zero-padded) so plain string
 // comparison sorts the same as chronological order.
-export const APP_VERSION = "2026.11.07";
+export const APP_VERSION = "2026.11.07.2";
 
 export const CHANGELOG = [
+  {
+    version: "2026.11.07.2",
+    date: "November 7, 2026",
+    changes: [
+      "Choosing a source also connects the source's profiles, not just its tags.",
+      "Something that leaves the Inbox by getting a tag now goes to the top of Recently saved (and of its tags and profiles), instead of back where it was first saved.",
+    ],
+  },
   {
     version: "2026.11.07",
     date: "November 7, 2026",

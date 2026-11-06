@@ -184,7 +184,11 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
     onAuthorFilled: (author) => {
       authorInput.value = author;
     },
-    onTagsInherited: () => drawTags(),
+    // Choosing a source adds its tags and profiles.
+    onTagsInherited: () => {
+      drawTags();
+      drawProfiles();
+    },
   });
   const pageInput = el.querySelector("#editor-page-input");
   pageInput.value = draft.page || "";
@@ -214,12 +218,15 @@ export function openSnippetEditor(nav, { snippet, isNew, refresh, presetProfileI
   drawTags();
 
   // ---- Profiles ----
-  renderProfileChips(el.querySelector("#editor-profile-chips"), {
-    selectedIds: draft.profileIds,
-    onToggle: (profileId) => {
-      const idx = draft.profileIds.indexOf(profileId);
-      if (idx >= 0) draft.profileIds.splice(idx, 1);
-      else draft.profileIds.push(profileId);
-    },
-  });
+  function drawProfiles() {
+    renderProfileChips(el.querySelector("#editor-profile-chips"), {
+      selectedIds: draft.profileIds,
+      onToggle: (profileId) => {
+        const idx = draft.profileIds.indexOf(profileId);
+        if (idx >= 0) draft.profileIds.splice(idx, 1);
+        else draft.profileIds.push(profileId);
+      },
+    });
+  }
+  drawProfiles();
 }
